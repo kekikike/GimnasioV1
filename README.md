@@ -12,7 +12,7 @@
 
 Esta guía contiene los pasos necesarios para instalar las dependencias, establecer el entorno y ejecutar el proyecto de forma local.
 
-## 📋 Prerrequisitos
+## Prerrequisitos
 Antes de comenzar, asegúrate de tener instalado en tu equipo:
 * PHP (Versión 8.2 o superior recomendada)
 * Composer
@@ -21,7 +21,7 @@ Antes de comenzar, asegúrate de tener instalado en tu equipo:
 
 ---
 
-## 🚀 Pasos para Configurar el Proyecto
+## Pasos para Configurar el Proyecto
 
 Si acabas de descargar o clonar el proyecto en una nueva computadora, ejecuta los siguientes comandos en la raíz de la carpeta:
 
@@ -60,7 +60,7 @@ php artisan key:generate
 
 ---
 
-## 🗄️ Creación y Migración de la Base de Datos
+## Creación y Migración de la Base de Datos
 
 Una vez que tengas tu servidor MySQL activo (por ejemplo, en XAMPP) y hayas creado la base de datos vacía con el nombre que pusiste en el `.env`, ejecuta el siguiente comando para estructurar las tablas y sus relaciones automáticas:
 
@@ -75,7 +75,7 @@ php artisan migrate:fresh --seed
 
 ---
 
-## 🖥️ Cómo Inicializar el Proyecto
+## Cómo Inicializar el Proyecto
 
 Para hacer funcionar el sistema en tu navegador, necesitas abrir **dos terminales diferentes** en la raíz del proyecto y dejar ambos comandos corriendo al mismo tiempo:
 
