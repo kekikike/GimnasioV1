@@ -47,9 +47,9 @@ npm install
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=nombre_de_tu_base_de_datos
-   DB_USERNAME=tu_usuario_root
-   DB_PASSWORD=tu_contraseña
+   DB_DATABASE=GimnasioV1
+   DB_USERNAME=usuario
+   DB_PASSWORD=contraseña
    ```
 
 ### 4. Generar la clave de seguridad de la aplicación
