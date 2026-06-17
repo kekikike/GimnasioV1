@@ -344,6 +344,21 @@ CREATE TABLE ReporteFalla (
     FOREIGN KEY (carnetEmpleado) REFERENCES Empleado(carnetEmpleado)
 );
 
+-- 24. Tabla tAuditoria
+CREATE TABLE tAuditoria (
+    idAuditoria INT AUTO_INCREMENT PRIMARY KEY,
+    tablaNombre VARCHAR(50) NULL,
+    registroId INT NULL,
+    accion VARCHAR(50) NULL,
+    campo VARCHAR(100) NULL,
+    valorAnterior TEXT NULL,  -- En MySQL usamos TEXT para simular el varchar(MAX) de tu imagen
+    valorNuevo TEXT NULL,     -- En MySQL usamos TEXT para simular el varchar(MAX) de tu imagen
+    usuarioA INT NULL,
+    fechaA DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    direccionIP VARCHAR(50) NULL,
+    detalles VARCHAR(500) NULL
+);
+
 -- ────────────────────────────────────────────────────────
 -- Vinculación de las columnas de auditoría (usuarioA -> Usuario)
 -- ────────────────────────────────────────────────────────
@@ -371,3 +386,4 @@ ALTER TABLE Marca ADD CONSTRAINT fk_marca_usuarioA FOREIGN KEY (usuarioA) REFERE
 ALTER TABLE Equipamiento ADD CONSTRAINT fk_equipamiento_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
 ALTER TABLE MantenimientoPreventivo ADD CONSTRAINT fk_mantenimiento_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
 ALTER TABLE ReporteFalla ADD CONSTRAINT fk_reportefalla_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
+ALTER TABLE tAuditoria ADD CONSTRAINT fk_tauditoria_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
