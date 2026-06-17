@@ -1,6 +1,6 @@
 -- Creación de la base de datos
-CREATE DATABASE IF NOT EXISTS gestion_gimnasio;
-USE gestion_gimnasio;
+CREATE DATABASE IF NOT EXISTS GimnasioV1;
+USE GimnasioV1;
 
 -- 1. Tabla Roles
 CREATE TABLE Roles (
@@ -386,4 +386,7 @@ ALTER TABLE Marca ADD CONSTRAINT fk_marca_usuarioA FOREIGN KEY (usuarioA) REFERE
 ALTER TABLE Equipamiento ADD CONSTRAINT fk_equipamiento_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
 ALTER TABLE MantenimientoPreventivo ADD CONSTRAINT fk_mantenimiento_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
 ALTER TABLE ReporteFalla ADD CONSTRAINT fk_reportefalla_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
+<<<<<<< HEAD
 ALTER TABLE tAuditoria ADD CONSTRAINT fk_tauditoria_usuarioA FOREIGN KEY (usuarioA) REFERENCES Usuario(idUsuario);
+=======
+>>>>>>> 14624570878ddb26430923495bece869dc7268aa

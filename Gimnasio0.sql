@@ -1,6 +1,6 @@
 -- Creación de la base de datos
-CREATE DATABASE IF NOT EXISTS gestion_gimnasio;
-USE gestion_gimnasio;
+CREATE DATABASE IF NOT EXISTS GimnasioV1;
+USE GimnasioV1;
 
 -- 1. Tabla Roles
 CREATE TABLE Roles (
