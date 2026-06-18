@@ -10,16 +10,16 @@ return new class extends Migration
     {
         Schema::create('TAsistenciasPersonal', function (Blueprint $table) {
             $table->id('idAsistencia');
-            $table->unsignedBigInteger('idEmpleado');
+            $table->integer('carnetEmpleado');
             $table->dateTime('horaEntrada');
             $table->dateTime('horaSalida')->nullable();
-            
-            $table->unsignedBigInteger('usuarioA');
+
+            $table->unsignedInteger('usuarioA');
             $table->ipAddress('ipA')->nullable();
             $table->timestamp('fechaA')->useCurrent();
             $table->timestamp('fechaM')->useCurrentOnUpdate()->nullable();
 
-            $table->foreign('idEmpleado')->references('idEmpleado')->on('TEmpleados')->onDelete('cascade');
+            $table->foreign('carnetEmpleado')->references('carnetEmpleado')->on('TEmpleados')->onDelete('cascade');
         });
     }
 

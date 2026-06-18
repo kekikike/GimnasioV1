@@ -10,18 +10,18 @@ return new class extends Migration
     {
         Schema::create('THorarios', function (Blueprint $table) {
             $table->id('idHorario');
-            $table->unsignedBigInteger('idEmpleado');
+            $table->integer('carnetEmpleado');
             $table->enum('diaSemana', ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']);
             $table->time('horaEntrada');
             $table->time('horaSalida');
             $table->boolean('estado')->default(true);
-            
-            $table->unsignedBigInteger('usuarioA');
+
+            $table->unsignedInteger('usuarioA');
             $table->ipAddress('ipA')->nullable();
             $table->timestamp('fechaA')->useCurrent();
             $table->timestamp('fechaM')->useCurrentOnUpdate()->nullable();
 
-            $table->foreign('idEmpleado')->references('idEmpleado')->on('TEmpleados')->onDelete('cascade');
+            $table->foreign('carnetEmpleado')->references('carnetEmpleado')->on('TEmpleados')->onDelete('cascade');
         });
     }
 

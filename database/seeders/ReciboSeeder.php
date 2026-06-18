@@ -18,7 +18,7 @@ class ReciboSeeder extends Seeder
             'montoTotal' => 300.00,
             'fechaPago' => '2024-06-01',
             'horaPago' => '10:00:00',
-            'estadoRecibo' => 'Pagado',
+            'estadoRecibo' => 'Emitido',
             'usuarioA' => $adminId,
         ]);
     }

@@ -26,7 +26,7 @@
 </head>
 <body>
     <div class="login-card">
-        <div class="brand">🏋️</div>
+        <div class="brand"><svg fill="none" stroke="#3b82f6" viewBox="0 0 24 24" width="48" height="48" stroke-width="1.5"><rect x="3" y="8" width="18" height="8" rx="2"/><rect x="5" y="5" width="2" height="14" rx="1"/><rect x="17" y="5" width="2" height="14" rx="1"/></svg></div>
         <h1>GimnasioV1</h1>
         <p class="subtitle">Inicia sesión para acceder al sistema</p>
 

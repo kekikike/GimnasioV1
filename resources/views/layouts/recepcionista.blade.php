@@ -38,7 +38,7 @@
 </head>
 <body>
     <aside class="sidebar">
-        <div class="brand"><h1>🏋️ <span>Gimnasio</span>V1</h1></div>
+        <div class="brand"><h1><svg fill="none" stroke="#10b981" viewBox="0 0 24 24" width="22" height="22" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="8" width="18" height="8" rx="2"/><rect x="5" y="5" width="2" height="14" rx="1"/><rect x="17" y="5" width="2" height="14" rx="1"/></svg><span>Gimnasio</span>V1</h1></div>
         <nav class="nav">
             <a href="{{ route('recepcionista.dashboard') }}" class="{{ request()->routeIs('recepcionista.dashboard') ? 'active' : '' }}">
                 Panel de Ingreso

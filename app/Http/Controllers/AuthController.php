@@ -8,10 +8,22 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    private function redirectByRole(): string
+    {
+        $usuario = session('usuario');
+        return match ((int) $usuario->idRol) {
+            1 => route('dashboard'),
+            2 => route('recepcionista.dashboard'),
+            3 => route('entrenador.dashboard'),
+            4 => route('socio.dashboard'),
+            default => route('login'),
+        };
+    }
+
     public function showLogin()
     {
         if (session()->has('usuario')) {
-            return redirect()->route('dashboard');
+            return redirect()->to($this->redirectByRole());
         }
         return view('auth.login');
     }
@@ -31,7 +43,7 @@ class AuthController extends Controller
 
         session(['usuario' => $usuario]);
 
-        return redirect()->route('dashboard');
+        return redirect()->to($this->redirectByRole());
     }
 
     public function logout(Request $request)

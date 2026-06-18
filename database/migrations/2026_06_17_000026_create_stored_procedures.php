@@ -54,6 +54,12 @@ return new class extends Migration
         $this->dropAndCreate($pdo, 'TUsuarios', 'Login', $this->buildLogin());
         $this->dropAndCreate($pdo, 'TUsuarios', 'FindByEmail', $this->buildFindByEmail());
 
+        $this->dropAndCreate($pdo, 'TSocios', 'GetByUserId', $this->buildGetSocioByUserId());
+        $this->dropAndCreate($pdo, 'TMembresias', 'GetActiveBySocio', $this->buildGetMembresiaBySocio());
+        $this->dropAndCreate($pdo, 'TControlAccesos', 'GetBySocio', $this->buildGetAccesosBySocio());
+        $this->dropAndCreate($pdo, 'TReservas', 'GetBySocio', $this->buildGetReservasBySocio());
+        $this->dropAndCreate($pdo, 'TClaseGrupales', 'GetAvailable', $this->buildGetClasesAvailable());
+
         $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
     }
 
@@ -139,7 +145,6 @@ return new class extends Migration
         $params = implode(",\n    ", $paramParts);
 
         $setParts = array_map(fn($c) => "{$c} = p_{$c}", $cols);
-        $setParts[] = 'usuarioA = p_usuarioA';
         $setStr = implode(",\n        ", $setParts);
 
         $declareLines = array_map(fn($c) => "DECLARE v_old_{$c} VARCHAR(500);", $auditCols);
@@ -188,7 +193,7 @@ return new class extends Migration
         return "CREATE PROCEDURE sp_{$table}_Delete(\n    IN p_{$pk} INT,\n    IN p_usuarioA INT,\n    IN p_direccionIP VARCHAR(50)\n)\n"
             . "BEGIN\n"
             . "    UPDATE {$table}\n"
-            . "    SET estadoA = 0, usuarioA = p_usuarioA\n"
+            . "    SET estadoA = 0\n"
             . "    WHERE {$pk} = p_{$pk};\n\n"
             . "    INSERT INTO TAuditorias (tablaNombre, registroId, accion, campo, valorAnterior, valorNuevo, usuarioA, fechaA, direccionIP, detalles)\n"
             . "    VALUES ('{$table}', p_{$pk}, 'D', 'estadoA', 'estado = 1', 'estadoA = 0', p_usuarioA, NOW(), p_direccionIP, 'Eliminado (desactivado) registro');\n"
@@ -247,6 +252,95 @@ return new class extends Migration
             . "      AND u.estado = 1\n"
             . "      AND u.estadoA = 1\n"
             . "    LIMIT 1;\n"
+            . "END";
+    }
+
+    private function buildGetSocioByUserId(): string
+    {
+        return "CREATE PROCEDURE sp_TSocios_GetByUserId(\n"
+            . "    IN p_idUsuario INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT s.*, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono\n"
+            . "    FROM TSocios s\n"
+            . "    INNER JOIN TUsuarios u ON u.idUsuario = s.idUsuario\n"
+            . "    WHERE u.idUsuario = p_idUsuario\n"
+            . "      AND s.estadoA = 1\n"
+            . "    LIMIT 1;\n"
+            . "END";
+    }
+
+    private function buildGetMembresiaBySocio(): string
+    {
+        return "CREATE PROCEDURE sp_TMembresias_GetActiveBySocio(\n"
+            . "    IN p_carnetSocio INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT m.*, p.nombrePlan, p.descripcion AS descripcionPlan, p.costoPlan, p.duracionDias\n"
+            . "    FROM TMembresias m\n"
+            . "    INNER JOIN TPlanes p ON p.idPlan = m.idPlan\n"
+            . "    WHERE m.carnetSocio = p_carnetSocio\n"
+            . "      AND m.estadoA = 1\n"
+            . "    ORDER BY m.idMembresia DESC\n"
+            . "    LIMIT 1;\n"
+            . "END";
+    }
+
+    private function buildGetAccesosBySocio(): string
+    {
+        return "CREATE PROCEDURE sp_TControlAccesos_GetBySocio(\n"
+            . "    IN p_carnetSocio INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT ca.*, s.nombre AS sucursal\n"
+            . "    FROM TControlAccesos ca\n"
+            . "    LEFT JOIN TSucursales s ON s.idSucursal = ca.idSucursal\n"
+            . "    WHERE ca.carnetSocio = p_carnetSocio\n"
+            . "      AND ca.estadoA = 1\n"
+            . "    ORDER BY ca.fechaAcceso DESC, ca.horaAcceso DESC\n"
+            . "    LIMIT 20;\n"
+            . "END";
+    }
+
+    private function buildGetReservasBySocio(): string
+    {
+        return "CREATE PROCEDURE sp_TReservas_GetBySocio(\n"
+            . "    IN p_carnetSocio INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT r.*, cg.fecha, cg.horaInicio, cg.horaFin, a.nombreActividad,\n"
+            . "           s.nombre AS sucursalNombre,\n"
+            . "           CONCAT(u.nombre1, ' ', u.apellido1) AS entrenador\n"
+            . "    FROM TReservas r\n"
+            . "    INNER JOIN TClaseGrupales cg ON cg.idClaseGrupal = r.idClaseGrupal\n"
+            . "    INNER JOIN TActividades a ON a.idActividad = cg.idActividad\n"
+            . "    INNER JOIN TSucursales s ON s.idSucursal = cg.idSucursal\n"
+            . "    INNER JOIN TEmpleados e ON e.carnetEmpleado = cg.carnetEmpleado\n"
+            . "    INNER JOIN TUsuarios u ON u.idUsuario = e.idUsuario\n"
+            . "    WHERE r.carnetSocio = p_carnetSocio\n"
+            . "      AND r.estadoA = 1\n"
+            . "    ORDER BY cg.fecha DESC, cg.horaInicio DESC\n"
+            . "    LIMIT 10;\n"
+            . "END";
+    }
+
+    private function buildGetClasesAvailable(): string
+    {
+        return "CREATE PROCEDURE sp_TClaseGrupales_GetAvailable()\n"
+            . "BEGIN\n"
+            . "    SELECT cg.*, a.nombreActividad, a.descripcionActividad,\n"
+            . "           s.nombre AS sucursalNombre,\n"
+            . "           CONCAT(u.nombre1, ' ', u.apellido1) AS entrenador\n"
+            . "    FROM TClaseGrupales cg\n"
+            . "    INNER JOIN TActividades a ON a.idActividad = cg.idActividad\n"
+            . "    INNER JOIN TSucursales s ON s.idSucursal = cg.idSucursal\n"
+            . "    INNER JOIN TEmpleados e ON e.carnetEmpleado = cg.carnetEmpleado\n"
+            . "    INNER JOIN TUsuarios u ON u.idUsuario = e.idUsuario\n"
+            . "    WHERE cg.fecha >= CURDATE()\n"
+            . "      AND cg.estadoA = 1\n"
+            . "      AND cg.estadoClase = 'Programada'\n"
+            . "    ORDER BY cg.fecha ASC, cg.horaInicio ASC\n"
+            . "    LIMIT 10;\n"
             . "END";
     }
 };

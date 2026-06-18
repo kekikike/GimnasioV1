@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('nombreEquipo', 100);
             $table->string('modelo', 100)->nullable();
             $table->date('fechaAdquisicion')->nullable();
-            $table->string('estadoEquipo', 50);
+            $table->enum('estadoEquipo', ['Operativo', 'En Mantenimiento', 'Fuera de Servicio', 'De Baja']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();

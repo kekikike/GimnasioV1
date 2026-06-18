@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('montoTotal', 10, 2);
             $table->date('fechaPago');
             $table->time('horaPago');
-            $table->string('estadoRecibo', 50);
+            $table->enum('estadoRecibo', ['Emitido', 'Anulado']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();

@@ -17,7 +17,7 @@ class MantenimientoPreventivoSeeder extends Seeder
             'descripcionMantenimiento' => 'Mantenimiento de rutina - revisión de motor y banda',
             'costoMantenimiento' => 150.00,
             'tecnicoAsignado' => 'Técnico externo',
-            'estadoMantenimiento' => 'Programado',
+            'estadoMantenimiento' => 'Pendiente',
             'usuarioA' => $adminId,
         ]);
     }

@@ -32,11 +32,26 @@
         .stat-card { text-align: center; padding: 1.5rem; }
         .stat-card .number { font-size: 2rem; font-weight: 700; color: #0f172a; }
         .stat-card .label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+        .section-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9; display: flex; align-items: center; gap: 0.5rem; }
+        .info-row { display: flex; padding: 0.5rem 0; border-bottom: 1px solid #f8fafc; }
+        .info-row .label { width: 140px; font-weight: 600; color: #64748b; font-size: 0.85rem; }
+        .info-row .value { flex: 1; color: #0f172a; font-size: 0.9rem; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 0.6rem 0.75rem; background: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
+        .empty-msg { color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 2rem; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
-        <div class="brand"><h1>🏋️ <span>Gimnasio</span>V1</h1></div>
+        <div class="brand"><h1><svg fill="none" stroke="#f43f5e" viewBox="0 0 24 24" width="22" height="22" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="8" width="18" height="8" rx="2"/><rect x="5" y="5" width="2" height="14" rx="1"/><rect x="17" y="5" width="2" height="14" rx="1"/></svg><span>Gimnasio</span>V1</h1></div>
         <nav class="nav">
             <a href="{{ route('socio.dashboard') }}" class="{{ request()->routeIs('socio.dashboard') ? 'active' : '' }}">
                 Inicio

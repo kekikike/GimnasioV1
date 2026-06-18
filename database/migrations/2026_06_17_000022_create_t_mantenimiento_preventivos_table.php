@@ -16,7 +16,7 @@ return new class extends Migration
             $table->text('descripcionMantenimiento')->nullable();
             $table->decimal('costoMantenimiento', 10, 2)->nullable();
             $table->string('tecnicoAsignado', 150)->nullable();
-            $table->string('estadoMantenimiento', 50);
+            $table->enum('estadoMantenimiento', ['Pendiente', 'Realizado', 'Cancelado']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();

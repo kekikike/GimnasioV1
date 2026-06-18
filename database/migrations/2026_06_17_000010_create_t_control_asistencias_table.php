@@ -14,7 +14,7 @@ return new class extends Migration
             $table->date('fecha');
             $table->time('horaEntrada');
             $table->time('horaSalida')->nullable();
-            $table->string('estadoAsistencia', 50);
+            $table->enum('estadoAsistencia', ['Puntual', 'Tardanza', 'Falta']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();

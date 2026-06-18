@@ -58,7 +58,7 @@
                         <td>{{ $eq->modelo ?? '-' }}</td>
                         <td>{{ $s->nombre ?? '-' }}</td>
                         <td>
-                            <span class="badge {{ $eq->estadoEquipo == 'Operativo' ? 'badge-success' : ($eq->estadoEquipo == 'Mantenimiento' ? 'badge-warning' : 'badge-danger') }}">
+                            <span class="badge {{ $eq->estadoEquipo == 'Operativo' ? 'badge-success' : ($eq->estadoEquipo == 'En Mantenimiento' ? 'badge-warning' : 'badge-danger') }}">
                                 {{ $eq->estadoEquipo }}
                             </span>
                         </td>

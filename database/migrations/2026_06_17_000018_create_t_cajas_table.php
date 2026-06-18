@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('montoCierre', 10, 2)->nullable();
             $table->decimal('montoCierreCalculado', 10, 2)->nullable();
             $table->decimal('diferenciaArqueo', 10, 2)->nullable();
-            $table->string('estadoCaja', 50);
+            $table->enum('estadoCaja', ['Abierta', 'Cerrada', 'Auditada']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();

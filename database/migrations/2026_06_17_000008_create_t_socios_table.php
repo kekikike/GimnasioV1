@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nombreContactoEmergencia', 150)->nullable();
             $table->integer('telefonoContactoEmergencia')->nullable();
             $table->text('observacionesMedicas')->nullable();
-            $table->string('estadoSocio', 50);
+            $table->enum('estadoSocio', ['Activo', 'Inactivo', 'Congelado']);
             $table->integer('Asistencias')->default(0);
             $table->integer('Faltas')->default(0);
             $table->integer('strikes')->default(0);

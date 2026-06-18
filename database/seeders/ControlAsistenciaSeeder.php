@@ -17,7 +17,7 @@ class ControlAsistenciaSeeder extends Seeder
                 'fecha' => '2024-06-17',
                 'horaEntrada' => '08:05:00',
                 'horaSalida' => '17:00:00',
-                'estadoAsistencia' => 'Presente',
+                'estadoAsistencia' => 'Puntual',
                 'usuarioA' => $adminId,
             ],
             [
@@ -25,7 +25,7 @@ class ControlAsistenciaSeeder extends Seeder
                 'fecha' => '2024-06-17',
                 'horaEntrada' => '06:00:00',
                 'horaSalida' => '14:00:00',
-                'estadoAsistencia' => 'Presente',
+                'estadoAsistencia' => 'Puntual',
                 'usuarioA' => $adminId,
             ],
         ]);

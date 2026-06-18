@@ -16,7 +16,7 @@ return new class extends Migration
             $table->time('horaReporte');
             $table->text('descripcionFalla');
             $table->string('gravedad', 50);
-            $table->string('estadoReporte', 50);
+            $table->enum('estadoReporte', ['Pendiente', 'En Revision', 'Solucionado']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();
