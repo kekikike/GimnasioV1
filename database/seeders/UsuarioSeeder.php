@@ -23,7 +23,7 @@ class UsuarioSeeder extends Seeder
 
         DB::table('TRoles')->whereNull('usuarioA')->update(['usuarioA' => $adminId]);
 
-        $favioId = DB::table('TUsuarios')->insertGetId([
+        DB::table('TUsuarios')->insertGetId([
             'idRol' => 1,
             'nombre1' => 'Favio Estefano',
             'apellido1' => 'Sandy Gonzales',
@@ -34,7 +34,7 @@ class UsuarioSeeder extends Seeder
             'usuarioA' => $adminId,
         ]);
 
-        $juanId = DB::table('TUsuarios')->insertGetId([
+        DB::table('TUsuarios')->insertGetId([
             'idRol' => 2,
             'nombre1' => 'Juan Enrique',
             'apellido1' => 'Quenallata Escobar',
@@ -62,6 +62,76 @@ class UsuarioSeeder extends Seeder
                 'apellido1' => 'Vargas Apaza',
                 'correo' => 'eddy@gmail.com',
                 'telefono' => 56789012,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 4,
+                'nombre1' => 'Maria Fernanda',
+                'apellido1' => 'Garcia Lopez',
+                'correo' => 'maria@gmail.com',
+                'telefono' => 67890123,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 4,
+                'nombre1' => 'Carlos Andres',
+                'apellido1' => 'Mendoza Ruiz',
+                'correo' => 'carlos@gmail.com',
+                'telefono' => 78901234,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 4,
+                'nombre1' => 'Ana Sofia',
+                'apellido1' => 'Torrico Herrera',
+                'correo' => 'ana@gmail.com',
+                'telefono' => 89012345,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 4,
+                'nombre1' => 'Pedro Luis',
+                'apellido1' => 'Camacho Rojas',
+                'correo' => 'pedro@gmail.com',
+                'telefono' => 90123456,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 2,
+                'nombre1' => 'Carlos',
+                'apellido1' => 'Ruiz Martinez',
+                'correo' => 'carlos.ruiz@gmail.com',
+                'telefono' => 11111111,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 3,
+                'nombre1' => 'Lucia',
+                'apellido1' => 'Morales Fernandez',
+                'correo' => 'lucia@gmail.com',
+                'telefono' => 22222222,
+                'contrasena' => Hash::make('123456'),
+                'estado' => true,
+                'usuarioA' => $adminId,
+            ],
+            [
+                'idRol' => 3,
+                'nombre1' => 'Roberto',
+                'apellido1' => 'Vega Castillo',
+                'correo' => 'roberto@gmail.com',
+                'telefono' => 33333333,
                 'contrasena' => Hash::make('123456'),
                 'estado' => true,
                 'usuarioA' => $adminId,

@@ -10,12 +10,21 @@ class DetalleMetodoPagoSeeder extends Seeder
     public function run(): void
     {
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
+        $recibos = DB::table('TRecibos')->where('estadoA', 1)->get(['idRecibo', 'montoTotal']);
+        $tipoPagos = ['Efectivo', 'Tarjeta', 'QR', 'Transferencia'];
 
-        DB::table('TDetalleMetodoPagos')->insert([
-            'idRecibo' => 1,
-            'tipoPago' => 'Efectivo',
-            'monto' => 300.00,
-            'usuarioA' => $adminId,
-        ]);
+        $detalles = [];
+        foreach ($recibos as $r) {
+            $detalles[] = [
+                'idRecibo' => $r->idRecibo,
+                'tipoPago' => $tipoPagos[array_rand($tipoPagos)],
+                'monto' => $r->montoTotal,
+                'usuarioA' => $adminId,
+            ];
+        }
+
+        if (!empty($detalles)) {
+            DB::table('TDetalleMetodoPagos')->insert($detalles);
+        }
     }
 }

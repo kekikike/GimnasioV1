@@ -30,6 +30,33 @@ class EmpleadoSeeder extends Seeder
                 'fechaContratoInicio' => '2024-02-01',
                 'usuarioA' => $adminId,
             ],
+            [
+                'carnetEmpleado' => 2001,
+                'idUsuario' => 10,
+                'idSucursal' => 1,
+                'sueldo' => 1800.00,
+                'especialidad' => 1,
+                'fechaContratoInicio' => '2025-06-01',
+                'usuarioA' => $adminId,
+            ],
+            [
+                'carnetEmpleado' => 2002,
+                'idUsuario' => 11,
+                'idSucursal' => 1,
+                'sueldo' => 2200.00,
+                'especialidad' => 3,
+                'fechaContratoInicio' => '2025-03-15',
+                'usuarioA' => $adminId,
+            ],
+            [
+                'carnetEmpleado' => 2003,
+                'idUsuario' => 12,
+                'idSucursal' => 1,
+                'sueldo' => 2500.00,
+                'especialidad' => 4,
+                'fechaContratoInicio' => '2025-09-01',
+                'usuarioA' => $adminId,
+            ],
         ]);
     }
 }
