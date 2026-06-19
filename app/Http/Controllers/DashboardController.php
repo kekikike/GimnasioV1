@@ -7,6 +7,7 @@ use App\Models\Marca;
 use App\Models\Sucursal;
 use App\Models\Socio;
 use App\Models\Empleado;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -21,8 +22,10 @@ class DashboardController extends Controller
         $totalEmpleados    = Empleado::count();
         $equiposRecientes  = array_slice($equipos, 0, 5);
 
+        $alertasProximas = DB::select('CALL sp_TMantenimientoPreventivos_GetProximos(?)', [5]);
+
         return view('admin.dashboard', compact(
-            'totalEquipos', 'totalSocios', 'totalEmpleados', 'equiposRecientes', 'marcas', 'sucursales'
+            'totalEquipos', 'totalSocios', 'totalEmpleados', 'equiposRecientes', 'marcas', 'sucursales', 'alertasProximas'
         ));
     }
 }

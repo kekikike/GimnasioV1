@@ -20,16 +20,7 @@ class PersonalController extends Controller
     // 2. Listar
     public function listar()
     {
-        $empleados = DB::select("
-            SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.sueldo, e.fechaContratoInicio,
-                   u.idRol, u.nombre1, u.apellido1, u.correo, u.telefono,
-                   r.nombreRol, s.nombre as nombreSucursal
-            FROM TEmpleados e
-            INNER JOIN TUsuarios u ON e.idUsuario = u.idUsuario
-            INNER JOIN TRoles r ON u.idRol = r.idRol
-            INNER JOIN TSucursales s ON e.idSucursal = s.idSucursal
-            WHERE e.estadoA = 1
-        ");
+        $empleados = DB::select('CALL sp_TEmpleados_GetAllWithDetails()');
         return response()->json($empleados);
     }
 
@@ -58,17 +49,17 @@ class PersonalController extends Controller
 
             $idUsuario = $usuario[0]->idUsuario ?? $usuario[0]->id ?? 0;
 
-            // B. Crear TEmpleados (Bypass directo a la tabla)
-            DB::table('TEmpleados')->insert([
-                'carnetEmpleado'      => $request->carnetEmpleado,
-                'idUsuario'           => $idUsuario,
-                'idSucursal'          => $request->idSucursal,
-                'sueldo'              => $request->sueldo,
-                'especialidad'        => 1, // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! (Mandamos un 1 en vez de 'General')
-                'fechaContratoInicio' => $request->fechaContratoInicio,
-                'fechaContratoFin'    => null, // Esto está perfecto, se envía como nulo
-                'estadoA'             => 1,
-                'usuarioA'            => $usuarioA
+            // B. Crear TEmpleados via SP
+            DB::select('CALL sp_TEmpleados_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                $request->carnetEmpleado,
+                $idUsuario,
+                $request->idSucursal,
+                $request->sueldo,
+                $request->especialidad ?? 'General',
+                $request->fechaContratoInicio,
+                null,
+                $usuarioA,
+                $ip
             ]);
 
             DB::commit(); 
@@ -88,7 +79,7 @@ class PersonalController extends Controller
 
         DB::beginTransaction();
         try {
-            $usuarioActual = DB::table('TUsuarios')->where('idUsuario', $request->idUsuario)->first();
+            $usuarioActual = DB::select('CALL sp_TUsuarios_SelectById(?)', [$request->idUsuario])[0] ?? null;
             $contrasena = $request->contrasena ? bcrypt($request->contrasena) : $usuarioActual->contrasena;
 
             DB::statement('CALL sp_TUsuarios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [

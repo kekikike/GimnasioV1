@@ -16,17 +16,9 @@ class SocioController extends Controller
         return view('admin.socios', compact('sucursales'));
     }
 
-    // 2. Listar uniendo Usuarios y Socios
     public function listar()
     {
-        $socios = DB::select("
-            SELECT s.carnetSocio, s.idUsuario, s.direccion,
-                   s.nombreContactoEmergencia, s.telefonoContactoEmergencia, s.estadoSocio,
-                   u.nombre1, u.apellido1, u.correo, u.telefono
-            FROM TSocios s
-            INNER JOIN TUsuarios u ON s.idUsuario = u.idUsuario
-            WHERE s.estadoA = 1
-        ");
+        $socios = DB::select('CALL sp_TSocios_GetAllWithUsers()');
         return response()->json($socios);
     }
 
@@ -38,8 +30,9 @@ class SocioController extends Controller
 
         DB::beginTransaction();
         try {
-            $rol = DB::table('TRoles')->where('nombreRol', 'Socio')->first();
-            $idRol = $rol ? ($rol->idRol ?? $rol->id) : DB::table('TRoles')->insertGetId(['nombreRol' => 'Socio']);
+            $roles = DB::select('CALL sp_TRoles_Select()');
+            $rol = collect($roles)->firstWhere('nombreRol', 'Socio');
+            $idRol = $rol ? $rol->idRol : 4;
 
             // A. Crear usuario (11 parámetros)
             $usuario = DB::select('CALL sp_TUsuarios_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
@@ -77,7 +70,7 @@ class SocioController extends Controller
 
             // C. Asignar Membresía Inicial (8 parámetros)
             if ($request->idPlan && $carnetSocio > 0) {
-                $plan = DB::table('tplanes')->where('idPlan', $request->idPlan)->first();
+                $plan = DB::select('CALL sp_TPlanes_SelectById(?)', [$request->idPlan])[0] ?? null;
                 $duracion = $plan ? $plan->duracionDias : 30;
 
                 $fechaInicio = now()->format('Y-m-d');
@@ -113,7 +106,7 @@ class SocioController extends Controller
         DB::beginTransaction();
         try {
             // Actualizar TUsuarios
-            $usuarioActual = DB::table('TUsuarios')->where('idUsuario', $request->idUsuario)->first();
+            $usuarioActual = DB::select('CALL sp_TUsuarios_SelectById(?)', [$request->idUsuario])[0] ?? null;
             $contrasena = $request->contrasena ? bcrypt($request->contrasena) : $usuarioActual->contrasena;
 
             DB::statement('CALL sp_TUsuarios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
@@ -132,7 +125,7 @@ class SocioController extends Controller
             ]);
 
             // Actualizar TSocios
-            $socioActual = DB::table('TSocios')->where('carnetSocio', $id)->first();
+            $socioActual = DB::select('CALL sp_TSocios_SelectById(?)', [$id])[0] ?? null;
 
             DB::statement('CALL sp_TSocios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                 $id,
@@ -174,23 +167,45 @@ class SocioController extends Controller
     public function congelar(Request $request, $id)
     {
         try {
-            // Buscamos el estado actual del socio
-            $socio = DB::table('TSocios')->where('carnetSocio', $id)->first();
-            $nuevoEstado = ($socio->estado === 'Activo') ? 'Congelado' : 'Activo';
+            $socio = DB::select('CALL sp_TSocios_SelectById(?)', [$id])[0] ?? null;
+            if (!$socio) return response()->json(['success' => false, 'message' => 'Socio no encontrado.'], 404);
 
-            // Actualizamos en la tabla de Socios
-            DB::table('TSocios')->where('carnetSocio', $id)->update([
-                'estado' => $nuevoEstado
+            $nuevoEstadoSocio = ($socio->estadoSocio === 'Activo') ? 'Congelado' : 'Activo';
+            $estadoMembresia  = ($nuevoEstadoSocio === 'Activo') ? 'Activa' : 'Congelada';
+
+            DB::select('CALL sp_TSocios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                $id,
+                $socio->idUsuario,
+                $socio->direccion ?? 'Sin especificar',
+                null,
+                $socio->nombreContactoEmergencia ?? 'Sin especificar',
+                $socio->telefonoContactoEmergencia ?? 0,
+                'Ninguna',
+                $nuevoEstadoSocio,
+                0,
+                $usuarioA,
+                $ip
             ]);
 
-            // Actualizamos también su Membresía (Congelar el tiempo de la membresía)
-            $estadoMembresia = ($nuevoEstado === 'Activo') ? 'Activa' : 'Congelada';
-            DB::table('TMembresias')
-                ->where('carnetSocio', $id)
-                ->where('estadoMembresia', '!=', 'Vencida')
-                ->update(['estadoMembresia' => $estadoMembresia]);
+            $todas = DB::select('CALL sp_TMembresias_Select()');
+            $membresias = array_filter($todas, function ($m) use ($id) {
+                return (int) $m->carnetSocio === (int) $id && $m->estadoMembresia !== 'Vencida';
+            });
+            foreach ($membresias as $m) {
+                DB::select('CALL sp_TMembresias_Update(?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $m->idMembresia,
+                    $m->idPlan,
+                    $id,
+                    $m->idSucursal,
+                    $m->fechaInicioMembresia,
+                    $m->fechaFinMembresia,
+                    $estadoMembresia,
+                    $usuarioA,
+                    $ip,
+                ]);
+            }
 
-            return response()->json(['success' => true, 'message' => '✅ El estado del socio y su membresía ahora es: ' . $nuevoEstado]);
+            return response()->json(['success' => true, 'message' => 'Estado del socio actualizado a: ' . $nuevoEstadoSocio]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()]);
         }

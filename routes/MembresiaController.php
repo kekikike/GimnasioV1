@@ -29,15 +29,13 @@ class MembresiaController extends Controller
 
         DB::beginTransaction();
         try {
-            // 1. Obtener la membresía actual para saber su fecha de fin.
-            $membresia = DB::table('membresias')->where('id', $id)->first();
+            $membresia = DB::select('CALL sp_TMembresias_SelectById(?)', [(int) $id])[0] ?? null;
 
             if (!$membresia) {
                 return response()->json(['success' => false, 'message' => 'Membresía no encontrada.'], 404);
             }
 
-            // 2. Calcular la nueva fecha de vencimiento.
-            $fechaFinActual = Carbon::parse($membresia->fecha_fin);
+            $fechaFinActual = Carbon::parse($membresia->fechaFinMembresia);
             $nuevaFechaFin = $fechaFinActual->addDays($diasSuspension);
 
             // 3. Actualizar la membresía con la nueva fecha de fin y un estado 'Suspendida'.

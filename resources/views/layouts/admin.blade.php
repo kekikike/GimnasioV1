@@ -66,6 +66,15 @@
         .action-group { display: flex; gap: 0.5rem; }
         .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
         .empty-state svg { width: 64px; height: 64px; margin: 0 auto 1rem; opacity: 0.4; }
+        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; }
+        .modal-content { background:white; border-radius:0.75rem; width:100%; max-width:640px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #e2e8f0; }
+        .modal-header h3 { font-size:1.1rem; font-weight:600; color:#0f172a; }
+        .modal-close { background:none; border:none; font-size:1.5rem; color:#64748b; cursor:pointer; padding:0; line-height:1; }
+        .modal-close:hover { color:#0f172a; }
+        .modal-content .form-group { padding:0 1.5rem; margin-bottom:1rem; }
+        .modal-content .grid-2 { padding:0 1.5rem; }
+        .modal-footer { display:flex; gap:0.75rem; justify-content:flex-end; padding:1.25rem 1.5rem; border-top:1px solid #e2e8f0; margin-top:1rem; }
     </style>
 </head>
 <body>
@@ -106,6 +115,14 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 Equipamiento
             </a>
+            <a href="{{ route('admin.mantenimientos.index') }}" class="{{ request()->routeIs('admin.mantenimientos.*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Mantenimientos
+            </a>
+            <a href="{{ route('admin.alertas') }}" class="{{ request()->routeIs('admin.alertas') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                Alertas
+            </a>
             <a href="{{ route('admin.reportes') }}" class="{{ request()->routeIs('admin.reportes') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Reportes
@@ -118,17 +135,16 @@
         <div class="user-info">
             <div class="name">{{ session('usuario')->nombre1 }} {{ session('usuario')->apellido1 }}</div>
             <div class="role">{{ session('usuario')->nombreRol ?? 'Usuario' }}</div>
+            <div style="margin-top:0.75rem;">
+                <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
+            </div>
         </div>
     </aside>
 
     <div class="main-content">
         <div class="topbar">
             <h2>@yield('title', 'Dashboard')</h2>
-            <div class="user-badge">
-                <span>{{ session('usuario')->nombre1 }} {{ session('usuario')->apellido1 }}</span>
-                <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
-            </div>
         </div>
 
         @if(session('success'))

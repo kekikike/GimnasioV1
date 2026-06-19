@@ -62,6 +62,20 @@ return new class extends Migration
         $this->dropAndCreate($pdo, 'TReservas', 'GetBySocio', $this->buildGetReservasBySocio());
         $this->dropAndCreate($pdo, 'TClaseGrupales', 'GetAvailable', $this->buildGetClasesAvailable());
 
+        $this->dropAndCreate($pdo, 'TEquipamientos', 'GetOperativosWithDetails', $this->buildGetEquiposOperativos());
+        $this->dropAndCreate($pdo, 'TEquipamientos', 'GetByEstado', $this->buildGetEquiposByEstado());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'CountRealizadoByEquipo', $this->buildCountRealizadoByEquipo());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetProximos', $this->buildGetProximosMantenimientos());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetAlertasPendientes', $this->buildGetAlertasPendientes());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetResumen', $this->buildGetResumenMantenimientos());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetFiltered', $this->buildGetMantenimientosFiltered());
+        $this->dropAndCreate($pdo, 'TEmpleados', 'GetAllWithDetails', $this->buildGetEmpleadosWithDetails());
+        $this->dropAndCreate($pdo, 'TSocios', 'GetAllWithUsers', $this->buildGetSociosWithUsers());
+        $this->dropAndCreate($pdo, 'TUsuarios', 'GetCajeros', $this->buildGetCajeros());
+        $this->dropAndCreate($pdo, 'TRecibos', 'GetReporteFinanciero', $this->buildGetReporteFinanciero());
+        $this->dropAndCreate($pdo, 'TReporteFallas', 'GetHistorial', $this->buildGetHistorialFallas());
+        $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetHistorial', $this->buildGetHistorialMantenimientos());
+
         $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
     }
 
@@ -87,6 +101,19 @@ return new class extends Migration
         }
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_Login");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_FindByEmail");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetOperativosWithDetails");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetByEstado");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_CountRealizadoByEquipo");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetProximos");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetAlertasPendientes");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetResumen");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetFiltered");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEmpleados_GetAllWithDetails");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TSocios_GetAllWithUsers");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_GetCajeros");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TRecibos_GetReporteFinanciero");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TReporteFallas_GetHistorial");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetHistorial");
 
         $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
     }
@@ -343,6 +370,224 @@ return new class extends Migration
             . "      AND cg.estadoClase = 'Programada'\n"
             . "    ORDER BY cg.fecha ASC, cg.horaInicio ASC\n"
             . "    LIMIT 10;\n"
+            . "END";
+    }
+
+    private function buildGetEquiposOperativos(): string
+    {
+        return "CREATE PROCEDURE sp_TEquipamientos_GetOperativosWithDetails()\n"
+            . "BEGIN\n"
+            . "    SELECT e.idEquipo, e.nombreEquipo, e.modelo, m.nombreMarca,\n"
+            . "           s.nombre AS sucursal\n"
+            . "    FROM TEquipamientos e\n"
+            . "    LEFT JOIN TMarcas m ON m.idMarca = e.idMarca\n"
+            . "    LEFT JOIN TSucursales s ON s.idSucursal = e.idSucursal\n"
+            . "    WHERE e.estadoA = 1 AND e.estadoEquipo = 'Operativo'\n"
+            . "    ORDER BY e.nombreEquipo ASC;\n"
+            . "END";
+    }
+
+    private function buildGetEquiposByEstado(): string
+    {
+        return "CREATE PROCEDURE sp_TEquipamientos_GetByEstado(\n"
+            . "    IN p_estado VARCHAR(50)\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT e.*, m.nombreMarca, s.nombre AS sucursal\n"
+            . "    FROM TEquipamientos e\n"
+            . "    LEFT JOIN TMarcas m ON m.idMarca = e.idMarca\n"
+            . "    LEFT JOIN TSucursales s ON s.idSucursal = e.idSucursal\n"
+            . "    WHERE e.estadoA = 1 AND e.estadoEquipo = p_estado\n"
+            . "    ORDER BY e.nombreEquipo;\n"
+            . "END";
+    }
+
+    private function buildCountRealizadoByEquipo(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_CountRealizadoByEquipo(\n"
+            . "    IN p_idEquipo INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT COUNT(*) AS c\n"
+            . "    FROM TMantenimientoPreventivos\n"
+            . "    WHERE idEquipo = p_idEquipo\n"
+            . "      AND estadoMantenimiento = 'Realizado'\n"
+            . "      AND estadoA = 1;\n"
+            . "END";
+    }
+
+    private function buildGetProximosMantenimientos(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_GetProximos(\n"
+            . "    IN p_limit INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT mp.*, e.nombreEquipo,\n"
+            . "           DATEDIFF(mp.fechaProgramada, CURDATE()) AS diasRestantes\n"
+            . "    FROM TMantenimientoPreventivos mp\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = mp.idEquipo\n"
+            . "    WHERE mp.estadoA = 1\n"
+            . "      AND mp.estadoMantenimiento = 'Pendiente'\n"
+            . "      AND mp.fechaProgramada >= CURDATE()\n"
+            . "    ORDER BY mp.fechaProgramada ASC\n"
+            . "    LIMIT p_limit;\n"
+            . "END";
+    }
+
+    private function buildGetAlertasPendientes(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_GetAlertasPendientes()\n"
+            . "BEGIN\n"
+            . "    SELECT mp.*, e.nombreEquipo, e.estadoEquipo,\n"
+            . "           DATEDIFF(mp.fechaProgramada, CURDATE()) AS diasRestantes\n"
+            . "    FROM TMantenimientoPreventivos mp\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = mp.idEquipo\n"
+            . "    WHERE mp.estadoA = 1\n"
+            . "      AND mp.estadoMantenimiento = 'Pendiente'\n"
+            . "      AND mp.fechaProgramada >= CURDATE()\n"
+            . "    ORDER BY mp.fechaProgramada ASC;\n"
+            . "END";
+    }
+
+    private function buildGetResumenMantenimientos(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_GetResumen()\n"
+            . "BEGIN\n"
+            . "    SELECT estadoMantenimiento, COUNT(*) AS cantidad\n"
+            . "    FROM TMantenimientoPreventivos\n"
+            . "    WHERE estadoA = 1\n"
+            . "    GROUP BY estadoMantenimiento;\n"
+            . "END";
+    }
+
+    private function buildGetMantenimientosFiltered(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_GetFiltered(\n"
+            . "    IN p_estado VARCHAR(50),\n"
+            . "    IN p_fecha_desde DATE,\n"
+            . "    IN p_fecha_hasta DATE\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT mp.*, e.nombreEquipo, e.estadoEquipo, e.modelo\n"
+            . "    FROM TMantenimientoPreventivos mp\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = mp.idEquipo\n"
+            . "    WHERE mp.estadoA = 1\n"
+            . "      AND (p_estado IS NULL OR mp.estadoMantenimiento = p_estado)\n"
+            . "      AND (p_fecha_desde IS NULL OR mp.fechaProgramada >= p_fecha_desde)\n"
+            . "      AND (p_fecha_hasta IS NULL OR mp.fechaProgramada <= p_fecha_hasta)\n"
+            . "    ORDER BY\n"
+            . "        CASE mp.estadoMantenimiento\n"
+            . "            WHEN 'Pendiente' THEN 1\n"
+            . "            WHEN 'Cancelado' THEN 2\n"
+            . "            WHEN 'Realizado' THEN 3\n"
+            . "        END,\n"
+            . "        mp.fechaProgramada DESC;\n"
+            . "END";
+    }
+
+    private function buildGetEmpleadosWithDetails(): string
+    {
+        return "CREATE PROCEDURE sp_TEmpleados_GetAllWithDetails()\n"
+            . "BEGIN\n"
+            . "    SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.sueldo,\n"
+            . "           e.fechaContratoInicio,\n"
+            . "           u.idRol, u.nombre1, u.apellido1, u.correo, u.telefono,\n"
+            . "           r.nombreRol, s.nombre AS nombreSucursal\n"
+            . "    FROM TEmpleados e\n"
+            . "    INNER JOIN TUsuarios u ON e.idUsuario = u.idUsuario\n"
+            . "    INNER JOIN TRoles r ON u.idRol = r.idRol\n"
+            . "    INNER JOIN TSucursales s ON e.idSucursal = s.idSucursal\n"
+            . "    WHERE e.estadoA = 1;\n"
+            . "END";
+    }
+
+    private function buildGetSociosWithUsers(): string
+    {
+        return "CREATE PROCEDURE sp_TSocios_GetAllWithUsers()\n"
+            . "BEGIN\n"
+            . "    SELECT s.carnetSocio, s.idUsuario, s.direccion,\n"
+            . "           s.nombreContactoEmergencia, s.telefonoContactoEmergencia,\n"
+            . "           s.estadoSocio,\n"
+            . "           u.nombre1, u.apellido1, u.correo, u.telefono\n"
+            . "    FROM TSocios s\n"
+            . "    INNER JOIN TUsuarios u ON s.idUsuario = u.idUsuario\n"
+            . "    WHERE s.estadoA = 1;\n"
+            . "END";
+    }
+
+    private function buildGetCajeros(): string
+    {
+        return "CREATE PROCEDURE sp_TUsuarios_GetCajeros()\n"
+            . "BEGIN\n"
+            . "    SELECT DISTINCT u.idUsuario, u.nombre1, u.apellido1\n"
+            . "    FROM TUsuarios u\n"
+            . "    INNER JOIN TCajas c ON c.carnetEmpleado = u.idUsuario\n"
+            . "    WHERE u.estadoA = 1\n"
+            . "    ORDER BY u.nombre1;\n"
+            . "END";
+    }
+
+    private function buildGetReporteFinanciero(): string
+    {
+        return "CREATE PROCEDURE sp_TRecibos_GetReporteFinanciero(\n"
+            . "    IN p_fecha_desde DATE,\n"
+            . "    IN p_fecha_hasta DATE,\n"
+            . "    IN p_idSucursal INT,\n"
+            . "    IN p_idMetodoPago INT,\n"
+            . "    IN p_carnetEmpleado INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT r.idRecibo, r.nroRecibo, r.montoTotal, r.fechaPago,\n"
+            . "           r.estadoRecibo,\n"
+            . "           c.idSucursal, c.carnetEmpleado,\n"
+            . "           s.nombre AS sucursal,\n"
+            . "           u.nombre1, u.apellido1,\n"
+            . "           mp.nombreMetodoPago, dmp.monto AS montoMetodo,\n"
+            . "           m.carnetSocio\n"
+            . "    FROM TRecibos r\n"
+            . "    INNER JOIN TCajas c ON c.idCaja = r.idCaja\n"
+            . "    INNER JOIN TSucursales s ON s.idSucursal = c.idSucursal\n"
+            . "    INNER JOIN TDetalleMetodoPagos dmp ON dmp.idRecibo = r.idRecibo\n"
+            . "    INNER JOIN TMetodoPagos mp ON mp.idMetodoPago = dmp.idMetodoPagoFK\n"
+            . "    INNER JOIN TMembresias m ON m.idMembresia = r.idMembresia\n"
+            . "    LEFT JOIN TUsuarios u ON u.idUsuario = c.carnetEmpleado\n"
+            . "    WHERE r.estadoA = 1\n"
+            . "      AND (p_fecha_desde IS NULL OR r.fechaPago >= p_fecha_desde)\n"
+            . "      AND (p_fecha_hasta IS NULL OR r.fechaPago < DATE_ADD(p_fecha_hasta, INTERVAL 1 DAY))\n"
+            . "      AND (p_idSucursal IS NULL OR c.idSucursal = p_idSucursal)\n"
+            . "      AND (p_idMetodoPago IS NULL OR dmp.idMetodoPagoFK = p_idMetodoPago)\n"
+            . "      AND (p_carnetEmpleado IS NULL OR c.carnetEmpleado = p_carnetEmpleado)\n"
+            . "    ORDER BY r.fechaPago DESC;\n"
+            . "END";
+    }
+
+    private function buildGetHistorialFallas(): string
+    {
+        return "CREATE PROCEDURE sp_TReporteFallas_GetHistorial(\n"
+            . "    IN p_limit INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT rf.*, e.nombreEquipo, e.estadoEquipo\n"
+            . "    FROM TReporteFallas rf\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = rf.idEquipo\n"
+            . "    WHERE rf.estadoA = 1\n"
+            . "    ORDER BY rf.fechaReporte DESC\n"
+            . "    LIMIT p_limit;\n"
+            . "END";
+    }
+
+    private function buildGetHistorialMantenimientos(): string
+    {
+        return "CREATE PROCEDURE sp_TMantenimientoPreventivos_GetHistorial(\n"
+            . "    IN p_limit INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT mp.*, e.nombreEquipo, e.estadoEquipo\n"
+            . "    FROM TMantenimientoPreventivos mp\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = mp.idEquipo\n"
+            . "    WHERE mp.estadoA = 1\n"
+            . "    ORDER BY mp.fechaProgramada DESC\n"
+            . "    LIMIT p_limit;\n"
             . "END";
     }
 };

@@ -13,37 +13,43 @@ class CheckMembershipExpirations extends Command
 
     public function handle()
     {
-        $this->info('Iniciando la verificación de membresías (RF-13 y RF-15)...');
-        $today = \Carbon\Carbon::today()->format('Y-m-d');
+        $this->info('Iniciando la verificacion de membresias (RF-13 y RF-15)...');
+        $today = now()->format('Y-m-d');
 
-        // RF-13: Controlar automáticamente el vencimiento
-        $expiredMemberships = DB::table('tmembresias')
-            ->where('fechaFin', '<', $today)
-            ->where('estadoMembresia', 'Activa')
-            ->get();
+        $todas = DB::select('CALL sp_TMembresias_Select()');
 
-        foreach ($expiredMemberships as $membership) {
-            DB::table('tmembresias')->where('idMembresia', $membership->idMembresia)->update(['estadoMembresia' => 'Vencida']);
-            $this->info("🔴 Membresía {$membership->idMembresia} marcada como Vencida.");
+        foreach ($todas as $m) {
+            if ($m->estadoMembresia === 'Activa' && $m->fechaFinMembresia < $today) {
+                DB::select('CALL sp_TMembresias_Update(?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $m->idMembresia,
+                    $m->idPlan,
+                    $m->carnetSocio,
+                    $m->idSucursal,
+                    $m->fechaInicioMembresia,
+                    $m->fechaFinMembresia,
+                    'Vencida',
+                    1,
+                    '127.0.0.1',
+                ]);
+                $this->info("Membresia {$m->idMembresia} marcada como Vencida.");
+            }
         }
 
-        // RF-15: Notificaciones de vencimiento (Aviso con 7 días de anticipación)
-        $targetDate = \Carbon\Carbon::today()->addDays(7)->format('Y-m-d');
+        $targetDate = now()->addDays(7)->format('Y-m-d');
 
-        $expiringMemberships = DB::table('tmembresias')
-            ->join('tsocios', 'tmembresias.carnetSocio', '=', 'tsocios.carnetSocio')
-            ->join('tusuarios', 'tsocios.idUsuario', '=', 'tusuarios.idUsuario')
-            ->whereDate('tmembresias.fechaFin', $targetDate)
-            ->where('tmembresias.estadoMembresia', 'Activa')
-            ->select('tusuarios.correo', 'tusuarios.nombre1', 'tmembresias.fechaFin')
-            ->get();
-
-        foreach ($expiringMemberships as $membership) {
-            // Simulamos el envío de correo guardándolo en el registro del sistema para la defensa
-            Log::info("🔔 EMAIL AUTOMÁTICO (RF-15) -> Para: {$membership->correo} | Asunto: Tu membresía vence pronto | Mensaje: Hola {$membership->nombre1}, te recordamos que tu plan vence el {$membership->fechaFin}. ¡No pierdas tu progreso!");
-            $this->info("📧 Correo de advertencia preparado para: {$membership->correo}");
+        foreach ($todas as $m) {
+            if ($m->estadoMembresia === 'Activa' && $m->fechaFinMembresia === $targetDate) {
+                $socios = DB::select('CALL sp_TSocios_SelectById(?)', [$m->carnetSocio]);
+                if (!empty($socios)) {
+                    $usuarios = DB::select('CALL sp_TUsuarios_SelectById(?)', [$socios[0]->idUsuario]);
+                    if (!empty($usuarios)) {
+                        Log::info("EMAIL AUTOMATICO (RF-15) -> Para: {$usuarios[0]->correo} | Asunto: Tu membresia vence pronto | Mensaje: Hola {$usuarios[0]->nombre1}, te recordamos que tu plan vence el {$m->fechaFinMembresia}.");
+                        $this->info("Correo de advertencia preparado para: {$usuarios[0]->correo}");
+                    }
+                }
+            }
         }
 
-        $this->info('✅ Proceso completado con éxito.');
+        $this->info('Proceso completado con exito.');
     }
 }

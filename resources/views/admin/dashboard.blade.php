@@ -27,45 +27,82 @@
         </div>
     </div>
 
-    <div class="card" style="padding: 1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.1rem; font-weight:600; color:#0f172a;">Equipos Recientes</h3>
-            <a href="{{ route('equipamiento.index') }}" class="btn btn-primary btn-sm">Ver Todos</a>
-        </div>
-
-        @if(empty($equiposRecientes))
-            <div class="empty-state">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <p>No hay equipos registrados a&uacute;n.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:2rem;">
+        <div class="card" style="padding:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="font-size:1.1rem; font-weight:600; color:#0f172a;">Alertas Proximas</h3>
+                <a href="{{ route('admin.alertas') }}" class="btn btn-warning btn-sm">Ver Todas</a>
             </div>
-        @else
-            <table>
-                <thead>
-                    <tr>
-                        <th>Equipo</th>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Sucursal</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($equiposRecientes as $eq)
-                    @php $m = $marcas[$eq->idMarca] ?? null; $s = $sucursales[$eq->idSucursal] ?? null; @endphp
-                    <tr>
-                        <td style="font-weight:600;">{{ $eq->nombreEquipo }}</td>
-                        <td>{{ $m->nombreMarca ?? '-' }}</td>
-                        <td>{{ $eq->modelo ?? '-' }}</td>
-                        <td>{{ $s->nombre ?? '-' }}</td>
-                        <td>
-                            <span class="badge {{ $eq->estadoEquipo == 'Operativo' ? 'badge-success' : ($eq->estadoEquipo == 'En Mantenimiento' ? 'badge-warning' : 'badge-danger') }}">
-                                {{ $eq->estadoEquipo }}
-                            </span>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
+            @if(empty($alertasProximas))
+                <div class="empty-state" style="padding:1.5rem 0;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:40px;height:40px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p>No hay alertas pendientes.</p>
+                </div>
+            @else
+                <table>
+                    <thead>
+                        <tr><th>Equipo</th><th>Programada</th><th>Dias</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($alertasProximas as $a)
+                        <tr>
+                            <td style="font-weight:600;">{{ $a->nombreEquipo }}</td>
+                            <td>{{ \Carbon\Carbon::parse($a->fechaProgramada)->format('d/m') }}</td>
+                            <td>
+                                @if($a->diasRestantes > 0)
+                                    <span style="color:#059669;">{{ $a->diasRestantes }}d</span>
+                                @elseif($a->diasRestantes == 0)
+                                    <span style="color:#d97706;">Hoy</span>
+                                @else
+                                    <span style="color:#dc2626;">{{ abs($a->diasRestantes) }}d vencido</span>
+                                @endif
+                            </td>
+                            <td><span class="badge {{ $a->estadoMantenimiento == 'Completado' ? 'badge-success' : ($a->estadoMantenimiento == 'En Curso' ? 'badge-info' : 'badge-warning') }}">{{ $a->estadoMantenimiento }}</span></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+        <div class="card" style="padding:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="font-size:1.1rem; font-weight:600; color:#0f172a;">Equipos Recientes</h3>
+                <a href="{{ route('equipamiento.index') }}" class="btn btn-primary btn-sm">Ver Todos</a>
+            </div>
+            @if(empty($equiposRecientes))
+                <div class="empty-state" style="padding:1.5rem 0;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:40px;height:40px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p>No hay equipos registrados a&uacute;n.</p>
+                </div>
+            @else
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Equipo</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Sucursal</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($equiposRecientes as $eq)
+                        @php $m = $marcas[$eq->idMarca] ?? null; $s = $sucursales[$eq->idSucursal] ?? null; @endphp
+                        <tr>
+                            <td style="font-weight:600;">{{ $eq->nombreEquipo }}</td>
+                            <td>{{ $m->nombreMarca ?? '-' }}</td>
+                            <td>{{ $eq->modelo ?? '-' }}</td>
+                            <td>{{ $s->nombre ?? '-' }}</td>
+                            <td>
+                                <span class="badge {{ $eq->estadoEquipo == 'Operativo' ? 'badge-success' : ($eq->estadoEquipo == 'En Mantenimiento' ? 'badge-warning' : 'badge-danger') }}">
+                                    {{ $eq->estadoEquipo }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
     </div>
 @endsection

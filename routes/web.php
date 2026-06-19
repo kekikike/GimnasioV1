@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\ClaseController;
 use App\Http\Controllers\Admin\MembresiaController;
 use App\Http\Controllers\Admin\CajaController;
 use App\Http\Controllers\Admin\ReporteController;
+use App\Http\Controllers\Admin\AlertasMantenimientoController;
+use App\Http\Controllers\Admin\MantenimientoController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\AsistenciaController;
@@ -72,6 +74,17 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/admin/clases', [ClaseController::class, 'index'])->name('admin.clases');
         Route::get('/admin/caja', [CajaController::class, 'index'])->name('admin.caja');
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
+        Route::get('/admin/reportes/financiero', [ReporteController::class, 'reporteFinanciero'])->name('admin.reportes.financiero');
+        Route::get('/admin/reportes/equipos', [ReporteController::class, 'reporteEquipos'])->name('admin.reportes.equipos');
+        Route::get('/admin/alertas', [AlertasMantenimientoController::class, 'index'])->name('admin.alertas');
+
+        Route::prefix('admin/mantenimientos')->name('admin.mantenimientos.')->group(function () {
+            Route::get('/', [MantenimientoController::class, 'index'])->name('index');
+            Route::put('/{id}', [MantenimientoController::class, 'update'])->name('update');
+            Route::delete('/{id}', [MantenimientoController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/json', [MantenimientoController::class, 'getJson'])->name('json');
+        });
+
         Route::get('/admin/auditoria', [AuditoriaController::class, 'index'])->name('admin.auditoria');
 
         Route::prefix('equipamiento')->name('equipamiento.')->group(function () {
@@ -80,6 +93,8 @@ Route::middleware('auth.usuario')->group(function () {
             Route::post('/', [EquipamientoController::class, 'store'])->name('store');
             Route::get('/{id}/edit', [EquipamientoController::class, 'edit'])->name('edit');
             Route::put('/{id}', [EquipamientoController::class, 'update'])->name('update');
+            Route::get('/{id}/toggle-estado', [EquipamientoController::class, 'toggleEstado'])->name('toggleEstado');
+            Route::post('/{id}/iniciar-mantenimiento', [EquipamientoController::class, 'iniciarMantenimiento'])->name('iniciarMantenimiento');
             Route::delete('/{id}', [EquipamientoController::class, 'destroy'])->name('destroy');
         });
     });
@@ -95,6 +110,7 @@ Route::middleware('auth.usuario')->group(function () {
     Route::middleware('role:3')->group(function () {
         Route::get('/entrenador', [EntrenadorController::class, 'dashboard'])->name('entrenador.dashboard');
         Route::get('/entrenador/fallas', [EntrenadorController::class, 'fallas'])->name('entrenador.fallas');
+        Route::post('/entrenador/fallas', [EntrenadorController::class, 'reportarFalla'])->name('entrenador.fallas.store');
     });
 
     // Portal del Socio (idRol = 4)
