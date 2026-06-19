@@ -11,13 +11,13 @@ class DetalleMetodoPagoSeeder extends Seeder
     {
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
         $recibos = DB::table('TRecibos')->where('estadoA', 1)->get(['idRecibo', 'montoTotal']);
-        $tipoPagos = ['Efectivo', 'Tarjeta', 'QR', 'Transferencia'];
+        $metodoPagos = DB::table('TMetodoPagos')->where('estadoA', 1)->pluck('idMetodoPago')->toArray();
 
         $detalles = [];
         foreach ($recibos as $r) {
             $detalles[] = [
                 'idRecibo' => $r->idRecibo,
-                'tipoPago' => $tipoPagos[array_rand($tipoPagos)],
+                'idMetodoPagoFK' => $metodoPagos[array_rand($metodoPagos)],
                 'monto' => $r->montoTotal,
                 'usuarioA' => $adminId,
             ];

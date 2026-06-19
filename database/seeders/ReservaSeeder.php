@@ -20,15 +20,13 @@ class ReservaSeeder extends Seeder
             $claseId = $claseIds[array_rand($claseIds)];
             $fechaClase = DB::table('TClaseGrupales')->where('idClaseGrupal', $claseId)->value('fecha');
             $diaReserva = rand(-5, 0);
-            $fechaReserva = date('Y-m-d', strtotime($fechaClase . " + $diaReserva days"));
-            $horaReserva = sprintf('%02d:%02d:00', rand(8, 18), rand(0, 59));
+            $fechaReserva = date('Y-m-d', strtotime($fechaClase . " + $diaReserva days")) . ' ' . sprintf('%02d:%02d:00', rand(8, 18), rand(0, 59));
             $estado = $estados[array_rand($estados)];
 
             $reservas[] = [
                 'idClaseGrupal' => $claseId,
                 'carnetSocio' => $carnet,
                 'fechaReserva' => $fechaReserva,
-                'horaReserva' => $horaReserva,
                 'estadoReserva' => $estado,
                 'usuarioA' => $adminId,
             ];

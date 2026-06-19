@@ -10,14 +10,6 @@
 
 <div class="grid-3" style="margin-bottom:1.5rem;">
     <div class="card stat-card">
-        <div class="number">{{ $socio->Asistencias ?? 0 }}</div>
-        <div class="label">Asistencias</div>
-    </div>
-    <div class="card stat-card">
-        <div class="number">{{ $socio->Faltas ?? 0 }}</div>
-        <div class="label">Faltas</div>
-    </div>
-    <div class="card stat-card">
         <div class="number">{{ $socio->strikes ?? 0 }}</div>
         <div class="label">Strikes</div>
     </div>
@@ -37,10 +29,6 @@
         <div class="info-row">
             <span class="label">Teléfono</span>
             <span class="value">{{ $socio->telefono }}</span>
-        </div>
-        <div class="info-row">
-            <span class="label">Código Acceso</span>
-            <span class="value">{{ $socio->codigoAcceso }}</span>
         </div>
         <div class="info-row">
             <span class="label">Estado</span>
@@ -187,7 +175,7 @@
                     <td>{{ $c->nombreActividad }}</td>
                     <td>{{ $c->fecha }}</td>
                     <td>{{ substr($c->horaInicio, 0, 5) }} - {{ substr($c->horaFin, 0, 5) }}</td>
-                    <td>{{ $c->cupoDisponible }}/{{ $c->cupoMaximo }}</td>
+                    <td>{{ $c->cupoMaximo }}</td>
                 </tr>
                 @endforeach
             </tbody>

@@ -22,8 +22,7 @@ class ReciboSeeder extends Seeder
             $carnetAleatorio = array_rand($socios);
             $idMembresia = $socios[$carnetAleatorio];
             $monto = [300.00, 500.00, 800.00][array_rand([300.00, 500.00, 800.00])];
-            $fechaPago = date('Y-m-d', strtotime($caja->fechaApertura));
-            $horaPago = sprintf('%02d:%02d:00', rand(9, 17), rand(0, 59));
+            $fechaPago = date('Y-m-d', strtotime($caja->fechaApertura)) . ' ' . sprintf('%02d:%02d:00', rand(9, 17), rand(0, 59));
 
             $recibos[] = [
                 'idCaja' => $idCaja,
@@ -31,7 +30,6 @@ class ReciboSeeder extends Seeder
                 'nroRecibo' => 'REC-' . str_pad($contador++, 6, '0', STR_PAD_LEFT),
                 'montoTotal' => $monto,
                 'fechaPago' => $fechaPago,
-                'horaPago' => $horaPago,
                 'estadoRecibo' => 'Emitido',
                 'usuarioA' => $adminId,
             ];

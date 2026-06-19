@@ -87,7 +87,6 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f1f5f9;">
                 <tr>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Acceso</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Socio y Estado</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Contacto</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: center;">Acciones</th>
@@ -95,9 +94,6 @@
             </thead>
             <tbody>
                 <tr v-for="socio in socios" :key="socio.carnetSocio" style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 12px; font-family: monospace; font-size: 1.2em; color: #059669; font-weight: bold; letter-spacing: 1px;">
-                        @{{ socio.codigoAcceso }}
-                    </td>
                     <td style="padding: 12px;">
                         <strong>@{{ socio.nombre1 }} @{{ socio.apellido1 }}</strong> <br>
                         <span :style="{ backgroundColor: socio.estadoSocio === 'Activo' ? '#dcfce3' : '#fef08a', color: socio.estadoSocio === 'Activo' ? '#166534' : '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }">

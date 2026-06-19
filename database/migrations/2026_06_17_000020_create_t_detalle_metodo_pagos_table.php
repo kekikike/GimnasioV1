@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('TDetalleMetodoPagos', function (Blueprint $table) {
             $table->increments('idMetodoPago');
             $table->unsignedInteger('idRecibo');
-            $table->string('tipoPago', 50);
+            $table->unsignedInteger('idMetodoPagoFK');
             $table->decimal('monto', 10, 2);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

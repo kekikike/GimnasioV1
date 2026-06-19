@@ -11,15 +11,12 @@ return new class extends Migration
         Schema::create('TSocios', function (Blueprint $table) {
             $table->increments('carnetSocio');
             $table->unsignedInteger('idUsuario')->unique();
-            $table->string('codigoAcceso', 100);
             $table->string('direccion', 255)->nullable();
             $table->string('fotografiaUrl', 255)->nullable();
             $table->string('nombreContactoEmergencia', 150)->nullable();
             $table->integer('telefonoContactoEmergencia')->nullable();
             $table->text('observacionesMedicas')->nullable();
             $table->enum('estadoSocio', ['Activo', 'Inactivo', 'Congelado']);
-            $table->integer('Asistencias')->default(0);
-            $table->integer('Faltas')->default(0);
             $table->integer('strikes')->default(0);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

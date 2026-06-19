@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('TPenalizaciones', function (Blueprint $table) {
             $table->increments('idPenalizacion');
             $table->unsignedInteger('carnetSocio');
+            $table->unsignedInteger('idReserva')->nullable();
             $table->date('fecha');
             $table->boolean('estado')->default(true);
             $table->boolean('estadoA')->default(true);

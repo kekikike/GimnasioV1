@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class SocioController extends Controller
 {
@@ -21,8 +20,8 @@ class SocioController extends Controller
     public function listar()
     {
         $socios = DB::select("
-            SELECT s.carnetSocio, s.idUsuario, s.codigoAcceso, s.direccion, 
-                   s.nombreContactoEmergencia, s.telefonoContactoEmergencia, s.estado as estadoSocio,
+            SELECT s.carnetSocio, s.idUsuario, s.direccion,
+                   s.nombreContactoEmergencia, s.telefonoContactoEmergencia, s.estadoSocio,
                    u.nombre1, u.apellido1, u.correo, u.telefono
             FROM TSocios s
             INNER JOIN TUsuarios u ON s.idUsuario = u.idUsuario
@@ -59,20 +58,17 @@ class SocioController extends Controller
 
             $idUsuario = $usuario[0]->idUsuario ?? $usuario[0]->id ?? 0;
 
-            // B. Generar Código de Acceso y crear Socio (¡14 parámetros corregidos!)
-            $codigoAcceso = 'SOC-' . strtoupper(Str::random(5));
-            
-            $socio = DB::select('CALL sp_TSocios_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                0, // <--- EL PARÁMETRO FALTANTE (p_carnetSocio que el SP exige)
+            // B. Crear Socio (9 parámetros)
+            $socio = DB::select('CALL sp_TSocios_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                0,
                 $idUsuario,
-                $codigoAcceso,
                 $request->direccion ?? 'Sin especificar',
                 null, // foto
                 $request->nombreContactoEmergencia ?? 'Sin especificar',
                 $request->telefonoContactoEmergencia ?? 0,
                 'Ninguna', // obs. médicas
-                'Activo', // estado
-                0, 0, 0, // asistencias, faltas, strikes
+                'Activo', // estadoSocio
+                0, // strikes
                 $usuarioA,
                 $ip
             ]);
@@ -100,7 +96,7 @@ class SocioController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito. Código de acceso: ' . $codigoAcceso]);
+            return response()->json(['success' => true, 'message' => 'Socio registrado con éxito.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -138,23 +134,22 @@ class SocioController extends Controller
             // Actualizar TSocios
             $socioActual = DB::table('TSocios')->where('carnetSocio', $id)->first();
 
-            DB::statement('CALL sp_TSocios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            DB::statement('CALL sp_TSocios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                 $id,
                 $request->idUsuario,
-                $socioActual->codigoAcceso, // Mantener su código original
                 $request->direccion ?? 'Sin especificar',
                 null,
                 $request->nombreContactoEmergencia ?? 'Sin especificar',
                 $request->telefonoContactoEmergencia ?? 0,
                 'Ninguna',
                 'Activo',
-                0, 0, 0,
+                0,
                 $usuarioA,
                 $ip
             ]);
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Información del socio actualizada.']);
+            return response()->json(['success' => true, 'message' => 'Información del socio actualizada.']);
 
         } catch (\Exception $e) {
             DB::rollBack();

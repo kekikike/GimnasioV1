@@ -17,7 +17,6 @@ return new class extends Migration
             $table->time('horaInicio');
             $table->time('horaFin');
             $table->integer('cupoMaximo');
-            $table->integer('cupoDisponible');
             $table->enum('estadoClase', ['Programada', 'Cursandose', 'Cancelada']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

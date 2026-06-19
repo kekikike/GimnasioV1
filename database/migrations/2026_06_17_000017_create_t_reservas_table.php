@@ -12,8 +12,7 @@ return new class extends Migration
             $table->increments('idReserva');
             $table->unsignedInteger('idClaseGrupal');
             $table->unsignedInteger('carnetSocio');
-            $table->date('fechaReserva');
-            $table->time('horaReserva');
+            $table->dateTime('fechaReserva');
             $table->enum('estadoReserva', ['Reservado', 'Asistido', 'Cancelado', 'Penalizado']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

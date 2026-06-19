@@ -31,15 +31,13 @@ class ReporteFallaSeeder extends Seeder
         for ($i = 0; $i < 30; $i++) {
             $idEquipo = $equipos[array_rand($equipos)];
             $dia = rand(0, 172);
-            $fecha = date('Y-m-d', strtotime("2026-01-01 + $dia days"));
-            $hora = sprintf('%02d:%02d:00', rand(8, 18), rand(0, 59));
+            $fecha = date('Y-m-d', strtotime("2026-01-01 + $dia days")) . ' ' . sprintf('%02d:%02d:00', rand(8, 18), rand(0, 59));
             $gravedad = $gravedades[array_rand($gravedades)];
 
             $reportes[] = [
                 'idEquipo' => $idEquipo,
                 'carnetEmpleado' => 1001,
                 'fechaReporte' => $fecha,
-                'horaReporte' => $hora,
                 'descripcionFalla' => $descripciones[array_rand($descripciones)],
                 'gravedad' => $gravedad,
                 'estadoReporte' => $estados[array_rand($estados)],

@@ -38,7 +38,6 @@ class ClaseGrupalSeeder extends Seeder
                 $actividadesUsadas[] = $actividad;
                 $horario = $horarios[array_rand($horarios)];
                 $cupoMax = rand(15, 30);
-                $cupoDisp = rand(0, $cupoMax);
                 $estado = $estados[array_rand($estados)];
 
                 $clases[] = [
@@ -49,7 +48,6 @@ class ClaseGrupalSeeder extends Seeder
                     'horaInicio' => $horario['inicio'],
                     'horaFin' => $horario['fin'],
                     'cupoMaximo' => $cupoMax,
-                    'cupoDisponible' => $cupoDisp,
                     'estadoClase' => $estado,
                     'usuarioA' => $adminId,
                 ];

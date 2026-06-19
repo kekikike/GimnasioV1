@@ -18,11 +18,13 @@ class DatabaseSeeder extends Seeder
         $this->call(HorarioLaboralSeeder::class);
         $this->call(ControlAsistenciaSeeder::class);
         $this->call(EsquemaSueldoSeeder::class);
+        $this->call(PagoSueldoSeeder::class);
         $this->call(SocioSeeder::class);
         $this->call(MembresiaSeeder::class);
         $this->call(ControlAccesoSeeder::class);
         $this->call(PenalizacionSeeder::class);
         $this->call(NotificacionSeeder::class);
+        $this->call(MetodoPagoSeeder::class);
         $this->call(ClaseGrupalSeeder::class);
         $this->call(ReservaSeeder::class);
         $this->call(CajaSeeder::class);

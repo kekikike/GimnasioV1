@@ -10,6 +10,11 @@ class PenalizacionSeeder extends Seeder
     public function run(): void
     {
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
+        $reservasPenalizadas = DB::table('TReservas')
+            ->where('estadoReserva', 'Penalizado')
+            ->where('estadoA', 1)
+            ->pluck('idReserva', 'carnetSocio')
+            ->toArray();
 
         $penalizaciones = [
             ['carnetSocio' => 6700001, 'fecha' => '2026-02-15', 'estado' => true],
@@ -27,6 +32,7 @@ class PenalizacionSeeder extends Seeder
         foreach ($penalizaciones as $p) {
             DB::table('TPenalizaciones')->insert([
                 'carnetSocio' => $p['carnetSocio'],
+                'idReserva' => $reservasPenalizadas[$p['carnetSocio']] ?? null,
                 'fecha' => $p['fecha'],
                 'estado' => $p['estado'],
                 'usuarioA' => $adminId,

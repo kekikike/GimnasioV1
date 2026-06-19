@@ -14,8 +14,7 @@ return new class extends Migration
             $table->unsignedInteger('idMembresia');
             $table->string('nroRecibo', 50)->unique();
             $table->decimal('montoTotal', 10, 2);
-            $table->date('fechaPago');
-            $table->time('horaPago');
+            $table->dateTime('fechaPago');
             $table->enum('estadoRecibo', ['Emitido', 'Anulado']);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

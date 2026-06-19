@@ -12,8 +12,7 @@ return new class extends Migration
             $table->increments('idReporteFalla');
             $table->unsignedInteger('idEquipo');
             $table->integer('carnetEmpleado');
-            $table->date('fechaReporte');
-            $table->time('horaReporte');
+            $table->dateTime('fechaReporte');
             $table->text('descripcionFalla');
             $table->string('gravedad', 50);
             $table->enum('estadoReporte', ['Pendiente', 'En Revision', 'Solucionado']);
