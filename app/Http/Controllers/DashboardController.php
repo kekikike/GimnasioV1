@@ -22,7 +22,19 @@ class DashboardController extends Controller
         $totalEmpleados    = Empleado::count();
         $equiposRecientes  = array_slice($equipos, 0, 5);
 
-        $alertasProximas = DB::select('CALL sp_TMantenimientoPreventivos_GetProximos(?)', [5]);
+        // Bypass: Calculamos los días restantes directamente en la consulta
+        $alertasProximas = DB::table('tmantenimientopreventivos')
+            ->join('tequipamientos', 'tmantenimientopreventivos.idEquipo', '=', 'tequipamientos.idEquipo')
+            ->select(
+                'tmantenimientopreventivos.*', 
+                'tequipamientos.nombreEquipo',
+                DB::raw('DATEDIFF(tmantenimientopreventivos.fechaProgramada, CURDATE()) as diasRestantes') // ¡Aquí está el cálculo mágico!
+            )
+            ->where('tmantenimientopreventivos.estadoA', 1)
+            ->where('tmantenimientopreventivos.estadoMantenimiento', 'Programado')
+            ->orderBy('tmantenimientopreventivos.fechaProgramada', 'asc')
+            ->limit(5)
+            ->get();
 
         return view('admin.dashboard', compact(
             'totalEquipos', 'totalSocios', 'totalEmpleados', 'equiposRecientes', 'marcas', 'sucursales', 'alertasProximas'
