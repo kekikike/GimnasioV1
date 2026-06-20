@@ -20,11 +20,19 @@ use App\Http\Controllers\Recepcionista\RecepcionistaController;
 use App\Http\Controllers\Entrenador\EntrenadorController;
 use App\Http\Controllers\Socio\SocioPortalController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 // Redirección inicial al Login
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Servir fotos de socios desde storage/fotos_socios/
+Route::get('storage/fotos_socios/{filename}', function ($filename) {
+    $path = storage_path('fotos_socios/' . basename($filename));
+    if (!file_exists($path)) abort(404);
+    return response()->file($path);
+})->where('filename', '.*');
 
 // Rutas Públicas de Autenticación
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
