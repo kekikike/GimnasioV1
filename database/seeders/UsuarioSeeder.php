@@ -139,3 +139,5 @@ class UsuarioSeeder extends Seeder
         ]);
     }
 }
+
+
