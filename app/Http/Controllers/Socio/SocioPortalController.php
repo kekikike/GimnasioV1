@@ -8,11 +8,19 @@ use Illuminate\Support\Facades\DB;
 
 class SocioPortalController extends Controller
 {
-    public function dashboard()
+    private function loadSocio()
     {
         $usuario = session('usuario');
         $socio = DB::select('CALL sp_TSocios_GetByUserId(?)', [$usuario->idUsuario]);
         $socio = $socio[0] ?? null;
+        view()->share('fotografiaUrl', $socio->fotografiaUrl ?? null);
+        return $socio;
+    }
+
+    public function dashboard()
+    {
+        $usuario = session('usuario');
+        $socio = $this->loadSocio();
 
         if (!$socio) {
             return view('socio.dashboard', [
@@ -40,16 +48,19 @@ class SocioPortalController extends Controller
 
     public function perfil()
     {
+        $this->loadSocio();
         return view('socio.perfil');
     }
 
     public function asistencias()
     {
+        $this->loadSocio();
         return view('socio.asistencias');
     }
 
     public function reservas()
     {
+        $this->loadSocio();
         return view('socio.reservas');
     }
 }

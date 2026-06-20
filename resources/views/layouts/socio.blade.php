@@ -29,6 +29,10 @@
         .btn-primary:hover { background: #e11d48; }
         .alert { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
         .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .user-photo { width: 48px; height: 48px; border-radius: 0.5rem; overflow: hidden; flex-shrink: 0; background: #1e293b; }
+        .user-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+        .foto-socio { width: 160px; height: 160px; border-radius: 0.75rem; overflow: hidden; margin: 0 auto; border: 3px solid #e2e8f0; background: #f8fafc; }
+        .foto-socio img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
         .stat-card { text-align: center; padding: 1.5rem; }
         .stat-card .number { font-size: 2rem; font-weight: 700; color: #0f172a; }
         .stat-card .label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
@@ -67,15 +71,25 @@
             </a>
         </nav>
         <div class="user-info">
-            <div class="name">{{ session('usuario')->nombre1 ?? 'Socio' }}</div>
-            <div class="role">Socio</div>
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                <div class="user-photo">
+                    <img src="{{ asset('storage/' . ($fotografiaUrl ?? 'fotos_socios/default.jpeg')) }}" alt="Foto"
+                         onerror="this.style.display='none'">
+                </div>
+                <div>
+                    <div class="name">{{ session('usuario')->nombre1 ?? 'Socio' }}</div>
+                    <div class="role">Socio</div>
+                </div>
+            </div>
+            <div style="margin-top:0.5rem;">
+                <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
+            </div>
         </div>
     </aside>
     <div class="main-content">
         <div class="topbar">
             <h2>@yield('title', 'Mi Cuenta')</h2>
-            <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
         </div>
         @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
         @yield('content')

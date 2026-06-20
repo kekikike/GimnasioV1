@@ -23,6 +23,8 @@
         .sidebar .user-info { padding: 1rem 1.5rem; border-top: 1px solid #1e293b; font-size: 0.85rem; }
         .sidebar .user-info .name { color: #f8fafc; font-weight: 600; }
         .sidebar .user-info .role { color: #94a3b8; font-size: 0.8rem; }
+        .user-photo { width: 48px; height: 48px; border-radius: 0.5rem; overflow: hidden; flex-shrink: 0; background: #1e293b; }
+        .user-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
         .main-content { margin-left: 260px; flex: 1; padding: 2rem; min-height: 100vh; width: calc(100% - 260px); }
         .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .topbar h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; }

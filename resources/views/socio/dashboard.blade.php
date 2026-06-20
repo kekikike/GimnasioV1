@@ -18,6 +18,13 @@
 <div class="grid-2">
     <div class="card">
         <div class="section-title">Datos Personales</div>
+        @if($socio->fotografiaUrl)
+        <div style="text-align:center; margin-bottom:1rem;">
+            <div class="foto-socio">
+                <img src="{{ asset('storage/' . $socio->fotografiaUrl) }}" alt="Foto">
+            </div>
+        </div>
+        @endif
         <div class="info-row">
             <span class="label">Nombre</span>
             <span class="value">{{ trim($socio->nombre1 . ' ' . ($socio->nombre2 ?? '') . ' ' . $socio->apellido1 . ' ' . ($socio->apellido2 ?? '')) }}</span>

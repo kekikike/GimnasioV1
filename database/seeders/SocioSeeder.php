@@ -19,16 +19,25 @@ class SocioSeeder extends Seeder
             ['idUsuario' => 9, 'direccion' => 'Av. Heroinas 159', 'contacto' => 'Sofia Rojas', 'telfContacto' => 98765437, 'obs' => 'Hipertension controlada', 'strikes' => 2],
         ];
 
+        $fotos = [
+            5 => 'fotos_socios/S-6700001.jpeg',
+            6 => 'fotos_socios/S-6700002.jpeg',
+            7 => 'fotos_socios/S-6700003.jpeg',
+            8 => 'fotos_socios/S-6700004.jpeg',
+            9 => 'fotos_socios/S-6700005.jpeg',
+        ];
+
         foreach ($socios as $s) {
             DB::table('TSocios')->insert([
-                'idUsuario' => $s['idUsuario'],
-                'direccion' => $s['direccion'],
+                'idUsuario'                => $s['idUsuario'],
+                'direccion'                => $s['direccion'],
+                'fotografiaUrl'            => $fotos[$s['idUsuario']],
                 'nombreContactoEmergencia' => $s['contacto'],
                 'telefonoContactoEmergencia' => $s['telfContacto'],
-                'observacionesMedicas' => $s['obs'],
-                'estadoSocio' => 'Activo',
-                'strikes' => $s['strikes'],
-                'usuarioA' => $adminId,
+                'observacionesMedicas'     => $s['obs'],
+                'estadoSocio'              => 'Activo',
+                'strikes'                  => $s['strikes'],
+                'usuarioA'                 => $adminId,
             ]);
         }
     }

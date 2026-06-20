@@ -78,8 +78,8 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Carlos Andres',
-                'apellido1' => 'Mendoza Ruiz',
+                'nombre1' => 'Charles James',
+                'apellido1' => 'Kirk Ruiz',
                 'correo' => 'carlos@gmail.com',
                 'telefono' => 78901234,
                 'contrasena' => Hash::make('123456'),
