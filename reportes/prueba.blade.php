@@ -1,0 +1,1 @@
+echo "<h1>Prueba de vista</h1>" > C:\xampp\htdocs\GimnasioV1\resources\views\reportes\prueba.blade.php
