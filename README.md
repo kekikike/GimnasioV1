@@ -62,13 +62,8 @@ php artisan key:generate
 
 ## Creación y Migración de la Base de Datos
 
-Una vez que tengas tu servidor MySQL activo (por ejemplo, en XAMPP) y hayas creado la base de datos vacía con el nombre que pusiste en el `.env`, ejecuta el siguiente comando para estructurar las tablas y sus relaciones automáticas:
+Una vez que tengas tu servidor MySQL activo (por ejemplo, en XAMPP) y hayas creado la base de datos vacía con el nombre que pusiste en el `.env`, ejecuta el siguiente comando para estructurar las tablas y sus relaciones automáticas, como sus registros:
 
-```bash
-php artisan migrate
-```
-
-*(Opcional)* Si en el futuro añades registros base o datos de prueba (Seeders), puedes vaciar y volver a levantar las tablas con el comando:
 ```bash
 php artisan migrate:fresh --seed
 ```
