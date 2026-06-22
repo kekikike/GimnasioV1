@@ -69,6 +69,9 @@
             <a href="{{ route('socio.asistencias') }}" class="{{ request()->routeIs('socio.asistencias') ? 'active' : '' }}">
                 Asistencias
             </a>
+            <a href="{{ route('socio.historial-membresias') }}" class="{{ request()->routeIs('socio.historial-membresias') ? 'active' : '' }}">
+                Historial Membresias
+            </a>
             <a href="{{ route('socio.reservas.index') }}" class="{{ request()->routeIs('socio.reservas*') ? 'active' : '' }}">
                 Mis Reservas
             </a>

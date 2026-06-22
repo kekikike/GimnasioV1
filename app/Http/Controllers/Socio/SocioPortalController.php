@@ -63,4 +63,19 @@ class SocioPortalController extends Controller
         $this->loadSocio();
         return view('socio.reservas');
     }
+
+    public function historialMembresias()
+    {
+        $socio = $this->loadSocio();
+        if (!$socio) {
+            return view('socio.historial-membresias', ['membresias' => []]);
+        }
+        $membresias = DB::table('TMembresias as m')
+            ->join('TPlanes as p', 'm.idPlan', '=', 'p.idPlan')
+            ->select('m.*', 'p.nombrePlan', 'p.costoPlan', 'p.duracionDias')
+            ->where('m.carnetSocio', $socio->carnetSocio)
+            ->orderBy('m.fechaInicioMembresia', 'desc')
+            ->get();
+        return view('socio.historial-membresias', compact('membresias'));
+    }
 }

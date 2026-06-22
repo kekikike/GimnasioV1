@@ -102,6 +102,8 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
         Route::get('/admin/reportes/financiero', [ReporteController::class, 'reporteFinanciero'])->name('admin.reportes.financiero');
         Route::get('/admin/reportes/equipos', [ReporteController::class, 'reporteEquipos'])->name('admin.reportes.equipos');
+        Route::get('/admin/reportes/membresias', [ReporteController::class, 'reporteMembresias'])->name('admin.reportes.membresias');
+        Route::get('/admin/reportes/renovaciones', [ReporteController::class, 'reporteRenovaciones'])->name('admin.reportes.renovaciones');
         Route::get('/admin/alertas', [AlertasMantenimientoController::class, 'index'])->name('admin.alertas');
 
         Route::prefix('admin/mantenimientos')->name('admin.mantenimientos.')->group(function () {
@@ -166,6 +168,7 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/socio', [SocioPortalController::class, 'dashboard'])->name('socio.dashboard');
         Route::get('/socio/perfil', [SocioPortalController::class, 'perfil'])->name('socio.perfil');
         Route::get('/socio/asistencias', [SocioPortalController::class, 'asistencias'])->name('socio.asistencias');
+        Route::get('/socio/historial-membresias', [SocioPortalController::class, 'historialMembresias'])->name('socio.historial-membresias');
 
         Route::prefix('socio/reservas')->name('socio.reservas.')->group(function () {
             Route::get('/', [SocioPortalController::class, 'reservas'])->name('index');

@@ -37,14 +37,16 @@ tbody tr:hover { background:#f8fafc; }
 </style>
 
 <div class="tab-bar">
-    <button class="tab-btn active" onclick="cargarRF('socios',this)">RF-44: Socios</button>
-    <button class="tab-btn" onclick="cargarRF('financiero',this)">RF-45: Financiero</button>
-    <button class="tab-btn" onclick="cargarRF('asistencia',this)">RF-46: Asistencia</button>
-    <button class="tab-btn" onclick="cargarRF('clases',this)">RF-47: Clases</button>
-    <button class="tab-btn" onclick="cargarRF('equipamiento',this)">RF-48: Equipamiento</button>
+    <button class="tab-btn active" onclick="cargarRF('socios',this)">Socios</button>
+    <button class="tab-btn" onclick="cargarRF('financiero',this)">Financiero</button>
+    <button class="tab-btn" onclick="cargarRF('asistencia',this)">Asistencia</button>
+    <button class="tab-btn" onclick="cargarRF('clases',this)">Clases</button>
+    <button class="tab-btn" onclick="cargarRF('equipamiento',this)">Equipamiento</button>
     <button class="tab-btn" onclick="switchTab('admin-financiero',this)">Ingresos Financieros</button>
     <button class="tab-btn" onclick="switchTab('admin-equipos',this)">Estado de Equipos</button>
     <button class="tab-btn" onclick="switchTab('admin-desempeno',this)">Desempeno y Asistencias</button>
+    <button class="tab-btn" onclick="switchTab('admin-membresias',this)">Membresias</button>
+    <button class="tab-btn" onclick="switchTab('admin-renovaciones',this)">Renovaciones</button>
 </div>
 
 <div id="tab-socios" class="tab-pane active">
@@ -206,6 +208,48 @@ tbody tr:hover { background:#f8fafc; }
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-primary">Exportar PDF</button>
             <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-outline">Imprimir</button>
+        </div>
+    </div>
+</div>
+
+<div id="tab-admin-membresias" class="tab-pane">
+    <div class="card" style="padding:20px;">
+        <div class="filter-row">
+            <div class="form-group">
+                <label>Fecha Inicio</label>
+                <input type="date" id="mem_fecha_inicio" class="form-control" value="{{ \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d') }}">
+            </div>
+            <div class="form-group">
+                <label>Fecha Fin</label>
+                <input type="date" id="mem_fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+            </div>
+            <button class="btn btn-primary" onclick="cargarAdminMembresias(this)">Generar Reporte</button>
+        </div>
+        <div id="admin-membresias-content"><div class="empty-state">Presione Generar Reporte</div></div>
+        <div class="action-print no-print">
+            <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-outline">Imprimir</button>
+        </div>
+    </div>
+</div>
+
+<div id="tab-admin-renovaciones" class="tab-pane">
+    <div class="card" style="padding:20px;">
+        <div class="filter-row">
+            <div class="form-group">
+                <label>Fecha Inicio</label>
+                <input type="date" id="ren_fecha_inicio" class="form-control" value="{{ \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d') }}">
+            </div>
+            <div class="form-group">
+                <label>Fecha Fin</label>
+                <input type="date" id="ren_fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+            </div>
+            <button class="btn btn-primary" onclick="cargarAdminRenovaciones(this)">Generar Reporte</button>
+        </div>
+        <div id="admin-renovaciones-content"><div class="empty-state">Presione Generar Reporte</div></div>
+        <div class="action-print no-print">
+            <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
 </div>
@@ -396,6 +440,43 @@ function cargarAdminDesempeno(btn) {
             d.forEach(function(a){var en=new Date(a.fechaHoraEntrada).toLocaleString('es-ES');var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleString('es-ES'):'Turno Activo';h+='<tr><td><strong>'+a.nombre1+' '+a.apellido1+'</strong></td><td>'+a.carnetEmpleado+'</td><td>'+en+'</td><td>'+sa+'</td></tr>';});
             h+='</tbody></table>';c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-desempeno-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
+        .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
+}
+
+function cargarAdminMembresias(btn) {
+    if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
+    var fi=document.getElementById('mem_fecha_inicio').value,ff=document.getElementById('mem_fecha_fin').value;
+    fetch('/admin/reportes/membresias?fecha_inicio='+fi+'&fecha_fin='+ff,{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();}).then(function(d){
+            var c=document.getElementById('admin-membresias-content');
+            if(!d||!d.membresias||!d.membresias.length){c.innerHTML='<div class="empty-state">No hay datos</div>';return;}
+            var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+d.totalMembresias+'</div><div class="label">Total Membresias</div></div>';
+            h+='<div class="stat-card"><div class="number green">$'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Ingresos Totales</div></div></div>';
+            h+='<table><thead><tr><th>Plan</th><th>Costo</th><th>Vendidas</th><th>Ingresos</th></tr></thead><tbody>';
+            d.membresias.forEach(function(m){
+                h+='<tr><td><strong>'+m.nombrePlan+'</strong></td><td>$'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.total_vendidas+'</td><td>$'+Number(m.ingresos_totales).toFixed(2)+'</td></tr>';
+            });
+            h+='</tbody></table>';c.innerHTML=h;
+        }).catch(function(){document.getElementById('admin-membresias-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
+        .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
+}
+
+function cargarAdminRenovaciones(btn) {
+    if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
+    var fi=document.getElementById('ren_fecha_inicio').value,ff=document.getElementById('ren_fecha_fin').value;
+    fetch('/admin/reportes/renovaciones?fecha_inicio='+fi+'&fecha_fin='+ff,{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();}).then(function(d){
+            var c=document.getElementById('admin-renovaciones-content');
+            if(!d||!d.renovaciones||!d.renovaciones.length){c.innerHTML='<div class="empty-state">No se encontraron renovaciones</div>';return;}
+            var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+d.totalRenovaciones+'</div><div class="label">Total Renovaciones</div></div>';
+            h+='<div class="stat-card"><div class="number blue">'+d.sociosUnicos+'</div><div class="label">Socios que renovaron</div></div></div>';
+            h+='<table><thead><tr><th>Socio</th><th>Carnet</th><th>Plan</th><th>Inicio</th><th>Fin</th><th>Estado</th><th># Membresia</th></tr></thead><tbody>';
+            d.renovaciones.forEach(function(r){
+                var bc=r.estadoMembresia==='Activa'?'badge-success':r.estadoMembresia==='Vencida'?'badge-warning':'badge-gray';
+                h+='<tr><td><strong>'+r.nombre_socio+'</strong></td><td>'+r.carnetSocio+'</td><td>'+r.nombrePlan+'</td><td>'+r.fechaInicioMembresia+'</td><td>'+r.fechaFinMembresia+'</td><td><span class="badge '+bc+'">'+r.estadoMembresia+'</span></td><td>#'+r.num_membresia+'</td></tr>';
+            });
+            h+='</tbody></table>';c.innerHTML=h;
+        }).catch(function(){document.getElementById('admin-renovaciones-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
 
