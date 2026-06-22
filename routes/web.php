@@ -168,6 +168,19 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
     Route::get('/equipamiento', [App\Http\Controllers\ReporteController::class, 'equipamiento'])->name('equipamiento');
 });
 
+// ==========================================
+// CONTROL DE HORARIOS Y ASISTENCIAS (RF5, RF6, RF7)
+// ==========================================
+Route::get('/admin/horarios', [App\Http\Controllers\Admin\HorarioController::class, 'index'])->name('admin.horarios.index');
+Route::get('/admin/horarios/listar/{carnetEmpleado}', [App\Http\Controllers\Admin\HorarioController::class, 'listar']);
+Route::post('/admin/horarios', [App\Http\Controllers\Admin\HorarioController::class, 'store']);
+Route::put('/admin/horarios/{id}', [App\Http\Controllers\Admin\HorarioController::class, 'update']);
+Route::delete('/admin/horarios/{id}', [App\Http\Controllers\Admin\HorarioController::class, 'destroy']);
+
+Route::get('/admin/asistencias', function () { return view('admin.asistencias'); })->name('admin.asistencias.index');
+Route::post('/admin/asistencias/entrada', [App\Http\Controllers\Admin\AsistenciaController::class, 'registrarEntrada']);
+Route::post('/admin/asistencias/salida', [App\Http\Controllers\Admin\AsistenciaController::class, 'registrarSalida']);
+
 Route::get('/test', function () {
     return "¡Hola! El servidor funciona correctamente.";
 });

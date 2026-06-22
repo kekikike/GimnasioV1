@@ -42,13 +42,16 @@ class EquipamientoController extends Controller
 
     public function store(Request $request)
     {
+        // RF12: Validación para que el nombre contenga letras.
         $data = $request->validate([
             'idSucursal'       => 'required|integer',
             'idMarca'          => 'required|integer',
-            'nombreEquipo'     => 'required|string|max:100',
+            'nombreEquipo'     => ['required', 'string', 'max:100', 'regex:/^(?=.*[a-zA-Z]).+$/'],
             'modelo'           => 'nullable|string|max:100',
             'fechaAdquisicion' => 'nullable|date',
             'estadoEquipo'     => 'required|string|max:50',
+        ], [
+            'nombreEquipo.regex' => 'El nombre del equipo debe contener al menos una letra.',
         ]);
 
         $usuarioA   = session('usuario')->idUsuario;
@@ -71,13 +74,16 @@ class EquipamientoController extends Controller
 
     public function update(Request $request, $id)
     {
+        // RF12: Validación para que el nombre contenga letras.
         $data = $request->validate([
             'idSucursal'       => 'required|integer',
             'idMarca'          => 'required|integer',
-            'nombreEquipo'     => 'required|string|max:100',
+            'nombreEquipo'     => ['required', 'string', 'max:100', 'regex:/^(?=.*[a-zA-Z]).+$/'],
             'modelo'           => 'nullable|string|max:100',
             'fechaAdquisicion' => 'nullable|date',
             'estadoEquipo'     => 'required|string|max:50',
+        ], [
+            'nombreEquipo.regex' => 'El nombre del equipo debe contener al menos una letra.',
         ]);
 
         $usuarioA   = session('usuario')->idUsuario;

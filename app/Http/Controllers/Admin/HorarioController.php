@@ -1,84 +1,122 @@
 <?php
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class HorarioController extends Controller
 {
-    // Asumimos que existirá una vista para gestionar horarios
     public function index()
     {
-        // Podrías necesitar listar empleados para seleccionar uno
-        $empleados = DB::select('CALL sp_TEmpleados_Select()');
+        $empleados = DB::table('templeados as e')
+            ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->where('e.estadoA', 1)
+            ->select('e.carnetEmpleado', 'u.nombre1', 'u.apellido1')
+            ->get();
         return view('admin.horarios', compact('empleados'));
     }
 
-    // Listar horarios de un empleado específico
-    public function listar($idEmpleado)
+    public function listar($carnetEmpleado)
     {
-        // Debes crear el SP: sp_THorarios_SelectPorEmpleado(?)
-        $horarios = DB::select('CALL sp_THorarios_SelectPorEmpleado(?)', [$idEmpleado]);
+        // Tabla correcta: thorariolaborales
+        $horarios = DB::table('thorariolaborales')
+            ->where('carnetEmpleado', $carnetEmpleado)
+            ->where('estadoA', 1)
+            ->select('idHorario', 'carnetEmpleado', 'diaSemana', 'horaEntradaEsperada as horaEntrada', 'horaSalidaEsperada as horaSalida')
+            ->get();
         return response()->json($horarios);
     }
 
-    // Registrar un nuevo horario
     public function store(Request $request)
     {
-        $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip();
-
-        // Debes crear el SP: sp_THorarios_Insert(?, ?, ?, ?, ?, ?)
-        DB::statement('CALL sp_THorarios_Insert(?, ?, ?, ?, ?, ?)', [
-            $request->idEmpleado,
-            $request->diaSemana,
-            $request->horaEntrada,
-            $request->horaSalida,
-            $usuarioA,
-            $ip
+        $validator = Validator::make($request->all(), [
+            'carnetEmpleado' => 'required|numeric|exists:templeados,carnetEmpleado',
+            'diaSemana' => [
+                'required',
+                'string',
+                'in:Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo',
+                Rule::unique('thorariolaborales')->where(function ($query) use ($request) {
+                    return $query->where('carnetEmpleado', $request->carnetEmpleado)
+                                 ->where('estadoA', 1);
+                }),
+            ],
+            'horaEntrada' => 'required|date_format:H:i',
+            'horaSalida' => 'required|date_format:H:i|after:horaEntrada',
+        ], [
+            'carnetEmpleado.exists' => 'El empleado seleccionado no es válido.',
+            'diaSemana.in' => 'El día de la semana no es válido. Use: Lunes, Martes, Miercoles, etc.',
+            'diaSemana.unique' => 'Este empleado ya tiene un horario asignado para ese día.',
+            'horaSalida.after' => 'La hora de salida debe ser posterior a la de entrada.'
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Horario registrado.']);
+        if ($validator->fails()) return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+
+        $usuarioA = Auth::id() ?? 1;
+
+        DB::table('thorariolaborales')->insert([
+            'carnetEmpleado' => $request->carnetEmpleado,
+            'diaSemana' => $request->diaSemana,
+            'horaEntradaEsperada' => $request->horaEntrada, // Nombre real de la BD
+            'horaSalidaEsperada' => $request->horaSalida,   // Nombre real de la BD
+            'estadoA' => 1,
+            'usuarioA' => $usuarioA,
+            'fechaA' => now(),
+        ]);
+        return response()->json(['success' => true, 'message' => '✅ Horario registrado exitosamente.']);
     }
 
-    // Actualizar un horario existente
     public function update(Request $request, $id)
     {
-        $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip();
-
-        try {
-            // Debes crear el SP: sp_THorarios_Update(?, ?, ?, ?, ?, ?)
-            DB::statement('CALL sp_THorarios_Update(?, ?, ?, ?, ?, ?)', [
-                $id, // id del horario a actualizar
-                $request->diaSemana,
-                $request->horaEntrada,
-                $request->horaSalida,
-                $usuarioA,
-                $ip
-            ]);
-            return response()->json(['success' => true, 'message' => 'Horario actualizado.']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()]);
+        // Obtenemos el carnet del empleado desde el horario que se está editando
+        $horarioActual = DB::table('thorariolaborales')->where('idHorario', $id)->first();
+        if (!$horarioActual) {
+            return response()->json(['success' => false, 'message' => 'El horario que intentas editar no existe.'], 404);
         }
+
+        $validator = Validator::make($request->all(), [
+            'diaSemana' => [
+                'required',
+                'string',
+                'in:Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo',
+                Rule::unique('thorariolaborales')->where(function ($query) use ($horarioActual) {
+                    return $query->where('carnetEmpleado', $horarioActual->carnetEmpleado)
+                                 ->where('estadoA', 1);
+                })->ignore($id, 'idHorario'),
+            ],
+            'horaEntrada' => 'required|date_format:H:i',
+            'horaSalida' => 'required|date_format:H:i|after:horaEntrada',
+        ], [
+            'diaSemana.in' => 'El día de la semana no es válido. Use: Lunes, Martes, Miercoles, etc.',
+            'diaSemana.unique' => 'Este empleado ya tiene un horario asignado para ese día.',
+            'horaSalida.after' => 'La hora de salida debe ser posterior a la de entrada.'
+        ]);
+
+        if ($validator->fails()) return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+
+        $usuarioA = Auth::id() ?? 1;
+
+        DB::table('thorariolaborales')->where('idHorario', $id)->update([
+            'diaSemana' => $request->diaSemana,
+            'horaEntradaEsperada' => $request->horaEntrada,
+            'horaSalidaEsperada' => $request->horaSalida,
+            'usuarioA' => $usuarioA, // En este proyecto, se usa usuarioA y fechaA para modificar
+            'fechaA' => now(),   // En un proyecto nuevo, serían usuarioM y fechaM
+        ]);
+        return response()->json(['success' => true, 'message' => '✅ Horario actualizado.']);
     }
 
-
-    // Eliminar un horario
     public function destroy(Request $request, $id)
     {
         $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip();
-
-        try {
-            // Debes crear el SP: sp_THorarios_Delete(?, ?, ?)
-            DB::statement('CALL sp_THorarios_Delete(?, ?, ?)', [$id, $usuarioA, $ip]);
-            return response()->json(['success' => true, 'message' => 'Horario eliminado.']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()]);
-        }
+        DB::table('thorariolaborales')->where('idHorario', $id)->update([
+            'estadoA' => 0,
+            'usuarioA' => $usuarioA,
+            'fechaA' => now()
+        ]);
+        return response()->json(['success' => true, 'message' => 'Horario dado de baja.']);
     }
 }

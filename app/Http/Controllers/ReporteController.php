@@ -205,4 +205,42 @@ class ReporteController extends Controller
 
         return view('reportes.equipamiento', compact('equipos', 'estadisticas'));
     }
+
+    // =========================================
+    // REPORTE DE DESEMPEÑO DE PERSONAL (RF-8)
+    // =========================================
+    public function personalDesempeno(Request $request)
+    {
+        $fechaInicio = $request->get('fecha_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $fechaFin = $request->get('fecha_fin', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        $empleadoId = $request->get('empleado_id');
+
+        // Obtener todos los empleados para el filtro del frontend
+        $empleados = Empleado::with('usuario')->whereHas('usuario', function ($q) {
+            $q->where('estadoA', 1);
+        })->get();
+
+        $query = DB::table('tasistenciaspersonal as ap')
+            ->join('templeados as e', 'ap.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->select(
+                'ap.idAsistencia',
+                'ap.carnetEmpleado',
+                'u.nombre1',
+                'u.apellido1',
+                'ap.fechaHoraEntrada',
+                'ap.fechaHoraSalida'
+            )
+            ->whereBetween('ap.fechaHoraEntrada', [$fechaInicio . " 00:00:00", $fechaFin . " 23:59:59"]);
+
+        if ($empleadoId) {
+            $query->where('ap.carnetEmpleado', $empleadoId);
+        }
+
+        $asistencias = $query->orderBy('ap.fechaHoraEntrada', 'desc')->get();
+
+        // Aquí se podrían agregar más cálculos: horas trabajadas, retardos, etc.
+
+        return view('reportes.personal_desempeno', compact('asistencias', 'empleados', 'fechaInicio', 'fechaFin', 'empleadoId'));
+    }
 }
