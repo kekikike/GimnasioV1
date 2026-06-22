@@ -71,6 +71,9 @@
                             </span>
                         </td>
                         <td style="text-align:center;">
+                            @if($m->estadoMantenimiento == 'Realizado')
+                                <span style="color:#94a3b8; font-size:0.85rem;">Bloqueado</span>
+                            @else
                             <div class="action-group" style="justify-content:center;">
                                 <button onclick="openEditMantoModal({{ $m->idMantenimiento }})" class="btn btn-warning btn-sm">
                                     <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -85,6 +88,7 @@
                                     </button>
                                 </form>
                             </div>
+                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -111,7 +115,7 @@
                 </div>
                 <div class="form-group">
                     <label>Fecha Realizada</label>
-                    <input type="date" name="fechaRealizada" id="em_fechaReal" class="form-control">
+                    <input type="date" name="fechaRealizada" id="em_fechaReal" class="form-control" onchange="actualizarEstadoManto()">
                 </div>
                 <div class="form-group">
                     <label>Tecnico Asignado</label>
@@ -122,12 +126,8 @@
                     <input type="number" step="0.01" min="0" name="costoMantenimiento" id="em_costo" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Estado</label>
-                    <select name="estadoMantenimiento" id="em_estado" class="form-control" required>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Realizado">Realizado</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
+                    <label>Estado <span style="color:#64748b; font-size:0.85rem; font-weight:400;">(se deriva automaticamente)</span></label>
+                    <input type="text" id="em_estado" class="form-control" readonly style="background:#f1f5f9; color:#64748b;">
                 </div>
             </div>
             <div class="form-group">
@@ -143,17 +143,21 @@
 </div>
 
 <script>
+function actualizarEstadoManto() {
+    var real = document.getElementById('em_fechaReal');
+    var est = document.getElementById('em_estado');
+    est.value = real && real.value ? 'Realizado' : 'Pendiente';
+}
+
 function actualizarRangoFechaRealizada() {
     var prog = document.getElementById('em_fechaProg').value;
     var real = document.getElementById('em_fechaReal');
     if (prog) {
         var d = new Date(prog);
-        d.setDate(d.getDate() + 1);
+        d.setDate(d.getDate() + 3);
         var min = d.toISOString().slice(0, 10);
-        d.setDate(d.getDate() + 6);
-        var max = d.toISOString().slice(0, 10);
         real.min = min;
-        real.max = max;
+        real.removeAttribute('max');
     } else {
         real.removeAttribute('min');
         real.removeAttribute('max');
@@ -169,9 +173,9 @@ function openEditMantoModal(id) {
             document.getElementById('em_fechaReal').value = m.fechaRealizada || '';
             document.getElementById('em_tecnico').value = m.tecnicoAsignado || '';
             document.getElementById('em_costo').value = m.costoMantenimiento || '';
-            document.getElementById('em_estado').value = m.estadoMantenimiento || 'Pendiente';
             document.getElementById('em_descripcion').value = m.descripcionMantenimiento || '';
             actualizarRangoFechaRealizada();
+            actualizarEstadoManto();
             document.getElementById('editMantoModal').style.display = 'flex';
         });
 }

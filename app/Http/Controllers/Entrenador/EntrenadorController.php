@@ -89,9 +89,25 @@ class EntrenadorController extends Controller
 
     public function fallas()
     {
-        $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosWithDetails()');
+        $usuario = session('usuario');
+        $empleado = DB::table('TEmpleados')
+            ->where('idUsuario', $usuario->idUsuario)
+            ->where('estadoA', 1)
+            ->first();
+        $carnetEmp = $empleado?->carnetEmpleado;
+        $idSucursal = $empleado?->idSucursal;
 
-        return view('entrenador.fallas', compact('equipos'));
+        $equipos = [];
+        if ($idSucursal) {
+            $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosBySucursal(?)', [$idSucursal]);
+        }
+
+        $historial = [];
+        if ($carnetEmp) {
+            $historial = DB::select('CALL sp_TReporteFallas_GetByEmpleado(?)', [$carnetEmp]);
+        }
+
+        return view('entrenador.fallas', compact('equipos', 'historial'));
     }
 
     public function reportarFalla(Request $request)
@@ -103,14 +119,25 @@ class EntrenadorController extends Controller
         ]);
 
         $usuario    = session('usuario');
-        $carnetEmp  = $usuario->carnetEmpleado ?? $usuario->idUsuario;
+        $empleado   = DB::table('TEmpleados')
+            ->where('idUsuario', $usuario->idUsuario)
+            ->where('estadoA', 1)
+            ->first();
+        $carnetEmp  = $empleado?->carnetEmpleado;
+
+        if (!$carnetEmp) {
+            return redirect()->route('entrenador.fallas')
+                ->with('error', 'No se encontró un empleado asociado a su usuario.');
+        }
+
         $direccionIP = $request->ip();
 
         DB::beginTransaction();
         try {
-            DB::select('CALL sp_TReporteFallas_Insert(?, ?, NOW(), ?, ?, ?, ?, ?)', [
+            DB::select('CALL sp_TReporteFallas_Insert(?, ?, ?, ?, ?, ?, ?, ?)', [
                 $data['idEquipo'],
                 $carnetEmp,
+                date('Y-m-d H:i:s'),
                 $data['descripcionFalla'],
                 $data['gravedad'],
                 'Pendiente',

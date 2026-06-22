@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Equipamiento;
 use App\Models\Marca;
 use App\Models\Sucursal;
+use App\Models\ReporteFalla;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -23,13 +24,7 @@ class EquipamientoController extends Controller
         $marcas     = collect(Marca::getAll())->keyBy('idMarca');
         $sucursales = collect(Sucursal::getAll())->keyBy('idSucursal');
 
-        $tieneRealizado = [];
-        foreach ($equipos as $eq) {
-            $rows = DB::select('CALL sp_TMantenimientoPreventivos_CountRealizadoByEquipo(?)', [$eq->idEquipo]);
-            $tieneRealizado[$eq->idEquipo] = ($rows[0]->c > 0);
-        }
-
-        return view('equipamiento.index', compact('equipos', 'marcas', 'sucursales', 'tieneRealizado'));
+        return view('equipamiento.index', compact('equipos', 'marcas', 'sucursales'));
     }
 
     public function create()
@@ -133,8 +128,8 @@ class EquipamientoController extends Controller
     public function iniciarMantenimiento(Request $request, $id)
     {
         $equipo = Equipamiento::getById((int) $id);
-        if (!$equipo || $equipo->estadoEquipo !== 'Operativo') {
-            return redirect()->route('equipamiento.index')->with('error', 'El equipo debe estar Operativo.');
+        if (!$equipo || $equipo->estadoEquipo == 'De Baja') {
+            return back()->with('error', 'No se puede iniciar mantenimiento en un equipo dado de baja.');
         }
 
         $data = $request->validate([
@@ -172,13 +167,78 @@ class EquipamientoController extends Controller
             Equipamiento::update((int) $id, $updateData, $usuarioA, $direccionIP);
 
             DB::commit();
-            return redirect()->route('equipamiento.index')
-                ->with('success', 'Mantenimiento iniciado. Equipo marcado como "En Mantenimiento".');
+            return back()->with('success', 'Mantenimiento iniciado. Equipo marcado como "En Mantenimiento".');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('equipamiento.index')
-                ->with('error', 'Error al iniciar mantenimiento: ' . $e->getMessage());
+            return back()->with('error', 'Error al iniciar mantenimiento: ' . $e->getMessage());
         }
+    }
+
+    public function reportarFallaForm()
+    {
+        $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosWithDetails()');
+        return view('equipamiento.reportar-falla', compact('equipos'));
+    }
+
+    public function reportarFallaStore(Request $request)
+    {
+        $data = $request->validate([
+            'idEquipo'        => 'required|integer|exists:TEquipamientos,idEquipo',
+            'descripcionFalla' => 'required|string|max:500',
+            'gravedad'         => 'required|in:Baja,Media,Alta,Critica',
+        ]);
+
+        $usuario    = session('usuario');
+        $empleado   = DB::table('TEmpleados')
+            ->where('idUsuario', $usuario->idUsuario)
+            ->where('estadoA', 1)
+            ->first();
+        $carnetEmp  = $empleado?->carnetEmpleado ?? $usuario->idUsuario;
+        $direccionIP = $request->ip();
+
+        DB::beginTransaction();
+        try {
+            DB::select('CALL sp_TReporteFallas_Insert(?, ?, ?, ?, ?, ?, ?, ?)', [
+                $data['idEquipo'],
+                $carnetEmp,
+                date('Y-m-d H:i:s'),
+                $data['descripcionFalla'],
+                $data['gravedad'],
+                'Pendiente',
+                $usuario->idUsuario,
+                $direccionIP,
+            ]);
+
+            $equipo = Equipamiento::getById((int) $data['idEquipo']);
+            if ($equipo) {
+                Equipamiento::update((int) $data['idEquipo'], [
+                    'idSucursal'       => $equipo->idSucursal,
+                    'idMarca'          => $equipo->idMarca,
+                    'nombreEquipo'     => $equipo->nombreEquipo,
+                    'modelo'           => $equipo->modelo,
+                    'fechaAdquisicion' => $equipo->fechaAdquisicion,
+                    'estadoEquipo'     => 'Fuera de Servicio',
+                ], $usuario->idUsuario, $direccionIP);
+            }
+
+            DB::commit();
+            return redirect()->route('equipamiento.reportar-falla')
+                ->with('success', 'Falla reportada. El equipo ha sido marcado como "Fuera de Servicio".');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('equipamiento.reportar-falla')
+                ->with('error', 'Error al reportar la falla: ' . $e->getMessage());
+        }
+    }
+
+    public function fallasSinMantenimiento(Request $request)
+    {
+        $fechaDesde = $request->input('fecha_desde', '');
+        $fechaHasta = $request->input('fecha_hasta', '');
+
+        $equipos = DB::select('CALL sp_TEquipamientos_GetFallasSinMantenimiento(?, ?)', [$fechaDesde, $fechaHasta]);
+
+        return view('equipamiento.fallas-sin-mantenimiento', compact('equipos'));
     }
 
     public function destroy($id)

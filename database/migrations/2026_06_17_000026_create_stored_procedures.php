@@ -63,6 +63,7 @@ return new class extends Migration
         $this->dropAndCreate($pdo, 'TClaseGrupales', 'GetAvailable', $this->buildGetClasesAvailable());
 
         $this->dropAndCreate($pdo, 'TEquipamientos', 'GetOperativosWithDetails', $this->buildGetEquiposOperativos());
+        $this->dropAndCreate($pdo, 'TEquipamientos', 'GetOperativosBySucursal', $this->buildGetEquiposOperativosBySucursal());
         $this->dropAndCreate($pdo, 'TEquipamientos', 'GetByEstado', $this->buildGetEquiposByEstado());
         $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'CountRealizadoByEquipo', $this->buildCountRealizadoByEquipo());
         $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetProximos', $this->buildGetProximosMantenimientos());
@@ -74,6 +75,8 @@ return new class extends Migration
         $this->dropAndCreate($pdo, 'TUsuarios', 'GetCajeros', $this->buildGetCajeros());
         $this->dropAndCreate($pdo, 'TRecibos', 'GetReporteFinanciero', $this->buildGetReporteFinanciero());
         $this->dropAndCreate($pdo, 'TReporteFallas', 'GetHistorial', $this->buildGetHistorialFallas());
+        $this->dropAndCreate($pdo, 'TReporteFallas', 'GetByEmpleado', $this->buildGetReportesByEmpleado());
+        $this->dropAndCreate($pdo, 'TEquipamientos', 'GetFallasSinMantenimiento', $this->buildGetFallasSinMantenimiento());
         $this->dropAndCreate($pdo, 'TMantenimientoPreventivos', 'GetHistorial', $this->buildGetHistorialMantenimientos());
 
         $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
@@ -102,6 +105,7 @@ return new class extends Migration
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_Login");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_FindByEmail");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetOperativosWithDetails");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetOperativosBySucursal");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetByEstado");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_CountRealizadoByEquipo");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetProximos");
@@ -113,6 +117,8 @@ return new class extends Migration
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TUsuarios_GetCajeros");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TRecibos_GetReporteFinanciero");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TReporteFallas_GetHistorial");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TReporteFallas_GetByEmpleado");
+        $pdo->exec("DROP PROCEDURE IF EXISTS sp_TEquipamientos_GetFallasSinMantenimiento");
         $pdo->exec("DROP PROCEDURE IF EXISTS sp_TMantenimientoPreventivos_GetHistorial");
 
         $pdo->setAttribute(PDO::MYSQL_ATTR_MULTI_STATEMENTS, false);
@@ -387,6 +393,23 @@ return new class extends Migration
             . "END";
     }
 
+    private function buildGetEquiposOperativosBySucursal(): string
+    {
+        return "CREATE PROCEDURE sp_TEquipamientos_GetOperativosBySucursal(\n"
+            . "    IN p_idSucursal INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT e.idEquipo, e.nombreEquipo, e.modelo, m.nombreMarca,\n"
+            . "           s.nombre AS sucursal\n"
+            . "    FROM TEquipamientos e\n"
+            . "    LEFT JOIN TMarcas m ON m.idMarca = e.idMarca\n"
+            . "    LEFT JOIN TSucursales s ON s.idSucursal = e.idSucursal\n"
+            . "    WHERE e.estadoA = 1 AND e.estadoEquipo = 'Operativo'\n"
+            . "      AND e.idSucursal = p_idSucursal\n"
+            . "    ORDER BY e.nombreEquipo ASC;\n"
+            . "END";
+    }
+
     private function buildGetEquiposByEstado(): string
     {
         return "CREATE PROCEDURE sp_TEquipamientos_GetByEstado(\n"
@@ -573,6 +596,57 @@ return new class extends Migration
             . "    WHERE rf.estadoA = 1\n"
             . "    ORDER BY rf.fechaReporte DESC\n"
             . "    LIMIT p_limit;\n"
+            . "END";
+    }
+
+    private function buildGetReportesByEmpleado(): string
+    {
+        return "CREATE PROCEDURE sp_TReporteFallas_GetByEmpleado(\n"
+            . "    IN p_carnetEmpleado INT\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT rf.*, e.nombreEquipo, e.estadoEquipo\n"
+            . "    FROM TReporteFallas rf\n"
+            . "    INNER JOIN TEquipamientos e ON e.idEquipo = rf.idEquipo\n"
+            . "    WHERE rf.estadoA = 1\n"
+            . "      AND rf.carnetEmpleado = p_carnetEmpleado\n"
+            . "    ORDER BY rf.fechaReporte DESC;\n"
+            . "END";
+    }
+
+    private function buildGetFallasSinMantenimiento(): string
+    {
+        return "CREATE PROCEDURE sp_TEquipamientos_GetFallasSinMantenimiento(\n"
+            . "    IN p_fechaDesde VARCHAR(10),\n"
+            . "    IN p_fechaHasta VARCHAR(10)\n"
+            . ")\n"
+            . "BEGIN\n"
+            . "    SELECT e.*,\n"
+            . "           latest_rf.idReporteFalla, latest_rf.fechaReporte,\n"
+            . "           latest_rf.descripcionFalla, latest_rf.gravedad,\n"
+            . "           latest_rf.estadoReporte,\n"
+            . "           s.nombre AS nombreSucursal\n"
+            . "    FROM TEquipamientos e\n"
+            . "    INNER JOIN (\n"
+            . "        SELECT rf1.*\n"
+            . "        FROM TReporteFallas rf1\n"
+            . "        INNER JOIN (\n"
+            . "            SELECT idEquipo, MAX(fechaReporte) AS maxFecha\n"
+            . "            FROM TReporteFallas\n"
+            . "            WHERE estadoA = 1\n"
+            . "            GROUP BY idEquipo\n"
+            . "        ) sub ON rf1.idEquipo = sub.idEquipo AND rf1.fechaReporte = sub.maxFecha\n"
+            . "        WHERE rf1.estadoA = 1\n"
+            . "    ) latest_rf ON latest_rf.idEquipo = e.idEquipo\n"
+            . "    LEFT JOIN TSucursales s ON s.idSucursal = e.idSucursal\n"
+            . "    WHERE e.estadoA = 1\n"
+            . "      AND NOT EXISTS (\n"
+            . "          SELECT 1 FROM TMantenimientoPreventivos mp\n"
+            . "          WHERE mp.idEquipo = e.idEquipo AND mp.estadoA = 1\n"
+            . "      )\n"
+            . "      AND (p_fechaDesde IS NULL OR p_fechaDesde = '' OR latest_rf.fechaReporte >= p_fechaDesde)\n"
+            . "      AND (p_fechaHasta IS NULL OR p_fechaHasta = '' OR latest_rf.fechaReporte <= p_fechaHasta)\n"
+            . "    ORDER BY latest_rf.fechaReporte DESC;\n"
             . "END";
     }
 

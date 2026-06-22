@@ -76,23 +76,6 @@
                                     <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     Editar
                                 </button>
-                                @if($eq->estadoEquipo == 'Operativo')
-                                    <button onclick="openMantoModal({{ $eq->idEquipo }})" class="btn btn-warning btn-sm">
-                                        <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        Mantenimiento
-                                    </button>
-                                @elseif($eq->estadoEquipo == 'En Mantenimiento')
-                                    @if(!empty($tieneRealizado[$eq->idEquipo]))
-                                        <a href="{{ route('equipamiento.toggleEstado', $eq->idEquipo) }}" class="btn btn-success btn-sm">
-                                            <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                            Operativo
-                                        </a>
-                                    @else
-                                        <button class="btn btn-sm btn-outline" disabled title="Requiere mantenimiento Realizado">
-                                            Bloqueado
-                                        </button>
-                                    @endif
-                                @endif
                                 <form action="{{ route('equipamiento.destroy', $eq->idEquipo) }}" method="POST" onsubmit="return confirm('¿Desactivar este equipo?')" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
@@ -168,44 +151,6 @@
     </div>
 </div>
 
-{{-- Modal Iniciar Mantenimiento --}}
-<div id="mantoModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeMantoModal()">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Iniciar Mantenimiento</h3>
-            <button onclick="closeMantoModal()" class="modal-close">&times;</button>
-        </div>
-        <form id="mantoForm" method="POST" action="">
-            @csrf
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Fecha Programada</label>
-                    <input type="date" name="fechaProgramada" id="manto_fecha" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}" required>
-                </div>
-                <div class="form-group">
-                    <label>Tecnico Asignado</label>
-                    <input type="text" name="tecnicoAsignado" id="manto_tecnico" class="form-control" placeholder="Nombre del tecnico">
-                </div>
-                <div class="form-group">
-                    <label>Costo Estimado</label>
-                    <input type="number" step="0.01" min="0" name="costoMantenimiento" id="manto_costo" class="form-control" placeholder="0.00">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Descripcion del Mantenimiento</label>
-                <textarea name="descripcionMantenimiento" id="manto_descripcion" class="form-control" rows="3" placeholder="Describa las tareas a realizar..."></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">
-                    <svg fill="none" stroke="currentColor" width="16" height="16" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Iniciar Mantenimiento
-                </button>
-                <button type="button" onclick="closeMantoModal()" class="btn btn-outline">Cancelar</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
 var equiposData = @json($equipos);
 
@@ -233,19 +178,6 @@ function openEditModal(id) {
 
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
-}
-
-function openMantoModal(id) {
-    document.getElementById('mantoForm').action = '{{ url("equipamiento") }}/' + id + '/iniciar-mantenimiento';
-    document.getElementById('manto_fecha').value = new Date().toISOString().split('T')[0];
-    document.getElementById('manto_tecnico').value = '';
-    document.getElementById('manto_costo').value = '';
-    document.getElementById('manto_descripcion').value = '';
-    document.getElementById('mantoModal').style.display = 'flex';
-}
-
-function closeMantoModal() {
-    document.getElementById('mantoModal').style.display = 'none';
 }
 </script>
 @endsection

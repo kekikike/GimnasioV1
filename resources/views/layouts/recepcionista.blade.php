@@ -54,13 +54,15 @@
         <div class="user-info">
             <div class="name">{{ session('usuario')->nombre1 ?? 'Usuario' }}</div>
             <div class="role">Recepcionista</div>
+            <div style="margin-top:0.75rem;">
+                <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
+            </div>
         </div>
     </aside>
     <div class="main-content">
         <div class="topbar">
             <h2>@yield('title', 'Recepción')</h2>
-            <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
         </div>
         @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
         @yield('content')

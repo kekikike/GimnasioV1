@@ -116,6 +116,9 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/{id}/toggle-estado', [EquipamientoController::class, 'toggleEstado'])->name('toggleEstado');
             Route::post('/{id}/iniciar-mantenimiento', [EquipamientoController::class, 'iniciarMantenimiento'])->name('iniciarMantenimiento');
             Route::delete('/{id}', [EquipamientoController::class, 'destroy'])->name('destroy');
+            Route::get('/reportar-falla', [EquipamientoController::class, 'reportarFallaForm'])->name('reportar-falla');
+            Route::post('/reportar-falla', [EquipamientoController::class, 'reportarFallaStore'])->name('reportar-falla.store');
+            Route::get('/fallas-sin-mantenimiento', [EquipamientoController::class, 'fallasSinMantenimiento'])->name('fallas-sin-mantenimiento');
         });
     });
 
@@ -166,6 +169,7 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
     Route::get('/asistencia', [App\Http\Controllers\ReporteController::class, 'asistencia'])->name('asistencia');
     Route::get('/clases', [App\Http\Controllers\ReporteController::class, 'clases'])->name('clases');
     Route::get('/equipamiento', [App\Http\Controllers\ReporteController::class, 'equipamiento'])->name('equipamiento');
+    Route::get('/personal', [App\Http\Controllers\ReporteController::class, 'personalDesempeno'])->name('personal');
 });
 
 // ==========================================

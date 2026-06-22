@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Eloquent\Socio as SocioEloquent;
 use Illuminate\Database\Eloquent\Model;
 
 class Asistencia extends Model
@@ -24,6 +25,6 @@ class Asistencia extends Model
     // Relación con Socio (para asistencias de socios)
     public function socio()
     {
-        return $this->belongsTo(Socio::class, 'carnetEmpleado', 'carnetSocio');
+        return $this->belongsTo(SocioEloquent::class, 'carnetEmpleado', 'carnetSocio');
     }
 }

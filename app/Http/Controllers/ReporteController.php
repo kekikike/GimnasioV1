@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Eloquent\Socio;
 use App\Models\Membresia;
 use App\Models\Asistencia;
@@ -22,7 +23,7 @@ class ReporteController extends Controller
     // =========================================
     public function index()
     {
-        return view('reportes.index');
+        return response()->json(['message' => 'Reporte API - use /reportes/{socios|financiero|asistencia|clases|equipamiento}?json=1']);
     }
 
     // =========================================
@@ -31,37 +32,28 @@ class ReporteController extends Controller
     public function socios(Request $request)
     {
         $estado = $request->get('estado', 'todos');
-        $fechaInicio = $request->get('fecha_inicio');
-        $fechaFin = $request->get('fecha_fin');
 
         $query = Socio::with(['usuario', 'membresia']);
 
         if ($estado == 'activos') {
             $query->whereHas('membresia', function($q) {
-                $q->where('estadoMembresia', 'Activa')
-                  ->where('fechaFinMembresia', '>=', Carbon::now()->format('Y-m-d'));
+                $q->where('estadoMembresia', 'Activa');
             });
         } elseif ($estado == 'inactivos') {
-            $query->whereHas('membresia', function($q) {
-                $q->where('estadoMembresia', 'Inactiva');
-            });
-        } elseif ($estado == 'vencidos') {
-            $query->whereHas('membresia', function($q) {
-                $q->where('fechaFinMembresia', '<', Carbon::now()->format('Y-m-d'));
+            $query->whereDoesntHave('membresia', function($q) {
+                $q->where('estadoMembresia', 'Activa');
             });
         }
 
         $socios = $query->get();
 
         $totalSocios = $socios->count();
-        $activos = $socios->filter(function($s) {
-            return $s->membresia && $s->membresia->estadoMembresia == 'Activa' && $s->membresia->fechaFinMembresia >= Carbon::now()->format('Y-m-d');
+        $conMembresia = $socios->filter(function($s) {
+            return $s->membresia && $s->membresia->estadoMembresia == 'Activa';
         })->count();
-        $inactivos = $socios->filter(function($s) {
-            return !$s->membresia || $s->membresia->estadoMembresia != 'Activa' || $s->membresia->fechaFinMembresia < Carbon::now()->format('Y-m-d');
-        })->count();
+        $sinMembresia = $totalSocios - $conMembresia;
 
-        return view('reportes.socios', compact('socios', 'totalSocios', 'activos', 'inactivos', 'estado'));
+        return response()->json(compact('socios', 'totalSocios', 'conMembresia', 'sinMembresia', 'estado'));
     }
 
     // =========================================
@@ -71,22 +63,24 @@ class ReporteController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $fechaFin = $request->get('fecha_fin', Carbon::now()->format('Y-m-d'));
-        $metodoPago = $request->get('metodo_pago');
+        $estadoCaja = $request->get('estado_caja');
 
         $query = Pago::whereBetween('fechaApertura', [$fechaInicio, $fechaFin]);
+
+        if ($estadoCaja) {
+            $query->where('estadoCaja', $estadoCaja);
+        }
 
         $pagos = $query->get();
         $totalIngresos = $pagos->sum('montoApertura');
         $totalTransacciones = $pagos->count();
 
-        // Agrupar por método de pago (usamos estadoCaja como categoría)
-        $ingresosPorMetodo = $pagos->groupBy('estadoCaja')->map(function($item) {
+        $ingresosPorEstado = $pagos->groupBy('estadoCaja')->map(function($item) {
             return $item->sum('montoApertura');
         });
 
-        // Si no hay datos, crear un array vacío para evitar error
-        if ($ingresosPorMetodo->isEmpty()) {
-            $ingresosPorMetodo = collect(['Sin datos' => 0]);
+        if ($ingresosPorEstado->isEmpty()) {
+            $ingresosPorEstado = collect(['Sin datos' => 0]);
         }
 
         $ingresosDiarios = $pagos->groupBy(function($pago) {
@@ -95,15 +89,7 @@ class ReporteController extends Controller
             return $item->sum('montoApertura');
         });
 
-        return view('reportes.financiero', compact(
-            'pagos',
-            'totalIngresos',
-            'totalTransacciones',
-            'ingresosPorMetodo',
-            'ingresosDiarios',
-            'fechaInicio',
-            'fechaFin'
-        ));
+        return response()->json(compact('pagos', 'totalIngresos', 'totalTransacciones', 'ingresosPorEstado', 'ingresosDiarios', 'fechaInicio', 'fechaFin', 'estadoCaja'));
     }
 
     // =========================================
@@ -113,34 +99,36 @@ class ReporteController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $fechaFin = $request->get('fecha_fin', Carbon::now()->format('Y-m-d'));
-        $socioId = $request->get('socio_id');
 
-        $query = Asistencia::whereBetween('fecha', [$fechaInicio, $fechaFin]);
+        $asistencias = DB::table('TAsistenciasPersonal as ap')
+            ->join('TEmpleados as e', 'ap.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->select(
+                'ap.idAsistencia',
+                'ap.carnetEmpleado',
+                DB::raw("CONCAT(u.nombre1, ' ', u.apellido1) as nombreEmpleado"),
+                'ap.fechaHoraEntrada',
+                'ap.fechaHoraSalida',
+                'ap.estadoAsistencia'
+            )
+            ->whereBetween('ap.fechaHoraEntrada', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
+            ->where('ap.estadoA', 1)
+            ->orderBy('ap.fechaHoraEntrada', 'desc')
+            ->get();
 
-        $asistencias = $query->get();
         $totalAsistencias = $asistencias->count();
 
         $asistenciasPorDia = $asistencias->groupBy(function($a) {
-            return Carbon::parse($a->fecha)->format('Y-m-d');
+            return Carbon::parse($a->fechaHoraEntrada)->format('Y-m-d');
         })->map(function($item) {
             return $item->count();
         });
 
-        // Si no hay datos, crear un array vacío para evitar error
         if ($asistenciasPorDia->isEmpty()) {
             $asistenciasPorDia = collect(['Sin datos' => 0]);
         }
 
-        $socios = Socio::with('usuario')->get();
-
-        return view('reportes.asistencia', compact(
-            'asistencias',
-            'totalAsistencias',
-            'asistenciasPorDia',
-            'socios',
-            'fechaInicio',
-            'fechaFin'
-        ));
+        return response()->json(compact('asistencias', 'totalAsistencias', 'asistenciasPorDia', 'fechaInicio', 'fechaFin'));
     }
 
     // =========================================
@@ -172,7 +160,7 @@ class ReporteController extends Controller
             ];
         });
 
-        return view('reportes.clases', compact('estadisticas', 'fechaInicio', 'fechaFin'));
+        return response()->json(compact('estadisticas', 'fechaInicio', 'fechaFin'));
     }
 
     // =========================================
@@ -203,7 +191,7 @@ class ReporteController extends Controller
             'fallas_recientes' => Incidencia::where('fechaReporte', '>=', Carbon::now()->subDays(30))->count()
         ];
 
-        return view('reportes.equipamiento', compact('equipos', 'estadisticas'));
+        return response()->json(compact('equipos', 'estadisticas'));
     }
 
     // =========================================
@@ -215,14 +203,9 @@ class ReporteController extends Controller
         $fechaFin = $request->get('fecha_fin', Carbon::now()->endOfMonth()->format('Y-m-d'));
         $empleadoId = $request->get('empleado_id');
 
-        // Obtener todos los empleados para el filtro del frontend
-        $empleados = Empleado::with('usuario')->whereHas('usuario', function ($q) {
-            $q->where('estadoA', 1);
-        })->get();
-
-        $query = DB::table('tasistenciaspersonal as ap')
-            ->join('templeados as e', 'ap.carnetEmpleado', '=', 'e.carnetEmpleado')
-            ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+        $query = DB::table('TAsistenciasPersonal as ap')
+            ->join('TEmpleados as e', 'ap.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->select(
                 'ap.idAsistencia',
                 'ap.carnetEmpleado',
@@ -231,7 +214,8 @@ class ReporteController extends Controller
                 'ap.fechaHoraEntrada',
                 'ap.fechaHoraSalida'
             )
-            ->whereBetween('ap.fechaHoraEntrada', [$fechaInicio . " 00:00:00", $fechaFin . " 23:59:59"]);
+            ->whereBetween('ap.fechaHoraEntrada', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
+            ->where('ap.estadoA', 1);
 
         if ($empleadoId) {
             $query->where('ap.carnetEmpleado', $empleadoId);
@@ -239,8 +223,6 @@ class ReporteController extends Controller
 
         $asistencias = $query->orderBy('ap.fechaHoraEntrada', 'desc')->get();
 
-        // Aquí se podrían agregar más cálculos: horas trabajadas, retardos, etc.
-
-        return view('reportes.personal_desempeno', compact('asistencias', 'empleados', 'fechaInicio', 'fechaFin', 'empleadoId'));
+        return response()->json($asistencias);
     }
 }

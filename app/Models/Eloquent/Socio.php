@@ -29,7 +29,8 @@ class Socio extends Model
     
     public function membresia()
     {
-        return $this->hasOne(Membresia::class, 'carnetSocio', 'carnetSocio');
+        return $this->hasOne(Membresia::class, 'carnetSocio', 'carnetSocio')
+            ->orderBy('fechaFinMembresia', 'desc');
     }
     
     public function asistencias()

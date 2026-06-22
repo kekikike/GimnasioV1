@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Eloquent\Empleado as EmpleadoEloquent;
 use Illuminate\Database\Eloquent\Model;
 
 class Clase extends Model
@@ -26,7 +27,7 @@ class Clase extends Model
     
     public function instructor()
     {
-        return $this->belongsTo(Empleado::class, 'carnetEmpleado', 'carnetEmpleado');
+        return $this->belongsTo(EmpleadoEloquent::class, 'carnetEmpleado', 'carnetEmpleado');
     }
     
     public function reservas()

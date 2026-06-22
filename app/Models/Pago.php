@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Eloquent\Socio as SocioEloquent;
 use Illuminate\Database\Eloquent\Model;
 
 class Pago extends Model
@@ -27,6 +28,6 @@ class Pago extends Model
     
     public function socio()
     {
-        return $this->belongsTo(Socio::class, 'carnetEmpleado', 'carnetSocio');
+        return $this->belongsTo(SocioEloquent::class, 'carnetEmpleado', 'carnetSocio');
     }
 }

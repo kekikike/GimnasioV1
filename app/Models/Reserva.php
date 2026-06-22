@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Eloquent\Socio as SocioEloquent;
 use Illuminate\Database\Eloquent\Model;
 
 class Reserva extends Model
@@ -22,7 +23,7 @@ class Reserva extends Model
     
     public function socio()
     {
-        return $this->belongsTo(Socio::class, 'carnetSocio', 'carnetSocio');
+        return $this->belongsTo(SocioEloquent::class, 'carnetSocio', 'carnetSocio');
     }
     
     public function clase()
