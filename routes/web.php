@@ -93,6 +93,12 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/reporte/ocupacion', [ClaseGrupalController::class, 'reporteOcupacion'])->name('reporte');
         });
         Route::get('/admin/caja', [CajaController::class, 'index'])->name('admin.caja');
+        Route::get('/admin/caja/estado', [CajaController::class, 'estado'])->name('admin.caja.estado');
+        Route::post('/admin/caja/abrir', [CajaController::class, 'abrir'])->name('admin.caja.abrir');
+        Route::post('/admin/caja/{id}/cerrar', [CajaController::class, 'cerrar'])->name('admin.caja.cerrar');
+        Route::get('/admin/caja/movimientos', [CajaController::class, 'movimientos'])->name('admin.caja.movimientos');
+        Route::post('/admin/caja/recibo', [CajaController::class, 'crearRecibo'])->name('admin.caja.recibo');
+        Route::get('/admin/caja/recibo/{id}', [CajaController::class, 'mostrarRecibo'])->name('admin.caja.recibo.mostrar');
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
         Route::get('/admin/reportes/financiero', [ReporteController::class, 'reporteFinanciero'])->name('admin.reportes.financiero');
         Route::get('/admin/reportes/equipos', [ReporteController::class, 'reporteEquipos'])->name('admin.reportes.equipos');
@@ -106,6 +112,8 @@ Route::middleware('auth.usuario')->group(function () {
         });
 
         Route::get('/admin/auditoria', [AuditoriaController::class, 'index'])->name('admin.auditoria');
+        Route::get('/admin/settings/caja', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings.caja');
+        Route::post('/admin/settings/caja', [\App\Http\Controllers\Admin\SettingsController::class, 'toggle'])->name('admin.settings.caja.toggle');
 
         Route::prefix('equipamiento')->name('equipamiento.')->group(function () {
             Route::get('/', [EquipamientoController::class, 'index'])->name('index');
@@ -134,6 +142,14 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/detalle/{carnet}', [ControlIngresoController::class, 'detalleSocio'])->name('detalle');
             Route::post('/registrar', [ControlIngresoController::class, 'registrarAcceso'])->name('registrar');
         });
+
+        // Rutas de operaciones de caja para recepcionista
+        Route::get('/recepcionista/caja/estado', [RecepcionistaController::class, 'estado'])->name('recepcionista.caja.estado');
+        Route::post('/recepcionista/caja/abrir', [RecepcionistaController::class, 'abrir'])->name('recepcionista.caja.abrir');
+        Route::post('/recepcionista/caja/cerrar/{id}', [RecepcionistaController::class, 'cerrar'])->name('recepcionista.caja.cerrar');
+        Route::get('/recepcionista/caja/movimientos', [RecepcionistaController::class, 'movimientos'])->name('recepcionista.caja.movimientos');
+        Route::post('/recepcionista/caja/recibo', [RecepcionistaController::class, 'crearRecibo'])->name('recepcionista.caja.recibo');
+        Route::get('/recepcionista/caja/recibo/{id}', [RecepcionistaController::class, 'mostrarRecibo'])->name('recepcionista.caja.mostrar_recibo');
     });
 
     // Portal de Entrenador (idRol = 3)

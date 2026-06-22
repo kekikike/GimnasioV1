@@ -8,57 +8,77 @@ class Recibo
 {
     public static function getAll(): array
     {
-        return DB::select('CALL sp_TRecibos_Select()');
+        return DB::table('TRecibos')->where('estadoA', 1)->get()->toArray();
     }
 
     public static function getById(int $id): ?object
     {
-        $rows = DB::select('CALL sp_TRecibos_SelectById(?)', [$id]);
-        return $rows[0] ?? null;
+        return DB::table('TRecibos')->where('idRecibo', $id)->where('estadoA', 1)->first();
     }
 
-    public static function create(array $data, int $usuarioA, string $direccionIP): void
+    public static function create(array $data, int $usuarioA, string $direccionIP): int
     {
-        DB::select('CALL sp_TRecibos_Insert(?, ?, ?, ?, ?, ?, ?, ?)', [
-            $data['idCaja'],
-            $data['idMembresia'],
-            $data['nroRecibo'],
-            $data['montoTotal'],
-            $data['fechaPago'],
-            $data['estadoRecibo'],
-            $usuarioA,
-            $direccionIP,
+        return DB::table('TRecibos')->insertGetId([
+            'idCaja' => $data['idCaja'],
+            'idMembresia' => $data['idMembresia'],
+            'nroRecibo' => $data['nroRecibo'],
+            'montoTotal' => $data['montoTotal'],
+            'fechaPago' => $data['fechaPago'],
+            'estadoRecibo' => $data['estadoRecibo'],
+            'estadoA' => 1,
+            'fechaA' => now(),
+            'usuarioA' => $usuarioA,
         ]);
     }
 
     public static function update(int $id, array $data, int $usuarioA, string $direccionIP): void
     {
-        DB::statement('CALL sp_TRecibos_Update(?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            $id,
-            $data['idCaja'],
-            $data['idMembresia'],
-            $data['nroRecibo'],
-            $data['montoTotal'],
-            $data['fechaPago'],
-            $data['estadoRecibo'],
-            $usuarioA,
-            $direccionIP,
+        DB::table('TRecibos')->where('idRecibo', $id)->update([
+            'idCaja' => $data['idCaja'],
+            'idMembresia' => $data['idMembresia'],
+            'nroRecibo' => $data['nroRecibo'],
+            'montoTotal' => $data['montoTotal'],
+            'fechaPago' => $data['fechaPago'],
+            'estadoRecibo' => $data['estadoRecibo'],
+            'estadoA' => 1,
+            'fechaA' => now(),
+            'usuarioA' => $usuarioA,
         ]);
     }
 
     public static function delete(int $id, int $usuarioA, string $direccionIP): void
     {
-        DB::statement('CALL sp_TRecibos_Delete(?, ?, ?)', [$id, $usuarioA, $direccionIP]);
+        DB::table('TRecibos')->where('idRecibo', $id)->update([
+            'estadoA' => 0,
+            'usuarioA' => $usuarioA,
+            'fechaA' => now(),
+        ]);
     }
 
     public static function getByFilters(array $filters): array
     {
-        return DB::select('CALL sp_TRecibos_GetReporteFinanciero(?, ?, ?, ?, ?)', [
-            $filters['fecha_desde'] ?? null,
-            $filters['fecha_hasta'] ?? null,
-            $filters['idSucursal'] ?? null,
-            $filters['idMetodoPago'] ?? null,
-            $filters['carnetEmpleado'] ?? null,
-        ]);
+        $query = DB::table('TRecibos')->where('estadoA', 1);
+
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fechaPago', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fechaPago', '<=', $filters['fecha_hasta']);
+        }
+
+        if (!empty($filters['idSucursal'])) {
+            $query->where('idSucursal', $filters['idSucursal']);
+        }
+
+        if (!empty($filters['idMetodoPago'])) {
+            $query->where('idMetodoPago', $filters['idMetodoPago']);
+        }
+
+        if (!empty($filters['carnetEmpleado'])) {
+            $query->where('carnetEmpleado', $filters['carnetEmpleado']);
+        }
+
+        return $query->get()->toArray();
     }
 }

@@ -8,52 +8,57 @@ class Caja
 {
     public static function getAll(): array
     {
-        return DB::select('CALL sp_TCajas_Select()');
+        return DB::table('TCajas')->where('estadoA', 1)->get()->toArray();
     }
 
     public static function getById(int $id): ?object
     {
-        $rows = DB::select('CALL sp_TCajas_SelectById(?)', [$id]);
-        return $rows[0] ?? null;
+        return DB::table('TCajas')->where('idCaja', $id)->where('estadoA', 1)->first();
     }
 
-    public static function create(array $data, int $usuarioA, string $direccionIP): void
+    public static function create(array $data, int $usuarioA, string $direccionIP): int
     {
-        DB::select('CALL sp_TCajas_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            $data['idSucursal'],
-            $data['carnetEmpleado'],
-            $data['fechaApertura'],
-            $data['horaApertura'],
-            $data['montoApertura'],
-            $data['montoCierre'] ?? null,
-            $data['montoCierreCalculado'] ?? null,
-            $data['diferenciaArqueo'] ?? null,
-            $data['estadoCaja'],
-            $usuarioA,
-            $direccionIP,
+        return DB::table('TCajas')->insertGetId([
+            'idSucursal' => $data['idSucursal'],
+            'carnetEmpleado' => $data['carnetEmpleado'],
+            'fechaApertura' => $data['fechaApertura'],
+            'horaApertura' => $data['horaApertura'],
+            'montoApertura' => $data['montoApertura'],
+            'montoCierre' => $data['montoCierre'] ?? null,
+            'montoCierreCalculado' => $data['montoCierreCalculado'] ?? null,
+            'diferenciaArqueo' => $data['diferenciaArqueo'] ?? null,
+            'estadoCaja' => $data['estadoCaja'],
+            'estadoA' => 1,
+            'fechaA' => now(),
+            'usuarioA' => $usuarioA,
+            'direccionIP' => $direccionIP,
         ]);
     }
 
     public static function update(int $id, array $data, int $usuarioA, string $direccionIP): void
     {
-        DB::statement('CALL sp_TCajas_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            $id,
-            $data['idSucursal'],
-            $data['carnetEmpleado'],
-            $data['fechaApertura'],
-            $data['horaApertura'],
-            $data['montoApertura'],
-            $data['montoCierre'] ?? null,
-            $data['montoCierreCalculado'] ?? null,
-            $data['diferenciaArqueo'] ?? null,
-            $data['estadoCaja'],
-            $usuarioA,
-            $direccionIP,
+        DB::table('TCajas')->where('idCaja', $id)->update([
+            'idSucursal' => $data['idSucursal'],
+            'carnetEmpleado' => $data['carnetEmpleado'],
+            'fechaApertura' => $data['fechaApertura'],
+            'horaApertura' => $data['horaApertura'],
+            'montoApertura' => $data['montoApertura'],
+            'montoCierre' => $data['montoCierre'] ?? null,
+            'montoCierreCalculado' => $data['montoCierreCalculado'] ?? null,
+            'diferenciaArqueo' => $data['diferenciaArqueo'] ?? null,
+            'estadoCaja' => $data['estadoCaja'],
+            'estadoA' => 1,
+            'fechaA' => now(),
+            'usuarioA' => $usuarioA,
         ]);
     }
 
     public static function delete(int $id, int $usuarioA, string $direccionIP): void
     {
-        DB::statement('CALL sp_TCajas_Delete(?, ?, ?)', [$id, $usuarioA, $direccionIP]);
+        DB::table('TCajas')->where('idCaja', $id)->update([
+            'estadoA' => 0,
+            'usuarioA' => $usuarioA,
+            'fechaA' => now(),
+        ]);
     }
 }

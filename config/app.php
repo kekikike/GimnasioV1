@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Caja Test Mode
+    |--------------------------------------------------------------------------
+    |
+    | When true, the application relaxes certain caja restrictions for
+    | testing (e.g., allow opening when no TEmpleados entry exists,
+    | or disable single-close-per-day enforcement). Controlled by
+    | the CAJA_TEST_MODE environment variable.
+    |
+    */
+    'caja_test_mode' => (bool) env('CAJA_TEST_MODE', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |
