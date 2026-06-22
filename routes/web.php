@@ -129,3 +129,17 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/socio/reservas', [SocioPortalController::class, 'reservas'])->name('socio.reservas');
     });
 });
+
+// Módulo de Reportes (independiente, sin auth)
+Route::prefix('reportes')->name('reportes.')->group(function () {
+    Route::get('/', [App\Http\Controllers\ReporteController::class, 'index'])->name('index');
+    Route::get('/socios', [App\Http\Controllers\ReporteController::class, 'socios'])->name('socios');
+    Route::get('/financiero', [App\Http\Controllers\ReporteController::class, 'financiero'])->name('financiero');
+    Route::get('/asistencia', [App\Http\Controllers\ReporteController::class, 'asistencia'])->name('asistencia');
+    Route::get('/clases', [App\Http\Controllers\ReporteController::class, 'clases'])->name('clases');
+    Route::get('/equipamiento', [App\Http\Controllers\ReporteController::class, 'equipamiento'])->name('equipamiento');
+});
+
+Route::get('/test', function () {
+    return "¡Hola! El servidor funciona correctamente.";
+});

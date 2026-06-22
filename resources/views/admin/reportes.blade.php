@@ -15,8 +15,16 @@
 </style>
 
 <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('financiero')">Ingresos Financieros</button>
+    <button class="tab-btn" onclick="switchTab('financiero')">Ingresos Financieros</button>
     <button class="tab-btn" onclick="switchTab('equipos')">Estado de Equipos</button>
+</div>
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+    <a href="{{ route('reportes.socios') }}" class="btn btn-primary btn-sm" target="_blank">Socios</a>
+    <a href="{{ route('reportes.asistencia') }}" class="btn btn-primary btn-sm" target="_blank">Asistencia</a>
+    <a href="{{ route('reportes.clases') }}" class="btn btn-primary btn-sm" target="_blank">Clases</a>
+    <a href="{{ route('reportes.equipamiento') }}" class="btn btn-primary btn-sm" target="_blank">Equipamiento</a>
+    <a href="{{ route('reportes.financiero') }}" class="btn btn-primary btn-sm" target="_blank">Financiero</a>
+</div>
 </div>
 
 <div id="tab-financiero" class="tab-pane active">

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Socio;
+use App\Models\Eloquent\Socio;
 use App\Models\Membresia;
 use App\Models\Asistencia;
 use App\Models\Pago;
@@ -11,8 +11,8 @@ use App\Models\Clase;
 use App\Models\Equipo;
 use App\Models\Incidencia;
 use App\Models\Reserva;
-use App\Models\Usuario;
-use App\Models\Empleado;
+use App\Models\Eloquent\Usuario;
+use App\Models\Eloquent\Empleado;
 use Carbon\Carbon;
 
 class ReporteController extends Controller

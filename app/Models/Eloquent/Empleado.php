@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Clase;
 
 class Empleado extends Model
 {
@@ -13,16 +14,8 @@ class Empleado extends Model
     public $timestamps = false;
     
     protected $fillable = [
-        'carnetEmpleado',
-        'idUsuario',
-        'idSucursal',
-        'sueldo',
-        'especialidad',
-        'fechaContratoInicio',
-        'fechaContratoFin',
-        'estadoA',
-        'fechaA',
-        'usuarioA'
+        'carnetEmpleado', 'idUsuario', 'idSucursal', 'sueldo', 'especialidad',
+        'fechaContratoInicio', 'fechaContratoFin', 'estadoA', 'fechaA', 'usuarioA'
     ];
     
     public function usuario()
