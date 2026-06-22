@@ -86,8 +86,7 @@
             <tbody>
                 <tr v-for="socio in socios" :key="socio.carnetSocio" style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 12px; font-family: monospace; font-size: 1.2em; color: #059669; font-weight: bold;">
-                        @{{ socio.codigoAcceso }}<br>
-                        <small style="color: #64748b; font-size: 0.7em;">CI: @{{ socio.carnetSocio }}</small>
+                        <span style="font-family: monospace;">@{{ socio.carnetSocio }}</span>
                     </td>
                     <td style="padding: 12px;">
                         <strong>@{{ socio.nombre1 }} @{{ socio.apellido1 }}</strong> <br>

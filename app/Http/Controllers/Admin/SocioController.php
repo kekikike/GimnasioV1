@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class SocioController extends Controller
 {
@@ -20,7 +19,8 @@ class SocioController extends Controller
     {
         try {
             $socios = DB::select("
-                SELECT s.carnetSocio, s.idUsuario, s.codigoAcceso, s.estadoSocio,
+                SELECT s.carnetSocio, s.idUsuario, s.estadoSocio,
+                       s.carnetSocio AS codigoAcceso,
                        u.nombre1, u.apellido1, u.correo, u.telefono
                 FROM tsocios s
                 INNER JOIN tusuarios u ON s.idUsuario = u.idUsuario
@@ -51,13 +51,10 @@ class SocioController extends Controller
 
             if ($idUsuario == 0) throw new \Exception("No se pudo obtener el ID del usuario.");
 
-            $codigoAcceso = 'SOC-' . strtoupper(Str::random(5));
-            
             // Bypass TSocios (Este ya pasó exitosamente)
             DB::table('tsocios')->insert([
                 'carnetSocio'  => $request->carnetSocio, 
                 'idUsuario'    => $idUsuario,
-                'codigoAcceso' => $codigoAcceso,
                 'estadoSocio'  => 'Activo', 
                 'fechaA'       => now(), 
                 'usuarioA'     => $usuarioA
@@ -72,8 +69,8 @@ class SocioController extends Controller
                     'idPlan'               => $request->idPlan,
                     'carnetSocio'          => $request->carnetSocio, 
                     'idSucursal'           => $request->idSucursal,
-                    'fechaInicioMembresia' => now()->format('Y-m-d'), // <-- Corregido
-                    'fechaFinMembresia'    => now()->addDays($duracion)->format('Y-m-d'), // <-- Corregido
+                    'fechaInicioMembresia' => now()->format('Y-m-d'),
+                    'fechaFinMembresia'    => now()->addDays($duracion)->format('Y-m-d'),
                     'estadoMembresia'      => 'Activa',
                     'estadoA'              => 1,
                     'fechaA'               => now(), 
@@ -82,7 +79,7 @@ class SocioController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito. Código de acceso: ' . $codigoAcceso]);
+            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito. Carnet: ' . $request->carnetSocio]);
 
         } catch (\Exception $e) {
             DB::rollBack();

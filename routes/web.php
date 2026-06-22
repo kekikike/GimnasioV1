@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\PersonalController;
 use App\Http\Controllers\Admin\SocioController;
 use App\Http\Controllers\Admin\ClaseController;
+use App\Http\Controllers\Admin\ClaseGrupalController;
 use App\Http\Controllers\Admin\MembresiaController;
 use App\Http\Controllers\Admin\CajaController;
 use App\Http\Controllers\Admin\ReporteController;
@@ -17,8 +18,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipamientoController;
 use App\Http\Controllers\Recepcionista\RecepcionistaController;
+use App\Http\Controllers\Recepcionista\ControlIngresoController;
 use App\Http\Controllers\Entrenador\EntrenadorController;
 use App\Http\Controllers\Socio\SocioPortalController;
+use App\Http\Controllers\Socio\ReservaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -79,7 +82,16 @@ Route::middleware('auth.usuario')->group(function () {
             Route::delete('/{id}', [PlanController::class, 'destroy'])->name('destroy');
         });
 
-        Route::get('/admin/clases', [ClaseController::class, 'index'])->name('admin.clases');
+        Route::prefix('admin/clases')->name('admin.clases.')->group(function () {
+            Route::get('/', [ClaseGrupalController::class, 'index'])->name('index');
+            Route::get('/listar', [ClaseGrupalController::class, 'listar'])->name('listar');
+            Route::post('/', [ClaseGrupalController::class, 'store'])->name('store');
+            Route::put('/{id}', [ClaseGrupalController::class, 'update'])->name('update');
+            Route::delete('/{id}', [ClaseGrupalController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/reservas', [ClaseGrupalController::class, 'listarReservas'])->name('reservas');
+            Route::post('/marcar-asistencia', [ClaseGrupalController::class, 'marcarAsistencia'])->name('asistencia');
+            Route::get('/reporte/ocupacion', [ClaseGrupalController::class, 'reporteOcupacion'])->name('reporte');
+        });
         Route::get('/admin/caja', [CajaController::class, 'index'])->name('admin.caja');
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
         Route::get('/admin/reportes/financiero', [ReporteController::class, 'reporteFinanciero'])->name('admin.reportes.financiero');
@@ -112,11 +124,20 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/recepcionista', [RecepcionistaController::class, 'dashboard'])->name('recepcionista.dashboard');
         Route::get('/recepcionista/caja', [RecepcionistaController::class, 'caja'])->name('recepcionista.caja');
         Route::get('/recepcionista/socios', [RecepcionistaController::class, 'socios'])->name('recepcionista.socios');
+
+        Route::prefix('recepcionista/ingreso')->name('recepcionista.ingreso.')->group(function () {
+            Route::get('/todos', [ControlIngresoController::class, 'listarTodos'])->name('todos');
+            Route::get('/buscar', [ControlIngresoController::class, 'buscarSocio'])->name('buscar');
+            Route::get('/detalle/{carnet}', [ControlIngresoController::class, 'detalleSocio'])->name('detalle');
+            Route::post('/registrar', [ControlIngresoController::class, 'registrarAcceso'])->name('registrar');
+        });
     });
 
     // Portal de Entrenador (idRol = 3)
     Route::middleware('role:3')->group(function () {
         Route::get('/entrenador', [EntrenadorController::class, 'dashboard'])->name('entrenador.dashboard');
+        Route::get('/entrenador/clases', [EntrenadorController::class, 'misClases'])->name('entrenador.clases');
+        Route::get('/entrenador/clases/{id}/participantes', [EntrenadorController::class, 'participantes'])->name('entrenador.clases.participantes');
         Route::get('/entrenador/fallas', [EntrenadorController::class, 'fallas'])->name('entrenador.fallas');
         Route::post('/entrenador/fallas', [EntrenadorController::class, 'reportarFalla'])->name('entrenador.fallas.store');
     });
@@ -126,7 +147,14 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/socio', [SocioPortalController::class, 'dashboard'])->name('socio.dashboard');
         Route::get('/socio/perfil', [SocioPortalController::class, 'perfil'])->name('socio.perfil');
         Route::get('/socio/asistencias', [SocioPortalController::class, 'asistencias'])->name('socio.asistencias');
-        Route::get('/socio/reservas', [SocioPortalController::class, 'reservas'])->name('socio.reservas');
+
+        Route::prefix('socio/reservas')->name('socio.reservas.')->group(function () {
+            Route::get('/', [SocioPortalController::class, 'reservas'])->name('index');
+            Route::get('/mis-reservas', [ReservaController::class, 'misReservas'])->name('mis');
+            Route::get('/disponibles', [ReservaController::class, 'disponibles'])->name('disponibles');
+            Route::post('/reservar', [ReservaController::class, 'reservar'])->name('reservar');
+            Route::post('/cancelar', [ReservaController::class, 'cancelar'])->name('cancelar');
+        });
     });
 });
 

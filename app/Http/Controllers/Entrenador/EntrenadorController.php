@@ -14,6 +14,79 @@ class EntrenadorController extends Controller
         return view('entrenador.dashboard');
     }
 
+    public function misClases()
+    {
+        $usuario = session('usuario');
+        $empleado = DB::table('TEmpleados')
+            ->where('idUsuario', $usuario->idUsuario)
+            ->where('estadoA', 1)
+            ->first();
+        $carnetEmp = $empleado->carnetEmpleado ?? null;
+
+        if (!$carnetEmp) {
+            return response()->json([]);
+        }
+
+        $clases = DB::table('TClaseGrupales as cg')
+            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->join('TSucursales as s', 'cg.idSucursal', '=', 's.idSucursal')
+            ->where('cg.carnetEmpleado', $carnetEmp)
+            ->where('cg.estadoA', 1)
+            ->select(
+                'cg.idClaseGrupal',
+                'cg.fecha',
+                'cg.horaInicio',
+                'cg.horaFin',
+                'cg.cupoMaximo',
+                'cg.estadoClase',
+                'a.nombreActividad',
+                's.nombre as nombreSucursal'
+            )
+            ->orderBy('cg.fecha', 'desc')
+            ->orderBy('cg.horaInicio', 'desc')
+            ->get()
+            ->map(function ($clase) {
+                $stats = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoA', 1)
+                    ->selectRaw("COUNT(*) as total")
+                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Reservado' THEN 1 ELSE 0 END) as reservados")
+                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Asistido' THEN 1 ELSE 0 END) as asistieron")
+                    ->first();
+                $clase->totalReservas = $stats->total ?? 0;
+                $clase->reservados = $stats->reservados ?? 0;
+                $clase->asistieron = $stats->asistieron ?? 0;
+                return $clase;
+            });
+
+        return response()->json($clases);
+    }
+
+    public function participantes($id)
+    {
+        $reservas = DB::table('TReservas as r')
+            ->join('TSocios as s', 'r.carnetSocio', '=', 's.carnetSocio')
+            ->join('TUsuarios as u', 's.idUsuario', '=', 'u.idUsuario')
+            ->where('r.idClaseGrupal', $id)
+            ->where('r.estadoA', 1)
+            ->select(
+                'r.idReserva',
+                'r.estadoReserva',
+                'r.fechaReserva',
+                's.fotografiaUrl',
+                's.observacionesMedicas',
+                'u.nombre1',
+                'u.apellido1',
+                'u.correo',
+                'u.telefono'
+            )
+            ->orderBy('r.estadoReserva', 'asc')
+            ->orderBy('u.apellido1', 'asc')
+            ->get();
+
+        return response()->json($reservas);
+    }
+
     public function fallas()
     {
         $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosWithDetails()');

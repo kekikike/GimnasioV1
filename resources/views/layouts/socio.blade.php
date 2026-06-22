@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Mi Cuenta') - GimnasioV1</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet" />
@@ -66,7 +67,7 @@
             <a href="{{ route('socio.asistencias') }}" class="{{ request()->routeIs('socio.asistencias') ? 'active' : '' }}">
                 Asistencias
             </a>
-            <a href="{{ route('socio.reservas') }}" class="{{ request()->routeIs('socio.reservas') ? 'active' : '' }}">
+            <a href="{{ route('socio.reservas.index') }}" class="{{ request()->routeIs('socio.reservas*') ? 'active' : '' }}">
                 Mis Reservas
             </a>
         </nav>
