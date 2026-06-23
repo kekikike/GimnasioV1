@@ -173,67 +173,47 @@ class ReservaController extends Controller
             return response()->json(['success' => false, 'message' => 'Socio no encontrado.'], 404);
         }
 
-        $reserva = DB::table('TReservas as r')
-            ->join('TClaseGrupales as cg', 'r.idClaseGrupal', '=', 'cg.idClaseGrupal')
-            ->where('r.idReserva', $request->idReserva)
-            ->where('r.carnetSocio', $socio->carnetSocio)
-            ->where('r.estadoReserva', 'Reservado')
-            ->where('r.estadoA', 1)
-            ->select('r.*', 'cg.fecha', 'cg.horaInicio')
-            ->first();
+        $usuarioA = session('usuario')->idUsuario;
+        $direccionIP = $request->ip();
 
-        if (!$reserva) {
-            return response()->json(['success' => false, 'message' => 'Reserva no encontrada o ya cancelada.']);
-        }
+        try {
+            $result = DB::select(
+                'CALL sp_TReservas_Cancelar_Validated(?, ?, ?, ?)',
+                [$request->idReserva, $socio->carnetSocio, $usuarioA, $direccionIP]
+            );
 
-        $inicioClase = "{$reserva->fecha} {$reserva->horaInicio}";
-        $horasRestantes = now()->diffInHours($inicioClase, false);
+            $row = $result[0] ?? null;
 
-        $estadoFinal = 'Cancelado';
-        $mensaje = 'Reserva cancelada correctamente.';
-
-        if ($horasRestantes < 2 && $horasRestantes >= 0) {
-            $estadoFinal = 'Penalizado';
-            $mensaje = 'Cancelación fuera del tiempo permitido (mín. 2h antes). Se aplicó un strike.';
-
-            $idUsuario = session('usuario')->idUsuario;
-
-            DB::table('TPenalizaciones')->insert([
-                'carnetSocio' => $socio->carnetSocio,
-                'idReserva' => $request->idReserva,
-                'fecha' => now()->format('Y-m-d'),
-                'estado' => true,
-                'usuarioA' => $idUsuario,
+            return response()->json([
+                'success' => $row && (bool) $row->success,
+                'message' => $row->message ?? 'Reserva cancelada.',
+                'penalizado' => $row->penalizado ?? false,
             ]);
-
-            DB::table('TSocios')
-                ->where('carnetSocio', $socio->carnetSocio)
-                ->increment('strikes');
-
-            $socioActualizado = DB::table('TSocios')
-                ->where('carnetSocio', $socio->carnetSocio)
-                ->first();
-
-            if ($socioActualizado && $socioActualizado->strikes >= 3) {
-                DB::table('TPenalizaciones')->insert([
-                    'carnetSocio' => $socio->carnetSocio,
-                    'idReserva' => null,
-                    'fecha' => now()->format('Y-m-d'),
-                    'estado' => true,
-                    'usuarioA' => $idUsuario,
-                ]);
-                $mensaje .= ' Has acumulado 3 strikes. Acceso suspendido por 1 semana.';
-            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->extraerMensajeError($e, 'Error al cancelar la reserva.'),
+                'penalizado' => false,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de conexión.',
+                'penalizado' => false,
+            ]);
         }
+    }
 
-        DB::table('TReservas')
-            ->where('idReserva', $request->idReserva)
-            ->update(['estadoReserva' => $estadoFinal]);
-
-        return response()->json([
-            'success' => true,
-            'message' => $mensaje,
-            'penalizado' => $estadoFinal === 'Penalizado',
-        ]);
+    private function extraerMensajeError(\Illuminate\Database\QueryException $e, string $default = 'Error de validación.')
+    {
+        $prev = $e->getPrevious();
+        $raw = $prev ? $prev->getMessage() : $e->getMessage();
+        if (preg_match('/\d+\s+(.+?)(?:\s*\(Connection:|\s*\(SQL:|\s*$)/s', $raw, $m)) {
+            return trim($m[1]);
+        }
+        if (preg_match('/SQLSTATE\[45000\].*?\[(?:\d+)\]\s*(.*?)(?:\(SQL|$)/i', $e->getMessage(), $m)) {
+            return trim($m[1]);
+        }
+        return $default;
     }
 }

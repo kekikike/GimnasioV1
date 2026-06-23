@@ -22,9 +22,6 @@ class AuthController extends Controller
 
     public function showLogin()
     {
-        if (session()->has('usuario')) {
-            return redirect()->to($this->redirectByRole());
-        }
         return view('auth.login');
     }
 

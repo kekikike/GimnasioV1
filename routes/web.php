@@ -84,6 +84,7 @@ Route::middleware('auth.usuario')->group(function () {
 
         Route::prefix('admin/clases')->name('admin.clases.')->group(function () {
             Route::get('/', [ClaseGrupalController::class, 'index'])->name('index');
+            Route::get('/create', [ClaseGrupalController::class, 'create'])->name('create');
             Route::get('/listar', [ClaseGrupalController::class, 'listar'])->name('listar');
             Route::post('/', [ClaseGrupalController::class, 'store'])->name('store');
             Route::put('/{id}', [ClaseGrupalController::class, 'update'])->name('update');
@@ -143,6 +144,9 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/buscar', [ControlIngresoController::class, 'buscarSocio'])->name('buscar');
             Route::get('/detalle/{carnet}', [ControlIngresoController::class, 'detalleSocio'])->name('detalle');
             Route::post('/registrar', [ControlIngresoController::class, 'registrarAcceso'])->name('registrar');
+            Route::post('/bloquear', [ControlIngresoController::class, 'bloquearSocio'])->name('bloquear');
+            Route::get('/{carnet}/reservas-hoy', [ControlIngresoController::class, 'reservasHoy'])->name('reservas-hoy');
+            Route::post('/marcar-asistencia-clase', [ControlIngresoController::class, 'marcarAsistenciaClase'])->name('marcar-asistencia-clase');
         });
 
         // Rutas de operaciones de caja para recepcionista

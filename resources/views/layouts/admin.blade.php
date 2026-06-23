@@ -15,7 +15,7 @@
         .sidebar .brand { padding: 1.5rem; border-bottom: 1px solid #1e293b; }
         .sidebar .brand h1 { font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
         .sidebar .brand span { color: #3b82f6; }
-        .sidebar .nav { padding: 1rem 0; flex: 1; }
+        .sidebar .nav { padding: 1rem 0; flex: 1; overflow-y: auto; }
         .sidebar .nav a { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: #94a3b8; text-decoration: none; transition: all 0.2s; font-size: 0.9rem; font-weight: 500; }
         .sidebar .nav a:hover, .sidebar .nav a.active { background: #1e293b; color: #f8fafc; }
         .sidebar .nav a.active { border-right: 3px solid #3b82f6; }

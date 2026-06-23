@@ -10,6 +10,18 @@ class ClaseGrupalController extends Controller
 {
     public function index()
     {
+        $data = $this->getFormData();
+        return view('admin.clases', $data);
+    }
+
+    public function create()
+    {
+        $data = $this->getFormData();
+        return view('admin.clases.create', $data);
+    }
+
+    private function getFormData()
+    {
         $actividades = DB::table('TActividades')
             ->where('estadoA', 1)
             ->where('estado', 1)
@@ -18,14 +30,25 @@ class ClaseGrupalController extends Controller
         $empleados = DB::table('TEmpleados as e')
             ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->where('e.estadoA', 1)
-            ->select('e.carnetEmpleado', 'u.nombre1', 'u.apellido1')
+            ->where('u.idRol', 3)
+            ->select('e.carnetEmpleado', 'u.nombre1', 'u.apellido1', 'u.idRol')
             ->get();
 
         $sucursales = DB::table('TSucursales')
             ->where('estadoA', 1)
             ->get();
 
-        return view('admin.clases', compact('actividades', 'empleados', 'sucursales'));
+        $adminSucursalId = null;
+        $usuarioA = session('usuario')->idUsuario ?? null;
+        if ($usuarioA) {
+            $empleado = DB::table('TEmpleados')
+                ->where('idUsuario', $usuarioA)
+                ->where('estadoA', 1)
+                ->first();
+            $adminSucursalId = $empleado->idSucursal ?? null;
+        }
+
+        return compact('actividades', 'empleados', 'sucursales', 'adminSucursalId');
     }
 
     public function listar()
@@ -68,29 +91,68 @@ class ClaseGrupalController extends Controller
             'idSucursal' => 'required|integer',
             'fecha' => 'required|date',
             'horaInicio' => 'required',
-            'horaFin' => 'required|after:horaInicio',
+            'horaFin' => 'required',
             'cupoMaximo' => 'required|integer|min:1',
         ]);
 
         $usuarioA = session('usuario')->idUsuario ?? 1;
+        $direccionIP = $request->ip();
 
-        $id = DB::table('TClaseGrupales')->insertGetId([
-            'idActividad' => $request->idActividad,
-            'carnetEmpleado' => $request->carnetEmpleado,
-            'idSucursal' => $request->idSucursal,
-            'fecha' => $request->fecha,
-            'horaInicio' => $request->horaInicio,
-            'horaFin' => $request->horaFin,
-            'cupoMaximo' => $request->cupoMaximo,
-            'estadoClase' => 'Programada',
-            'usuarioA' => $usuarioA,
-        ]);
+        try {
+            $result = DB::select(
+                'CALL sp_TClaseGrupales_Insert_Validated(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [
+                    $request->idActividad,
+                    $request->carnetEmpleado,
+                    $request->idSucursal,
+                    $request->fecha,
+                    $request->horaInicio,
+                    $request->horaFin,
+                    $request->cupoMaximo,
+                    $usuarioA,
+                    $direccionIP,
+                ]
+            );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Clase grupal registrada correctamente.',
-            'id' => $id,
-        ]);
+            $row = $result[0] ?? null;
+            $success = $row && (bool) $row->success;
+            $message = $row->message ?? 'Clase grupal registrada correctamente.';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => $success,
+                    'message' => $message,
+                    'id' => $row->id ?? null,
+                ]);
+            }
+
+            if ($success) {
+                return redirect()->route('admin.clases.index')
+                    ->with('success', $message);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $message);
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            $mensaje = $this->extraerMensajeError($e);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $mensaje]);
+            }
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $mensaje);
+
+        } catch (\Exception $e) {
+            $msg = 'Error de conexión al registrar la clase.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg]);
+            }
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $msg);
+        }
     }
 
     public function update(Request $request, $id)
@@ -101,23 +163,40 @@ class ClaseGrupalController extends Controller
             'idSucursal' => 'required|integer',
             'fecha' => 'required|date',
             'horaInicio' => 'required',
-            'horaFin' => 'required|after:horaInicio',
+            'horaFin' => 'required',
             'cupoMaximo' => 'required|integer|min:1',
             'estadoClase' => 'required|in:Programada,Cursandose,Cancelada',
         ]);
 
+        if ($request->horaFin <= $request->horaInicio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La hora de fin debe ser posterior a la hora de inicio.',
+            ]);
+        }
+
+        $usuarioA = session('usuario')->idUsuario ?? 1;
+
+        DB::statement(
+            'CALL sp_TClaseGrupales_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                $id,
+                $request->idActividad,
+                $request->carnetEmpleado,
+                $request->idSucursal,
+                $request->fecha,
+                $request->horaInicio,
+                $request->horaFin,
+                $request->cupoMaximo,
+                $request->estadoClase,
+                $usuarioA,
+                $request->ip(),
+            ]
+        );
+
         DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $id)
-            ->update([
-                'idActividad' => $request->idActividad,
-                'carnetEmpleado' => $request->carnetEmpleado,
-                'idSucursal' => $request->idSucursal,
-                'fecha' => $request->fecha,
-                'horaInicio' => $request->horaInicio,
-                'horaFin' => $request->horaFin,
-                'cupoMaximo' => $request->cupoMaximo,
-                'estadoClase' => $request->estadoClase,
-            ]);
+            ->update(['usuarioA' => $usuarioA]);
 
         if ($request->estadoClase === 'Cancelada') {
             DB::table('TReservas')
@@ -134,6 +213,8 @@ class ClaseGrupalController extends Controller
 
     public function destroy($id)
     {
+        $usuarioA = session('usuario')->idUsuario ?? 1;
+
         DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $id)
             ->update(['estadoA' => 0, 'estadoClase' => 'Cancelada']);
@@ -142,6 +223,19 @@ class ClaseGrupalController extends Controller
             ->where('idClaseGrupal', $id)
             ->where('estadoReserva', 'Reservado')
             ->update(['estadoReserva' => 'Cancelado']);
+
+        DB::table('tauditorias')->insert([
+            'tablaNombre'   => 'TClaseGrupales',
+            'registroId'    => $id,
+            'accion'        => 'D',
+            'campo'         => 'estadoA, estadoClase',
+            'valorAnterior' => 'estadoA = 1, estadoClase = Programada',
+            'valorNuevo'    => 'estadoA = 0, estadoClase = Cancelada',
+            'usuarioA'      => $usuarioA,
+            'fechaA'        => now(),
+            'direccionIP'   => request()->ip(),
+            'detalles'      => 'Clase cancelada (desactivada) desde el panel de administración',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -264,5 +358,18 @@ class ClaseGrupalController extends Controller
             });
 
         return response()->json($clases);
+    }
+
+    private function extraerMensajeError(\Illuminate\Database\QueryException $e)
+    {
+        $prev = $e->getPrevious();
+        $raw = $prev ? $prev->getMessage() : $e->getMessage();
+        if (preg_match('/\d+\s+(.+?)(?:\s*\(Connection:|\s*\(SQL:|\s*$)/s', $raw, $m)) {
+            return trim($m[1]);
+        }
+        if (preg_match('/SQLSTATE\[45000\].*?\[(?:\d+)\]\s*(.*?)(?:\(SQL|$)/i', $e->getMessage(), $m)) {
+            return trim($m[1]);
+        }
+        return 'Error de validación al registrar la clase.';
     }
 }

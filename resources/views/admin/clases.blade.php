@@ -8,76 +8,42 @@
     window.listaActividades = @json($actividades);
     window.listaEmpleados = @json($empleados);
     window.listaSucursales = @json($sucursales);
+    window.adminSucursalId = @json($adminSucursalId);
 </script>
 
 <div id="appClases">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-        <h3 style="color: #1e293b; margin: 0;">📅 @{{ modoEdicion ? 'Editar Clase' : 'Registrar Nueva Clase Grupal' }}</h3>
-    </div>
+    @if(session('success'))
+        <div class="alert alert-success" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ session('success') }}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ session('error') }}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
+        </div>
+    @endif
 
     <div v-if="mensaje" class="alert" :class="mensajeTipo === 'error' ? 'alert-danger' : 'alert-success'" style="display: flex; justify-content: space-between; align-items: center;">
         <span>@{{ mensaje }}</span>
         <button @click="mensaje = ''" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
     </div>
 
-    <div class="card" style="padding: 20px; margin-bottom: 20px;">
-        <form @submit.prevent="guardarClase" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: end;">
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Actividad *</label>
-                <select v-model="formulario.idActividad" class="form-control" required>
-                    <option value="" disabled>Seleccione actividad...</option>
-                    <option v-for="a in actividades" :key="a.idActividad" :value="a.idActividad">@{{ a.nombreActividad }}</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Instructor *</label>
-                <select v-model="formulario.carnetEmpleado" class="form-control" required>
-                    <option value="" disabled>Seleccione instructor...</option>
-                    <option v-for="e in empleados" :key="e.carnetEmpleado" :value="e.carnetEmpleado">@{{ e.nombre1 }} @{{ e.apellido1 }}</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Sucursal *</label>
-                <select v-model="formulario.idSucursal" class="form-control" required>
-                    <option value="" disabled>Seleccione sucursal...</option>
-                    <option v-for="s in sucursales" :key="s.idSucursal" :value="s.idSucursal">@{{ s.nombre }}</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Fecha *</label>
-                <input type="date" v-model="formulario.fecha" class="form-control" required>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Hora Inicio *</label>
-                <input type="time" v-model="formulario.horaInicio" class="form-control" required>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Hora Fin *</label>
-                <input type="time" v-model="formulario.horaFin" class="form-control" required>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.9em;">Cupo Máximo *</label>
-                <input type="number" v-model="formulario.cupoMaximo" class="form-control" required min="1">
-            </div>
-            <div v-if="modoEdicion">
-                <label style="font-weight: bold; font-size: 0.9em;">Estado</label>
-                <select v-model="formulario.estadoClase" class="form-control">
-                    <option value="Programada">Programada</option>
-                    <option value="Cursandose">Cursándose</option>
-                    <option value="Cancelada">Cancelada</option>
-                </select>
-            </div>
-            <div style="display: flex; gap: 10px; align-self: end;">
-                <button type="submit" class="btn btn-primary">@{{ modoEdicion ? '💾 Guardar Cambios' : '➕ Registrar Clase' }}</button>
-                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">❌ Cancelar</button>
-            </div>
-        </form>
+    <div class="page-actions">
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+            <span style="font-size:0.9rem; color:#64748b;">Clases programadas</span>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+            <a href="{{ route('admin.clases.create') }}" class="btn btn-primary">
+                <svg fill="none" stroke="currentColor" width="18" height="18" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Registrar Clase
+            </a>
+        </div>
     </div>
 
-    <div class="card" style="padding: 20px;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Clases Programadas</h3>
-
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+    <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 10px;">
             <input type="date" v-model="filtroFecha" @change="cargarClases" class="form-control" style="max-width: 200px;">
             <select v-model="filtroEstado" @change="cargarClases" class="form-control" style="max-width: 180px;">
                 <option value="">Todos los estados</option>
@@ -86,7 +52,9 @@
                 <option value="Cancelada">Cancelada</option>
             </select>
         </div>
+    </div>
 
+    <div class="card" style="padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f1f5f9;">
                 <tr>
@@ -120,7 +88,7 @@
                         }">@{{ clase.estadoClase }}</span>
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarClase(clase)" class="btn btn-sm btn-info" style="margin-right: 4px;">✏️</button>
+                        <button @click="openEditModal(clase)" class="btn btn-sm btn-info" style="margin-right: 4px;">✏️</button>
                         <button @click="verReservas(clase)" class="btn btn-sm btn-primary" style="margin-right: 4px;">👥</button>
                         <button @click="confirmarEliminar(clase)" class="btn btn-sm btn-danger">🗑️</button>
                     </td>
@@ -132,6 +100,70 @@
         </table>
     </div>
 
+    {{-- Modal Editar Clase --}}
+    <div v-if="editModal" class="modal-overlay" @click.self="closeEditModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>✏️ Editar Clase</h3>
+                <button @click="closeEditModal" class="modal-close">&times;</button>
+            </div>
+            <form @submit.prevent="guardarEdicion" style="padding: 1.5rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Actividad *</label>
+                        <select v-model="editFormulario.idActividad" class="form-control" required>
+                            <option value="" disabled>Seleccione actividad...</option>
+                            <option v-for="a in actividades" :key="a.idActividad" :value="a.idActividad">@{{ a.nombreActividad }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Instructor *</label>
+                        <select v-model="editFormulario.carnetEmpleado" class="form-control" required>
+                            <option value="" disabled>Seleccione instructor...</option>
+                            <option v-for="e in empleados" :key="e.carnetEmpleado" :value="e.carnetEmpleado">@{{ e.nombre1 }} @{{ e.apellido1 }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sucursal *</label>
+                        <select v-model="editFormulario.idSucursal" class="form-control" required>
+                            <option v-if="!adminSucursalId" value="" disabled>Seleccione sucursal...</option>
+                            <option v-for="s in sucursales" :key="s.idSucursal" :value="s.idSucursal">@{{ s.nombre }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha *</label>
+                        <input type="date" v-model="editFormulario.fecha" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Inicio *</label>
+                        <input type="time" v-model="editFormulario.horaInicio" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Fin *</label>
+                        <input type="time" v-model="editFormulario.horaFin" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cupo Máximo *</label>
+                        <input type="number" v-model="editFormulario.cupoMaximo" class="form-control" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select v-model="editFormulario.estadoClase" class="form-control">
+                            <option value="Programada">Programada</option>
+                            <option value="Cursandose">Cursándose</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">💾 Guardar Cambios</button>
+                    <button type="button" @click="closeEditModal" class="btn btn-outline">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Reservas --}}
     <div v-if="modalReservas" class="modal-overlay" @click.self="modalReservas = false">
         <div class="modal-content" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -190,10 +222,16 @@
     .badge-danger { background: #fee2e2; color: #991b1b; }
     .badge-info { background: #dbeafe; color: #1e40af; }
     .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+    .btn-info { background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 0.4rem; font-weight: 600; }
+    .btn-info:hover { background: #2563eb; }
     .btn-success { background: #10b981; color: white; border: none; cursor: pointer; border-radius: 0.4rem; font-weight: 600; }
     .btn-success:hover { background: #059669; }
-    .btn-secondary { background: #e2e8f0; color: #475569; border: none; cursor: pointer; border-radius: 0.5rem; padding: 0.6rem 1.25rem; font-weight: 600; }
-    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-danger { background: #ef4444; color: white; border: none; cursor: pointer; border-radius: 0.4rem; font-weight: 600; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-primary { background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 0.4rem; font-weight: 600; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-outline { background: transparent; color: #475569; border: 2px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 1.25rem; cursor: pointer; font-weight: 600; }
+    .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
     .form-control { width: 100%; padding: 0.6rem 0.75rem; border: 2px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.9rem; outline: none; transition: border-color 0.2s; background: white; }
     .form-control:focus { border-color: #3b82f6; }
 </style>
@@ -207,7 +245,7 @@ createApp({
         const actividades = ref(window.listaActividades || []);
         const empleados = ref(window.listaEmpleados || []);
         const sucursales = ref(window.listaSucursales || []);
-        const modoEdicion = ref(false);
+        const adminSucursalId = ref(window.adminSucursalId || null);
         const mensaje = ref('');
         const mensajeTipo = ref('success');
         const filtroFecha = ref('');
@@ -215,13 +253,13 @@ createApp({
         const modalReservas = ref(false);
         const reservasClase = ref([]);
         const claseSeleccionada = ref(null);
+        const editModal = ref(false);
         const editandoId = ref(null);
-
-        const formBase = {
-            idActividad: '', carnetEmpleado: '', idSucursal: '',
-            fecha: '', horaInicio: '', horaFin: '', cupoMaximo: '', estadoClase: 'Programada'
-        };
-        const formulario = ref({ ...formBase });
+        const editFormulario = ref({
+            idActividad: '', carnetEmpleado: '',
+            idSucursal: '', fecha: '', horaInicio: '',
+            horaFin: '', cupoMaximo: '', estadoClase: 'Programada'
+        });
 
         const headers = {
             'Content-Type': 'application/json',
@@ -245,33 +283,9 @@ createApp({
             }
         };
 
-        const guardarClase = async () => {
-            const url = modoEdicion.value
-                ? `{{ route("admin.clases.update", ["id" => ":id"]) }}`.replace(':id', editandoId.value)
-                : '{{ route("admin.clases.store") }}';
-            const metodo = modoEdicion.value ? 'PUT' : 'POST';
-            const body = { ...formulario.value };
-            if (!modoEdicion.value) delete body.estadoClase;
-
-            try {
-                const res = await fetch(url, { method: metodo, headers, body: JSON.stringify(body) });
-                const data = await res.json();
-                mensaje.value = data.message;
-                mensajeTipo.value = data.success ? 'success' : 'error';
-                if (data.success) {
-                    cancelarEdicion();
-                    await cargarClases();
-                }
-            } catch (e) {
-                mensaje.value = 'Error de conexión.';
-                mensajeTipo.value = 'error';
-            }
-        };
-
-        const editarClase = (clase) => {
-            modoEdicion.value = true;
+        const openEditModal = (clase) => {
             editandoId.value = clase.idClaseGrupal;
-            formulario.value = {
+            editFormulario.value = {
                 idActividad: clase.idActividad,
                 carnetEmpleado: clase.carnetEmpleado,
                 idSucursal: clase.idSucursal,
@@ -281,18 +295,40 @@ createApp({
                 cupoMaximo: clase.cupoMaximo,
                 estadoClase: clase.estadoClase || 'Programada',
             };
+            editModal.value = true;
         };
 
-        const cancelarEdicion = () => {
-            modoEdicion.value = false;
+        const closeEditModal = () => {
+            editModal.value = false;
             editandoId.value = null;
-            formulario.value = { ...formBase };
+        };
+
+        const guardarEdicion = async () => {
+            try {
+                const res = await fetch(
+                    `{{ route("admin.clases.update", ["id" => ":id"]) }}`.replace(':id', editandoId.value),
+                    { method: 'PUT', headers, body: JSON.stringify(editFormulario.value) }
+                );
+                const data = await res.json();
+                mensaje.value = data.message;
+                mensajeTipo.value = data.success ? 'success' : 'error';
+                if (data.success) {
+                    closeEditModal();
+                    await cargarClases();
+                }
+            } catch (e) {
+                mensaje.value = 'Error de conexión.';
+                mensajeTipo.value = 'error';
+            }
         };
 
         const confirmarEliminar = async (clase) => {
             if (!confirm(`¿Cancelar la clase "${clase.nombreActividad}" del ${clase.fecha}?`)) return;
             try {
-                const res = await fetch(`{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal), { method: 'DELETE', headers });
+                const res = await fetch(
+                    `{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
+                    { method: 'DELETE', headers }
+                );
                 const data = await res.json();
                 mensaje.value = data.message;
                 mensajeTipo.value = data.success ? 'success' : 'error';
@@ -337,10 +373,11 @@ createApp({
         onMounted(cargarClases);
 
         return {
-            clases, actividades, empleados, sucursales, formulario, modoEdicion,
+            clases, actividades, empleados, sucursales, adminSucursalId,
             mensaje, mensajeTipo, filtroFecha, filtroEstado, clasesFiltradas,
             modalReservas, reservasClase, claseSeleccionada,
-            cargarClases, guardarClase, editarClase, cancelarEdicion,
+            editModal, editFormulario,
+            cargarClases, openEditModal, closeEditModal, guardarEdicion,
             confirmarEliminar, verReservas, marcarAsistencia,
         };
     }

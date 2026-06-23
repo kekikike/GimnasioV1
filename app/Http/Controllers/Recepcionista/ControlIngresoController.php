@@ -169,6 +169,9 @@ class ControlIngresoController extends Controller
         ]);
     }
 
+    /**
+     * Registrar acceso mediante SP con validación anti-duplicado.
+     */
     public function registrarAcceso(Request $request)
     {
         $request->validate([
@@ -177,57 +180,7 @@ class ControlIngresoController extends Controller
 
         $carnet = $request->carnetSocio;
         $usuarioA = session('usuario')->idUsuario ?? 1;
-
-        $socio = DB::table('TSocios')
-            ->where('carnetSocio', $carnet)
-            ->where('estadoA', 1)
-            ->first();
-
-        if (!$socio) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Socio no encontrado.',
-            ]);
-        }
-
-        $bloqueo = false;
-        $motivo = null;
-
-        if ($socio->estadoSocio !== 'Activo') {
-            $bloqueo = true;
-            $motivo = 'Socio con estado: ' . $socio->estadoSocio;
-        }
-
-        if ($socio->strikes >= 3) {
-            $penalizacionReciente = DB::table('TPenalizaciones')
-                ->where('carnetSocio', $carnet)
-                ->where('estado', 1)
-                ->where('estadoA', 1)
-                ->where('fecha', '>=', now()->subDays(7)->format('Y-m-d'))
-                ->first();
-
-            if ($penalizacionReciente) {
-                $bloqueo = true;
-                $motivo = 'Acceso suspendido por acumular 3 strikes. Penalización vigente hasta: ' . now()->addDays(7)->format('Y-m-d');
-            }
-        }
-
-        $membresia = DB::table('TMembresias')
-            ->where('carnetSocio', $carnet)
-            ->where('estadoA', 1)
-            ->orderBy('idMembresia', 'desc')
-            ->first();
-
-        $membresiaValida = $membresia
-            && $membresia->estadoMembresia === 'Activa'
-            && $membresia->fechaInicioMembresia <= now()->format('Y-m-d')
-            && $membresia->fechaFinMembresia >= now()->format('Y-m-d');
-
-        if (!$membresiaValida) {
-            $bloqueo = true;
-            $motivo = $motivo ? $motivo . '. ' : '';
-            $motivo .= 'Membresía no vigente o vencida.';
-        }
+        $direccionIP = $request->ip();
 
         $empleado = DB::table('TEmpleados')
             ->where('idUsuario', $usuarioA)
@@ -235,22 +188,163 @@ class ControlIngresoController extends Controller
             ->first();
         $idSucursal = $empleado->idSucursal ?? 1;
 
-        DB::table('TControlAccesos')->insert([
-            'carnetSocio' => $carnet,
-            'idSucursal' => $idSucursal,
-            'fechaAcceso' => now()->format('Y-m-d'),
-            'horaAcceso' => now()->format('H:i:s'),
-            'bloqueo' => $bloqueo,
-            'motivoDenegacion' => $motivo,
-            'usuarioA' => $usuarioA,
+        try {
+            $result = DB::select(
+                'CALL sp_TControlAccesos_Registrar(?, ?, ?, ?)',
+                [$carnet, $idSucursal, $usuarioA, $direccionIP]
+            );
+
+            $row = $result[0] ?? null;
+
+            if (!$row) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al procesar el ingreso.',
+                ]);
+            }
+
+            return response()->json([
+                'success' => (bool) $row->success,
+                'bloqueo' => (bool) $row->bloqueo,
+                'message' => $row->message,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'bloqueo' => true,
+                'message' => $this->extraerMensajeError($e, 'Error al registrar acceso.'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'bloqueo' => true,
+                'message' => 'Error de conexión al registrar acceso.',
+            ]);
+        }
+    }
+
+    /**
+     * Bloquear socio manualmente mediante SP.
+     */
+    public function bloquearSocio(Request $request)
+    {
+        $request->validate([
+            'carnetSocio' => 'required|integer',
         ]);
 
-        return response()->json([
-            'success' => true,
-            'bloqueo' => $bloqueo,
-            'message' => $bloqueo
-                ? 'ACCESO DENEGADO: ' . $motivo
-                : 'Ingreso registrado correctamente.',
+        $carnet = $request->carnetSocio;
+        $usuarioA = session('usuario')->idUsuario ?? 1;
+        $direccionIP = $request->ip();
+
+        try {
+            $result = DB::select(
+                'CALL sp_TSocios_Bloquear(?, ?, ?)',
+                [$carnet, $usuarioA, $direccionIP]
+            );
+
+            $row = $result[0] ?? null;
+
+            return response()->json([
+                'success' => $row && (bool) $row->success,
+                'message' => $row->message ?? 'Socio bloqueado correctamente.',
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->extraerMensajeError($e, 'Error al bloquear socio.'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de conexión al bloquear socio.',
+            ]);
+        }
+    }
+
+    /**
+     * Verificar si el socio tiene reservas de clases grupales para hoy.
+     */
+    public function reservasHoy($carnet)
+    {
+        $reservas = DB::table('TReservas as r')
+            ->join('TClaseGrupales as cg', 'r.idClaseGrupal', '=', 'cg.idClaseGrupal')
+            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->join('TEmpleados as e', 'cg.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->where('r.carnetSocio', $carnet)
+            ->where('r.estadoReserva', 'Reservado')
+            ->where('r.estadoA', 1)
+            ->where('cg.fecha', now()->format('Y-m-d'))
+            ->where('cg.estadoClase', 'Programada')
+            ->select(
+                'r.idReserva',
+                'cg.idClaseGrupal',
+                'cg.horaInicio',
+                'cg.horaFin',
+                'cg.cupoMaximo',
+                'a.nombreActividad',
+                DB::raw("CONCAT(u.nombre1, ' ', u.apellido1) as instructor")
+            )
+            ->orderBy('cg.horaInicio', 'asc')
+            ->get();
+
+        return response()->json($reservas);
+    }
+
+    /**
+     * Marcar asistencia a clase desde recepción (flujo integrado).
+     */
+    public function marcarAsistenciaClase(Request $request)
+    {
+        $request->validate([
+            'idReserva' => 'required|integer',
+            'carnetSocio' => 'required|integer',
         ]);
+
+        $usuarioA = session('usuario')->idUsuario ?? 1;
+        $direccionIP = $request->ip();
+
+        $empleado = DB::table('TEmpleados')
+            ->where('idUsuario', $usuarioA)
+            ->where('estadoA', 1)
+            ->first();
+        $idSucursal = $empleado->idSucursal ?? 1;
+
+        try {
+            $result = DB::select(
+                'CALL sp_TReservas_MarcarAsistencia_Integrado(?, ?, ?, ?, ?)',
+                [$request->idReserva, $request->carnetSocio, $idSucursal, $usuarioA, $direccionIP]
+            );
+
+            $row = $result[0] ?? null;
+
+            return response()->json([
+                'success' => $row && (bool) $row->success,
+                'message' => $row->message ?? 'Asistencia registrada.',
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->extraerMensajeError($e, 'Error al marcar asistencia.'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de conexión.',
+            ]);
+        }
+    }
+
+    private function extraerMensajeError(\Illuminate\Database\QueryException $e, string $default = 'Error de validación.')
+    {
+        $prev = $e->getPrevious();
+        $raw = $prev ? $prev->getMessage() : $e->getMessage();
+        if (preg_match('/\d+\s+(.+?)(?:\s*\(Connection:|\s*\(SQL:|\s*$)/s', $raw, $m)) {
+            return trim($m[1]);
+        }
+        if (preg_match('/SQLSTATE\[45000\].*?\[(?:\d+)\]\s*(.*?)(?:\(SQL|$)/i', $e->getMessage(), $m)) {
+            return trim($m[1]);
+        }
+        return $default;
     }
 }

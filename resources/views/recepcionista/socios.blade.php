@@ -46,12 +46,18 @@
                 </div>
             </div>
             <div v-if="socioSeleccionado" style="display: flex; gap: 0.5rem;">
-                <button @click="registrarAcceso" class="btn" :class="accesoRegistrado ? 'btn-success' : 'btn-primary'" style="font-size: 1rem; padding: 0.85rem 1.5rem;" :disabled="procesando">
+                <button @click="mostrarModalIngreso = true" class="btn btn-primary" style="font-size: 1rem; padding: 0.85rem 1.5rem;" :disabled="procesando || accesoRegistrado">
                     <span v-if="procesando">⏳</span>
                     <span v-else-if="accesoRegistrado">✅</span>
                     <span v-else>🔑</span>
                     @{{ procesando ? 'Procesando...' : accesoRegistrado ? 'Ingreso Registrado' : 'Registrar Ingreso' }}
                 </button>
+                <button v-if="socioSeleccionado.estadoSocio === 'Activo'"
+                    @click="mostrarModalBloqueo = true"
+                    class="btn btn-danger"
+                    style="padding: 0.85rem 1rem;"
+                    :disabled="procesandoBloqueo"
+                >🚫 Bloquear</button>
                 <button @click="limpiarSeleccion" class="btn btn-danger" style="padding: 0.85rem 1rem;">✕</button>
             </div>
         </div>
@@ -60,6 +66,57 @@
     <div v-if="mensaje" class="alert" :class="mensajeTipo === 'error' ? 'alert-danger' : 'alert-success'" style="display: flex; justify-content: space-between; align-items: center;">
         <span>@{{ mensaje }}</span>
         <button @click="mensaje = ''" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
+    </div>
+
+    <!-- MODAL CONFIRMACIÓN INGRESO -->
+    <div v-if="mostrarModalIngreso" class="modal-overlay" @click.self="mostrarModalIngreso = false">
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔑</div>
+            <h3 style="margin-bottom: 0.5rem;">Confirmar Ingreso</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">
+                ¿Registrar ingreso de <strong>@{{ socioSeleccionado?.nombre1 }} @{{ socioSeleccionado?.apellido1 }}</strong>?
+            </p>
+            <div v-if="socioSeleccionado" style="background: #f8fafc; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.25rem 0;">
+                    <span style="color: #64748b;">Carnet:</span>
+                    <span style="font-weight: 600;">@{{ socioSeleccionado.carnetSocio }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.25rem 0;">
+                    <span style="color: #64748b;">Estado:</span>
+                    <span style="font-weight: 600;">@{{ socioSeleccionado.estadoSocio }}</span>
+                </div>
+                <div v-if="detalle?.membresia" style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.25rem 0;">
+                    <span style="color: #64748b;">Membresía:</span>
+                    <span style="font-weight: 600;">@{{ detalle.membresia.nombrePlan }} — @{{ estadoMembresiaTexto }}</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                <button @click="mostrarModalIngreso = false" class="btn btn-secondary" style="padding: 0.75rem 2rem;">Cancelar</button>
+                <button @click="confirmarRegistroIngreso" class="btn btn-primary" style="padding: 0.75rem 2rem;" :disabled="procesando">
+                    <span v-if="procesando">⏳ Procesando...</span>
+                    <span v-else>✅ Sí, Registrar Ingreso</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMACIÓN BLOQUEO -->
+    <div v-if="mostrarModalBloqueo" class="modal-overlay" @click.self="mostrarModalBloqueo = false">
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚫</div>
+            <h3 style="margin-bottom: 0.5rem; color: #dc2626;">Bloquear Socio</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">
+                ¿Estás seguro de bloquear a <strong>@{{ socioSeleccionado?.nombre1 }} @{{ socioSeleccionado?.apellido1 }}</strong>?
+                <br><span style="color: #ef4444; font-size: 0.85rem;">Esta acción cambiará su estado a Inactivo.</span>
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                <button @click="mostrarModalBloqueo = false" class="btn btn-secondary" style="padding: 0.75rem 2rem;">Cancelar</button>
+                <button @click="confirmarBloqueo" class="btn btn-danger" style="padding: 0.75rem 2rem;" :disabled="procesandoBloqueo">
+                    <span v-if="procesandoBloqueo">⏳ Procesando...</span>
+                    <span v-else>🚫 Sí, Bloquear</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <div v-if="socioSeleccionado" class="card" style="padding: 0;">
@@ -174,9 +231,27 @@
                         </table>
                     </div>
 
-                    <div v-if="detalle?.reservasPendientes > 0" style="margin-top: 1rem;">
-                        <div class="section-title">Reservas Pendientes</div>
-                        <p style="color: #0f172a; font-size: 0.9rem;">Tiene @{{ detalle.reservasPendientes }} reserva(s) activa(s) para hoy.</p>
+                    <!-- SECCIÓN: RESERVAS DE CLASES PARA HOY -->
+                    <div v-if="reservasHoy.length > 0" style="margin-top: 1.5rem; border-top: 2px solid #e2e8f0; padding-top: 1rem;">
+                        <div class="section-title" style="color: #0f172a;">📅 Clases Reservadas para Hoy</div>
+                        <div v-for="r in reservasHoy" :key="r.idReserva" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; color: #0f172a;">@{{ r.nombreActividad }}</div>
+                                <div style="font-size: 0.85rem; color: #64748b;">
+                                    🕐 @{{ r.horaInicio?.substring(0,5) }} - @{{ r.horaFin?.substring(0,5) }}
+                                    · 👤 @{{ r.instructor }}
+                                </div>
+                            </div>
+                            <button
+                                @click="marcarAsistenciaClase(r)"
+                                class="btn btn-success btn-sm"
+                                :disabled="procesandoAsistenciaClase"
+                                style="font-size: 0.8rem;"
+                            >
+                                <span v-if="procesandoAsistenciaClase === r.idReserva">⏳</span>
+                                <span v-else>✅ Marcar Asistencia</span>
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -244,6 +319,8 @@
     .badge-info { background: #dbeafe; color: #1e40af; }
     .btn-success { background: #10b981; color: white; }
     .btn-success:hover { background: #059669; }
+    .btn-secondary { background: #e2e8f0; color: #475569; }
+    .btn-secondary:hover { background: #cbd5e1; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     th { text-align: left; padding: 0.6rem 0.75rem; background: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
     td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
@@ -251,6 +328,8 @@
     .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
     .resultado-item:hover { background: #f8fafc !important; }
     .resultado-item.seleccionado { background: #f0fdf4; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: white; border-radius: 0.75rem; padding: 2rem; width: 90%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
 </style>
 
 <script>
@@ -266,9 +345,14 @@ createApp({
         const detalle = ref(null);
         const cargandoDetalle = ref(false);
         const procesando = ref(false);
+        const procesandoBloqueo = ref(false);
+        const procesandoAsistenciaClase = ref(false);
         const accesoRegistrado = ref(false);
         const mensaje = ref('');
         const mensajeTipo = ref('success');
+        const mostrarModalIngreso = ref(false);
+        const mostrarModalBloqueo = ref(false);
+        const reservasHoy = ref([]);
         let timeoutId = null;
 
         const buscando = computed(() => termino.value.length > 0);
@@ -337,6 +421,7 @@ createApp({
             sinResultados.value = false;
             accesoRegistrado.value = false;
             mensaje.value = '';
+            reservasHoy.value = [];
             await cargarDetalle(socio.carnetSocio);
         };
 
@@ -353,7 +438,19 @@ createApp({
             }
         };
 
-        const registrarAcceso = async () => {
+        const cargarReservasHoy = async (carnet) => {
+            try {
+                const res = await fetch('{{ route("recepcionista.ingreso.reservas-hoy", ["carnet" => ":carnet"]) }}'.replace(':carnet', carnet));
+                const data = await res.json();
+                reservasHoy.value = data;
+            } catch (e) {
+                console.error('Error cargando reservas hoy:', e);
+                reservasHoy.value = [];
+            }
+        };
+
+        const confirmarRegistroIngreso = async () => {
+            mostrarModalIngreso.value = false;
             if (!socioSeleccionado.value) return;
             procesando.value = true;
             mensaje.value = '';
@@ -372,12 +469,73 @@ createApp({
                 if (data.success) {
                     accesoRegistrado.value = true;
                     await cargarDetalle(socioSeleccionado.value.carnetSocio);
+                    // Verificar si tiene clases reservadas para hoy
+                    await cargarReservasHoy(socioSeleccionado.value.carnetSocio);
                 }
             } catch (e) {
                 mensaje.value = 'Error al registrar acceso.';
                 mensajeTipo.value = 'error';
             } finally {
                 procesando.value = false;
+            }
+        };
+
+        const confirmarBloqueo = async () => {
+            mostrarModalBloqueo.value = false;
+            if (!socioSeleccionado.value) return;
+            procesandoBloqueo.value = true;
+            mensaje.value = '';
+            try {
+                const res = await fetch('{{ route("recepcionista.ingreso.bloquear") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ carnetSocio: socioSeleccionado.value.carnetSocio })
+                });
+                const data = await res.json();
+                mensaje.value = data.message;
+                mensajeTipo.value = data.success ? 'success' : 'error';
+                if (data.success) {
+                    socioSeleccionado.value.estadoSocio = 'Inactivo';
+                    await cargarDetalle(socioSeleccionado.value.carnetSocio);
+                }
+            } catch (e) {
+                mensaje.value = 'Error al bloquear socio.';
+                mensajeTipo.value = 'error';
+            } finally {
+                procesandoBloqueo.value = false;
+            }
+        };
+
+        const marcarAsistenciaClase = async (reserva) => {
+            procesandoAsistenciaClase.value = reserva.idReserva;
+            mensaje.value = '';
+            try {
+                const res = await fetch('{{ route("recepcionista.ingreso.marcar-asistencia-clase") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        idReserva: reserva.idReserva,
+                        carnetSocio: socioSeleccionado.value.carnetSocio,
+                    })
+                });
+                const data = await res.json();
+                mensaje.value = data.message;
+                mensajeTipo.value = data.success ? 'success' : 'error';
+                if (data.success) {
+                    await cargarReservasHoy(socioSeleccionado.value.carnetSocio);
+                    accesoRegistrado.value = true;
+                }
+            } catch (e) {
+                mensaje.value = 'Error al marcar asistencia.';
+                mensajeTipo.value = 'error';
+            } finally {
+                procesandoAsistenciaClase.value = false;
             }
         };
 
@@ -407,13 +565,17 @@ createApp({
             mensaje.value = '';
             termino.value = '';
             resultados.value = [];
+            reservasHoy.value = [];
         };
 
         return {
             termino, resultados, sinResultados, socioSeleccionado, detalle,
-            cargandoDetalle, procesando, accesoRegistrado, mensaje, mensajeTipo,
-            buscando, estadoMembresiaClass, estadoMembresiaTexto, diasRestantes, tieneAlertas,
-            buscar, seleccionarSocio, cargarDetalle, registrarAcceso, limpiarSeleccion, hoverSocio
+            cargandoDetalle, procesando, procesandoBloqueo, procesandoAsistenciaClase,
+            accesoRegistrado, mensaje, mensajeTipo,
+            buscar, seleccionarSocio, cargarDetalle, limpiarSeleccion, hoverSocio,
+            estadoMembresiaClass, estadoMembresiaTexto, diasRestantes, tieneAlertas,
+            mostrarModalIngreso, mostrarModalBloqueo, reservasHoy,
+            confirmarRegistroIngreso, confirmarBloqueo, marcarAsistenciaClase,
         };
     }
 }).mount('#appIngreso');
