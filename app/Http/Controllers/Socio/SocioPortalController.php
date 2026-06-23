@@ -70,6 +70,21 @@ class SocioPortalController extends Controller
         return view('socio.reservas');
     }
 
+    public function notificaciones()
+    {
+        $socio = $this->loadSocio();
+        $notificaciones = [];
+        if ($socio) {
+            $notificaciones = DB::table('tnotificaciones')
+                ->where('carnetSocio', $socio->carnetSocio)
+                ->where('estadoA', 1)
+                ->orderBy('fechaEnvio', 'desc')
+                ->orderBy('idNotificacion', 'desc')
+                ->get();
+        }
+        return view('socio.notificaciones', compact('notificaciones'));
+    }
+
     public function historialMembresias()
     {
         $socio = $this->loadSocio();

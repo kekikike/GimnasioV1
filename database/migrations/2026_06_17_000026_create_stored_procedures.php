@@ -24,11 +24,11 @@ return new class extends Migration
             'TMembresias' => ['pk' => 'idMembresia', 'cols' => ['idPlan', 'carnetSocio', 'idSucursal', 'fechaInicioMembresia', 'fechaFinMembresia', 'estadoMembresia'], 'auditCols' => ['idPlan', 'carnetSocio', 'idSucursal', 'fechaInicioMembresia', 'fechaFinMembresia', 'estadoMembresia'], 'autoinc' => true],
             'TControlAccesos' => ['pk' => 'idControlAcceso', 'cols' => ['carnetSocio', 'idSucursal', 'fechaAcceso', 'horaAcceso', 'bloqueo', 'motivoDenegacion'], 'auditCols' => ['carnetSocio', 'idSucursal', 'fechaAcceso', 'horaAcceso', 'bloqueo', 'motivoDenegacion'], 'autoinc' => true],
             'TPenalizaciones' => ['pk' => 'idPenalizacion', 'cols' => ['carnetSocio', 'idReserva', 'fecha', 'estado'], 'auditCols' => ['carnetSocio', 'idReserva', 'fecha', 'estado'], 'autoinc' => true],
-            'TNotificaciones' => ['pk' => 'idNotificacion', 'cols' => ['carnetSocio', 'tipoNotificacion', 'mensaje', 'canal', 'fechaEnvio', 'estado'], 'auditCols' => ['carnetSocio', 'tipoNotificacion', 'mensaje', 'canal', 'fechaEnvio', 'estado'], 'autoinc' => true],
+            'TNotificaciones' => ['pk' => 'idNotificacion', 'cols' => ['carnetSocio', 'tipoNotificacion', 'mensaje', 'fechaEnvio', 'estado'], 'auditCols' => ['carnetSocio', 'tipoNotificacion', 'mensaje', 'fechaEnvio', 'estado'], 'autoinc' => true],
             'TClaseGrupales' => ['pk' => 'idClaseGrupal', 'cols' => ['idActividad', 'carnetEmpleado', 'idSucursal', 'fecha', 'horaInicio', 'horaFin', 'cupoMaximo', 'estadoClase'], 'auditCols' => ['idActividad', 'carnetEmpleado', 'idSucursal', 'fecha', 'horaInicio', 'horaFin', 'cupoMaximo', 'estadoClase'], 'autoinc' => true],
             'TReservas' => ['pk' => 'idReserva', 'cols' => ['idClaseGrupal', 'carnetSocio', 'fechaReserva', 'estadoReserva'], 'auditCols' => ['idClaseGrupal', 'carnetSocio', 'fechaReserva', 'estadoReserva'], 'autoinc' => true],
             'TCajas' => ['pk' => 'idCaja', 'cols' => ['idSucursal', 'carnetEmpleado', 'fechaApertura', 'horaApertura', 'montoApertura', 'montoCierre', 'montoCierreCalculado', 'diferenciaArqueo', 'estadoCaja'], 'auditCols' => ['idSucursal', 'carnetEmpleado', 'fechaApertura', 'horaApertura', 'montoApertura', 'montoCierre', 'montoCierreCalculado', 'diferenciaArqueo', 'estadoCaja'], 'autoinc' => true],
-            'TRecibos' => ['pk' => 'idRecibo', 'cols' => ['idCaja', 'idMembresia', 'nroRecibo', 'montoTotal', 'fechaPago', 'estadoRecibo'], 'auditCols' => ['idCaja', 'idMembresia', 'nroRecibo', 'montoTotal', 'fechaPago', 'estadoRecibo'], 'autoinc' => true],
+            'TRecibos' => ['pk' => 'idRecibo', 'cols' => ['idCaja', 'idMembresia', 'montoTotal', 'fechaPago', 'estadoRecibo'], 'auditCols' => ['idCaja', 'idMembresia', 'montoTotal', 'fechaPago', 'estadoRecibo'], 'autoinc' => true],
             'TDetalleMetodoPagos' => ['pk' => 'idMetodoPago', 'cols' => ['idRecibo', 'idMetodoPagoFK', 'monto'], 'auditCols' => ['idRecibo', 'idMetodoPagoFK', 'monto'], 'autoinc' => true],
             'TEquipamientos' => ['pk' => 'idEquipo', 'cols' => ['idSucursal', 'idMarca', 'nombreEquipo', 'modelo', 'fechaAdquisicion', 'estadoEquipo'], 'auditCols' => ['idSucursal', 'idMarca', 'nombreEquipo', 'modelo', 'fechaAdquisicion', 'estadoEquipo'], 'autoinc' => true],
             'TMantenimientoPreventivos' => ['pk' => 'idMantenimiento', 'cols' => ['idEquipo', 'fechaProgramada', 'fechaRealizada', 'descripcionMantenimiento', 'costoMantenimiento', 'tecnicoAsignado', 'estadoMantenimiento'], 'auditCols' => ['idEquipo', 'fechaProgramada', 'fechaRealizada', 'descripcionMantenimiento', 'costoMantenimiento', 'tecnicoAsignado', 'estadoMantenimiento'], 'autoinc' => true],
@@ -560,7 +560,7 @@ return new class extends Migration
             . "    IN p_carnetEmpleado INT\n"
             . ")\n"
             . "BEGIN\n"
-            . "    SELECT r.idRecibo, r.nroRecibo, r.montoTotal, r.fechaPago,\n"
+            . "    SELECT r.idRecibo, r.montoTotal, r.fechaPago,\n"
             . "           r.estadoRecibo,\n"
             . "           c.idSucursal, c.carnetEmpleado,\n"
             . "           s.nombre AS sucursal,\n"

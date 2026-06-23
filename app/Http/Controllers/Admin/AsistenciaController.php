@@ -9,6 +9,26 @@ use Carbon\Carbon;
 
 class AsistenciaController extends Controller
 {
+    private function getHorario($carnetEmpleado)
+    {
+        $dias = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miercoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sabado',
+            'Sunday'    => 'Domingo',
+        ];
+        $diaSemanaActual = $dias[Carbon::now()->format('l')];
+
+        return DB::table('thorariolaborales')
+            ->where('carnetEmpleado', $carnetEmpleado)
+            ->where('diaSemana', $diaSemanaActual)
+            ->where('estadoA', 1)
+            ->first();
+    }
+
     public function registrarEntrada(Request $request)
     {
         $request->validate(['carnetEmpleado' => 'required|string|exists:templeados,carnetEmpleado']);
@@ -25,41 +45,39 @@ class AsistenciaController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ya existe una entrada registrada sin salida para hoy.'], 409);
             }
 
-            $dias = [
-                'Monday'    => 'Lunes',
-                'Tuesday'   => 'Martes',
-                'Wednesday' => 'Miercoles',
-                'Thursday'  => 'Jueves',
-                'Friday'    => 'Viernes',
-                'Saturday'  => 'Sabado',
-                'Sunday'    => 'Domingo',
-            ];
-            $diaSemanaActual = $dias[Carbon::now()->format('l')];
-
-            $horario = DB::table('thorariolaborales')
-                ->where('carnetEmpleado', $request->carnetEmpleado)
-                ->where('diaSemana', $diaSemanaActual)
-                ->where('estadoA', 1)
-                ->first();
+            $horario = $this->getHorario($request->carnetEmpleado);
+            $ahora = Carbon::now();
 
             $estadoAsistencia = 'Puntual';
             if ($horario) {
-                $horaEntradaEsperada = Carbon::parse($horario->horaEntradaEsperada)->addMinutes(5);
-                if (Carbon::now()->gt($horaEntradaEsperada)) {
+                $horaEntradaEsperada = Carbon::parse($horario->horaEntradaEsperada);
+                $tolerancia = $horaEntradaEsperada->copy()->addMinutes(5);
+                if ($ahora->gt($tolerancia)) {
                     $estadoAsistencia = 'Tardanza';
                 }
             }
 
             DB::table('tasistenciaspersonal')->insert([
                 'carnetEmpleado' => $request->carnetEmpleado,
-                'fechaHoraEntrada' => Carbon::now(),
+                'fechaHoraEntrada' => $ahora,
                 'estadoAsistencia' => $estadoAsistencia,
                 'usuarioA' => $usuarioA,
                 'fechaA' => now(),
                 'estadoA' => 1
             ]);
 
-            return response()->json(['success' => true, 'message' => 'Entrada registrada exitosamente.']);
+            if ($horario) {
+                $horaEntradaEsperada = Carbon::parse($horario->horaEntradaEsperada);
+                $msg = $ahora->lte($horaEntradaEsperada)
+                    ? 'Entrada registrada - Llegaste a tiempo.'
+                    : ($estadoAsistencia === 'Tardanza'
+                        ? 'Entrada registrada - Llegaste tarde (mas de 5 min de tolerancia).'
+                        : 'Entrada registrada exitosamente.');
+            } else {
+                $msg = 'Entrada registrada exitosamente.';
+            }
+
+            return response()->json(['success' => true, 'message' => $msg]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
@@ -81,13 +99,30 @@ class AsistenciaController extends Controller
                 return response()->json(['success' => false, 'message' => 'No se encontro una entrada abierta para registrar la salida.'], 404);
             }
 
-            DB::table('tasistenciaspersonal')->where('idAsistencia', $asistenciaAbierta->idAsistencia)->update([
-                'fechaHoraSalida' => Carbon::now(),
-                'usuarioA' => $usuarioA,
-                'fechaA' => now()
-            ]);
+            $ahora = Carbon::now();
+            $horario = $this->getHorario($request->carnetEmpleado);
+            $estadoSalida = $asistenciaAbierta->estadoAsistencia;
+            $msg = 'Salida registrada correctamente.';
 
-            return response()->json(['success' => true, 'message' => 'Salida registrada correctamente.']);
+            if ($horario) {
+                $horaSalidaEsperada = Carbon::parse($horario->horaSalidaEsperada);
+
+                if ($ahora->lt($horaSalidaEsperada->copy()->subMinutes(10))) {
+                    $estadoSalida = 'Falta';
+                    $msg = 'Salida registrada - Te fuiste antes de tiempo, se registro como Falta.';
+                }
+            }
+
+            DB::table('tasistenciaspersonal')
+                ->where('idAsistencia', $asistenciaAbierta->idAsistencia)
+                ->update([
+                    'fechaHoraSalida' => $ahora,
+                    'estadoAsistencia' => $estadoSalida,
+                    'usuarioA' => $usuarioA,
+                    'fechaA' => now()
+                ]);
+
+            return response()->json(['success' => true, 'message' => $msg]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }

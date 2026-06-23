@@ -11,68 +11,29 @@ class HorarioLaboralSeeder extends Seeder
     {
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
 
-        $horarios = [
-            [1001, 'Lunes', '08:00:00', '17:00:00'],
-            [1001, 'Martes', '08:00:00', '17:00:00'],
-            [1001, 'Miercoles', '08:00:00', '17:00:00'],
-            [1001, 'Jueves', '08:00:00', '17:00:00'],
-            [1001, 'Viernes', '08:00:00', '17:00:00'],
-            [1001, 'Sabado', '08:00:00', '12:00:00'],
-            [1002, 'Lunes', '06:00:00', '14:00:00'],
-            [1002, 'Martes', '06:00:00', '14:00:00'],
-            [1002, 'Miercoles', '06:00:00', '14:00:00'],
-            [1002, 'Jueves', '06:00:00', '14:00:00'],
-            [1002, 'Viernes', '06:00:00', '14:00:00'],
-            [1002, 'Sabado', '06:00:00', '10:00:00'],
-            [2001, 'Lunes', '14:00:00', '22:00:00'],
-            [2001, 'Martes', '14:00:00', '22:00:00'],
-            [2001, 'Miercoles', '14:00:00', '22:00:00'],
-            [2001, 'Jueves', '14:00:00', '22:00:00'],
-            [2001, 'Viernes', '14:00:00', '22:00:00'],
-            [2001, 'Sabado', '10:00:00', '18:00:00'],
-            [2002, 'Lunes', '07:00:00', '15:00:00'],
-            [2002, 'Martes', '07:00:00', '15:00:00'],
-            [2002, 'Miercoles', '07:00:00', '15:00:00'],
-            [2002, 'Jueves', '07:00:00', '15:00:00'],
-            [2002, 'Viernes', '07:00:00', '15:00:00'],
-            [2002, 'Sabado', '08:00:00', '12:00:00'],
-            [2003, 'Lunes', '09:00:00', '18:00:00'],
-            [2003, 'Martes', '09:00:00', '18:00:00'],
-            [2003, 'Miercoles', '09:00:00', '18:00:00'],
-            [2003, 'Jueves', '09:00:00', '18:00:00'],
-            [2003, 'Viernes', '09:00:00', '18:00:00'],
-            [2003, 'Sabado', '08:00:00', '14:00:00'],
-            [1001, 'Domingo', '08:00:00', '12:00:00'],
-            [2002, 'Domingo', '08:00:00', '14:00:00'],
-            [1002, 'Domingo', '08:00:00', '12:00:00'],
-            [2001, 'Domingo', '10:00:00', '16:00:00'],
-            [2003, 'Domingo', '09:00:00', '15:00:00'],
-            [1001, 'Lunes', '13:00:00', '22:00:00'],
-            [1001, 'Martes', '13:00:00', '22:00:00'],
-            [1002, 'Lunes', '14:00:00', '22:00:00'],
-            [1002, 'Martes', '14:00:00', '22:00:00'],
-            [1002, 'Miercoles', '14:00:00', '22:00:00'],
-            [2001, 'Lunes', '06:00:00', '14:00:00'],
-            [2001, 'Martes', '06:00:00', '14:00:00'],
-            [2002, 'Lunes', '15:00:00', '22:00:00'],
-            [2002, 'Martes', '15:00:00', '22:00:00'],
-            [2003, 'Lunes', '06:00:00', '14:00:00'],
-            [2003, 'Martes', '06:00:00', '14:00:00'],
-            [2003, 'Miercoles', '06:00:00', '14:00:00'],
-            [1001, 'Miercoles', '13:00:00', '22:00:00'],
-            [1002, 'Jueves', '14:00:00', '22:00:00'],
-            [2001, 'Miercoles', '06:00:00', '14:00:00'],
+        $empleados = [
+            ['carnet' => 1001, 'entrada' => '08:00', 'salida' => '17:00'],
+            ['carnet' => 1002, 'entrada' => '06:00', 'salida' => '14:00'],
+            ['carnet' => 2001, 'entrada' => '14:00', 'salida' => '22:00'],
+            ['carnet' => 2002, 'entrada' => '07:00', 'salida' => '15:00'],
+            ['carnet' => 2003, 'entrada' => '09:00', 'salida' => '18:00'],
+            ['carnet' => 5001, 'entrada' => '08:00', 'salida' => '17:00'],
         ];
 
+        $dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
+
         $registros = [];
-        foreach ($horarios as $h) {
-            $registros[] = [
-                'carnetEmpleado' => $h[0],
-                'diaSemana' => $h[1],
-                'horaEntradaEsperada' => $h[2],
-                'horaSalidaEsperada' => $h[3],
-                'usuarioA' => $adminId,
-            ];
+        foreach ($empleados as $emp) {
+            foreach ($dias as $dia) {
+                $registros[] = [
+                    'carnetEmpleado' => $emp['carnet'],
+                    'diaSemana' => $dia,
+                    'horaEntradaEsperada' => $emp['entrada'] . ':00',
+                    'horaSalidaEsperada' => $emp['salida'] . ':00',
+                    'usuarioA' => $adminId,
+                    'estadoA' => 1,
+                ];
+            }
         }
 
         DB::table('THorarioLaborales')->insert($registros);

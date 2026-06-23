@@ -19,13 +19,22 @@ class CajaController extends Controller
         return $usuario->idUsuario ?? 1;
     }
 
+    private function getEmpleado()
+    {
+        $usuarioId = $this->getUsuarioA();
+        return DB::table('TEmpleados')->where('idUsuario', $usuarioId)->first();
+    }
+
     public function index()
     {
         $metodosPago = DB::select('CALL sp_TMetodoPagos_Select()');
-        $sucursales  = DB::select('CALL sp_TSucursales_Select()');
-        $membresias  = DB::select('CALL sp_TMembresias_Select()');
-
-        return view('admin.caja', compact('metodosPago', 'sucursales', 'membresias'));
+        $empleado = $this->getEmpleado();
+        $sucursalNombre = '';
+        if ($empleado && $empleado->idSucursal) {
+            $suc = DB::table('TSucursales')->where('idSucursal', $empleado->idSucursal)->first();
+            $sucursalNombre = $suc ? $suc->nombre : '';
+        }
+        return view('admin.caja', compact('metodosPago', 'sucursalNombre'));
     }
 
     public function estado()
@@ -33,7 +42,6 @@ class CajaController extends Controller
         $today = date('Y-m-d');
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
-            ->where('estadoCaja', 'Abierta')
             ->where('estadoA', 1)
             ->first();
 
@@ -42,7 +50,7 @@ class CajaController extends Controller
         }
 
         return response()->json([
-            'open' => true,
+            'open' => $cajaHoy->estadoCaja === 'Abierta',
             'caja' => $cajaHoy,
         ]);
     }
@@ -50,46 +58,31 @@ class CajaController extends Controller
     public function abrir(Request $request)
     {
         $request->validate([
-            'idSucursal' => 'required|integer|exists:TSucursales,idSucursal',
             'montoApertura' => 'required|numeric|min:0',
         ]);
 
         $today = date('Y-m-d');
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
-            ->where('estadoCaja', 'Abierta')
             ->where('estadoA', 1)
             ->first();
 
         if ($cajaHoy) {
-            return response()->json(['success' => false, 'message' => 'Ya existe una caja registrada para el día de hoy.'], 422);
+            return response()->json(['success' => false, 'message' => 'Ya existe una caja registrada para el dia de hoy (abierta o cerrada). Solo se puede abrir/cerrar una vez por dia.'], 422);
         }
 
-        $usuario = $this->getUsuarioSesion();
-        $usuarioId = $usuario->idUsuario ?? $this->getUsuarioA();
-
-        // Buscar el carnetEmpleado asociado al usuario actual
-        $empleado = DB::table('TEmpleados')
-            ->where('idUsuario', $usuarioId)
-            ->first(['carnetEmpleado']);
-
-        if (!$empleado) {
-            if (config('app.caja_test_mode', true)) {
-                // En modo pruebas, usar idUsuario como carnetEmpleado si no hay empleado asociado
-                $carnetEmpleado = $usuarioId;
-            } else {
-                return response()->json(['success' => false, 'message' => 'Usuario no asociado a un empleado válido.'], 422);
-            }
-        } else {
-            $carnetEmpleado = $empleado->carnetEmpleado;
+        $empleado = $this->getEmpleado();
+        if (!$empleado || !$empleado->idSucursal) {
+            return response()->json(['success' => false, 'message' => 'El usuario no esta asociado a un empleado con sucursal valida.'], 422);
         }
+
         $usuarioA = $this->getUsuarioA();
         $horaApertura = date('H:i:s');
 
         try {
             $idCaja = DB::table('TCajas')->insertGetId([
-                'idSucursal' => $request->idSucursal,
-                'carnetEmpleado' => $carnetEmpleado,
+                'idSucursal' => $empleado->idSucursal,
+                'carnetEmpleado' => $empleado->carnetEmpleado,
                 'fechaApertura' => $today,
                 'horaApertura' => $horaApertura,
                 'montoApertura' => $request->montoApertura,
@@ -112,25 +105,36 @@ class CajaController extends Controller
     {
         $request->validate([
             'montoCierre' => 'required|numeric|min:0',
-            'montoCierreCalculado' => 'required|numeric|min:0',
         ]);
 
         $caja = DB::table('TCajas')->where('idCaja', $id)->where('estadoA', 1)->first();
         if (!$caja) {
             return response()->json(['success' => false, 'message' => 'Caja no encontrada.'], 404);
         }
-
         if ($caja->estadoCaja !== 'Abierta') {
-            return response()->json(['success' => false, 'message' => 'La caja ya fue cerrada o no está en estado abierto.'], 422);
+            return response()->json(['success' => false, 'message' => 'La caja ya fue cerrada.'], 422);
         }
 
-        $diferenciaArqueo = $request->montoCierre - $request->montoCierreCalculado;
+        $today = date('Y-m-d');
+        $totalRecibos = DB::table('TRecibos')
+            ->where('idCaja', $id)
+            ->whereDate('fechaPago', $today)
+            ->where('estadoA', 1)
+            ->sum('montoTotal') ?? 0;
+
+        $totalMantenimientos = DB::table('TMantenimientoPreventivos')
+            ->where('fechaRealizada', $today)
+            ->where('estadoMantenimiento', 'Realizado')
+            ->sum('costoMantenimiento') ?? 0;
+
+        $montoCierreCalculado = $caja->montoApertura + $totalRecibos - $totalMantenimientos;
+        $diferenciaArqueo = $request->montoCierre - $montoCierreCalculado;
         $usuarioA = $this->getUsuarioA();
 
         try {
             DB::table('TCajas')->where('idCaja', $id)->update([
                 'montoCierre' => $request->montoCierre,
-                'montoCierreCalculado' => $request->montoCierreCalculado,
+                'montoCierreCalculado' => $montoCierreCalculado,
                 'diferenciaArqueo' => $diferenciaArqueo,
                 'estadoCaja' => 'Cerrada',
                 'estadoA' => 1,
@@ -141,7 +145,13 @@ class CajaController extends Controller
             return response()->json(['success' => false, 'message' => 'Error al cerrar la caja: ' . $e->getMessage()], 500);
         }
 
-        return response()->json(['success' => true, 'message' => 'Caja cerrada correctamente.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Caja cerrada correctamente.',
+            'montoCierreCalculado' => $montoCierreCalculado,
+            'totalRecibos' => $totalRecibos,
+            'totalMantenimientos' => $totalMantenimientos,
+        ]);
     }
 
     public function movimientos(Request $request)
@@ -149,7 +159,6 @@ class CajaController extends Controller
         $today = date('Y-m-d');
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
-            ->where('estadoCaja', 'Abierta')
             ->where('estadoA', 1)
             ->first();
 
@@ -157,68 +166,172 @@ class CajaController extends Controller
             return response()->json(['movimientos' => []]);
         }
 
-        $movimientos = DB::select(
-            'SELECT r.idRecibo, r.nroRecibo, r.montoTotal, r.fechaPago, r.estadoRecibo,
-                    c.idCaja, c.idSucursal, s.nombre AS sucursal,
-                    u.nombre1, u.apellido1,
-                    mp.nombreMetodoPago, dmp.monto AS montoMetodo,
-                    m.carnetSocio
-             FROM TRecibos r
-             INNER JOIN TCajas c ON c.idCaja = r.idCaja
-             INNER JOIN TSucursales s ON s.idSucursal = c.idSucursal
-             INNER JOIN TDetalleMetodoPagos dmp ON dmp.idRecibo = r.idRecibo
-             INNER JOIN TMetodoPagos mp ON mp.idMetodoPago = dmp.idMetodoPagoFK
-             INNER JOIN TMembresias m ON m.idMembresia = r.idMembresia
-             LEFT JOIN TUsuarios u ON u.idUsuario = c.carnetEmpleado
-             WHERE r.estadoA = 1
-               AND r.idCaja = ?
-             ORDER BY r.fechaPago DESC',
-            [$cajaHoy->idCaja]
-        );
+        $movimientos = DB::table('TRecibos as r')
+            ->join('TCajas as c', 'c.idCaja', '=', 'r.idCaja')
+            ->join('TSucursales as s', 's.idSucursal', '=', 'c.idSucursal')
+            ->join('TMembresias as m', 'm.idMembresia', '=', 'r.idMembresia')
+            ->join('TSocios as so', 'so.carnetSocio', '=', 'm.carnetSocio')
+            ->join('TUsuarios as u', 'u.idUsuario', '=', 'so.idUsuario')
+            ->where('r.estadoA', 1)
+            ->where('r.idCaja', $cajaHoy->idCaja)
+            ->select(
+                'r.idRecibo', 'r.montoTotal', 'r.fechaPago', 'r.estadoRecibo',
+                'c.idCaja', 's.nombre as sucursal',
+                'u.nombre1', 'u.apellido1',
+                'm.carnetSocio',
+                DB::raw('(SELECT GROUP_CONCAT(mp.nombreMetodoPago SEPARATOR ", ") FROM TDetalleMetodoPagos dmp JOIN TMetodoPagos mp ON mp.idMetodoPago = dmp.idMetodoPagoFK WHERE dmp.idRecibo = r.idRecibo) as metodos_pago')
+            )
+            ->orderBy('r.fechaPago', 'desc')
+            ->get();
 
-        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy]);
+        $totalMantenimientos = DB::table('TMantenimientoPreventivos')
+            ->where('fechaRealizada', $today)
+            ->where('estadoMantenimiento', 'Realizado')
+            ->sum('costoMantenimiento') ?? 0;
+
+        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy, 'totalMantenimientosHoy' => $totalMantenimientos ?? 0]);
+    }
+
+    public function buscarSocio($carnet)
+    {
+        try {
+            $socio = DB::table('TSocios as s')
+                ->join('TUsuarios as u', 's.idUsuario', '=', 'u.idUsuario')
+                ->where('s.carnetSocio', $carnet)
+                ->where('s.estadoA', 1)
+                ->select('s.carnetSocio', 's.estadoSocio', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2')
+                ->first();
+
+            if (!$socio) {
+                return response()->json(['success' => false, 'message' => 'Socio no encontrado.'], 404);
+            }
+
+            $membresiaActiva = DB::table('TMembresias')
+                ->where('carnetSocio', $carnet)
+                ->where('estadoA', 1)
+                ->where('estadoMembresia', 'Activa')
+                ->whereDate('fechaFinMembresia', '>=', date('Y-m-d'))
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'socio' => $socio,
+                'tieneMembresiaActiva' => $membresiaActiva,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error al buscar socio.'], 500);
+        }
+    }
+
+    public function planes()
+    {
+        $planes = DB::table('TPlanes')
+            ->where('estadoA', 1)
+            ->select('idPlan', 'nombrePlan', 'costoPlan', 'duracionDias')
+            ->get();
+        return response()->json($planes);
     }
 
     public function crearRecibo(Request $request)
     {
         $request->validate([
-            'idCaja' => 'required|integer|exists:TCajas,idCaja',
-            'idMembresia' => 'required|integer|exists:TMembresias,idMembresia',
-            'idMetodoPago' => 'required|integer|exists:TMetodoPagos,idMetodoPago',
-            'nroRecibo' => 'required|string|max:50',
+            'carnetSocio' => 'required|integer|exists:TSocios,carnetSocio',
+            'idPlan' => 'required|integer|exists:TPlanes,idPlan',
             'montoTotal' => 'required|numeric|min:0',
-            'fechaPago' => 'required|date',
-            'montoMetodo' => 'required|numeric|min:0',
+            'metodos' => 'required|array|min:1',
+            'metodos.*.idMetodoPago' => 'required|integer|exists:TMetodoPagos,idMetodoPago',
+            'metodos.*.monto' => 'required|numeric|min:0',
         ]);
 
+        $carnet = $request->carnetSocio;
+        $today = date('Y-m-d');
         $usuarioA = $this->getUsuarioA();
+
+        $tieneActiva = DB::table('TMembresias')
+            ->where('carnetSocio', $carnet)
+            ->where('estadoA', 1)
+            ->where('estadoMembresia', 'Activa')
+            ->whereDate('fechaFinMembresia', '>=', $today)
+            ->exists();
+
+        if ($tieneActiva) {
+            return response()->json(['success' => false, 'message' => 'El socio ya tiene una membresia activa. Debe esperar a que venza para comprar una nueva.'], 422);
+        }
+
+        $sumaMetodos = collect($request->metodos)->sum('monto');
+        if (abs($sumaMetodos - $request->montoTotal) > 0.01) {
+            return response()->json(['success' => false, 'message' => 'La suma de los montos de los metodos de pago no coincide con el monto total.'], 422);
+        }
+
+        $plan = DB::table('TPlanes')->where('idPlan', $request->idPlan)->first();
+        if (!$plan) {
+            return response()->json(['success' => false, 'message' => 'Plan no encontrado.'], 404);
+        }
+
+        $empleado = $this->getEmpleado();
+        $idSucursal = $empleado->idSucursal ?? 1;
+
+        $cajaAbierta = DB::table('TCajas')
+            ->where('fechaApertura', $today)
+            ->where('estadoCaja', 'Abierta')
+            ->where('estadoA', 1)
+            ->first();
+
+        if (!$cajaAbierta) {
+            return response()->json(['success' => false, 'message' => 'No hay una caja abierta para hoy.'], 422);
+        }
 
         DB::beginTransaction();
         try {
+            $idMembresia = DB::table('TMembresias')->insertGetId([
+                'idPlan' => $request->idPlan,
+                'carnetSocio' => $carnet,
+                'idSucursal' => $idSucursal,
+                'fechaInicioMembresia' => $today,
+                'fechaFinMembresia' => date('Y-m-d', strtotime("$today +{$plan->duracionDias} days")),
+                'estadoMembresia' => 'Activa',
+                'estadoA' => 1,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            $socio = DB::table('TSocios')->where('carnetSocio', $carnet)->first();
+            if ($socio && $socio->estadoSocio !== 'Activo') {
+                DB::table('TSocios')->where('carnetSocio', $carnet)->update([
+                    'estadoSocio' => 'Activo',
+                    'fechaA' => now(),
+                    'usuarioA' => $usuarioA,
+                ]);
+            }
+
             $idRecibo = DB::table('TRecibos')->insertGetId([
-                'idCaja' => $request->idCaja,
-                'idMembresia' => $request->idMembresia,
-                'nroRecibo' => $request->nroRecibo,
+                'idCaja' => $cajaAbierta->idCaja,
+                'idMembresia' => $idMembresia,
                 'montoTotal' => $request->montoTotal,
-                'fechaPago' => $request->fechaPago,
+                'fechaPago' => now(),
                 'estadoRecibo' => 'Emitido',
                 'estadoA' => 1,
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
 
-            DB::table('TDetalleMetodoPagos')->insert([
-                'idRecibo' => $idRecibo,
-                'idMetodoPagoFK' => $request->idMetodoPago,
-                'monto' => $request->montoMetodo,
-                'estadoA' => 1,
-                'fechaA' => now(),
-                'usuarioA' => $usuarioA,
-            ]);
+            foreach ($request->metodos as $metodo) {
+                DB::table('TDetalleMetodoPagos')->insert([
+                    'idRecibo' => $idRecibo,
+                    'idMetodoPagoFK' => $metodo['idMetodoPago'],
+                    'monto' => $metodo['monto'],
+                    'estadoA' => 1,
+                    'fechaA' => now(),
+                    'usuarioA' => $usuarioA,
+                ]);
+            }
 
             DB::commit();
-
-            return response()->json(['success' => true, 'message' => 'Recibo registrado correctamente.', 'idRecibo' => $idRecibo]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Recibo #' . $idRecibo . ' registrado correctamente.',
+                'idRecibo' => $idRecibo,
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error al registrar el recibo: ' . $e->getMessage()], 500);
@@ -227,29 +340,35 @@ class CajaController extends Controller
 
     public function mostrarRecibo(int $id)
     {
-        $recibo = DB::select(
-            'SELECT r.idRecibo, r.nroRecibo, r.montoTotal, r.fechaPago, r.estadoRecibo,
-                    c.idCaja, s.nombre AS sucursal,
-                    u.nombre1, u.apellido1,
-                    mp.nombreMetodoPago, dmp.monto AS montoMetodo,
-                    m.carnetSocio, m.idMembresia
-             FROM TRecibos r
-             INNER JOIN TCajas c ON c.idCaja = r.idCaja
-             INNER JOIN TSucursales s ON s.idSucursal = c.idSucursal
-             INNER JOIN TDetalleMetodoPagos dmp ON dmp.idRecibo = r.idRecibo
-             INNER JOIN TMetodoPagos mp ON mp.idMetodoPago = dmp.idMetodoPagoFK
-             INNER JOIN TMembresias m ON m.idMembresia = r.idMembresia
-             LEFT JOIN TUsuarios u ON u.idUsuario = c.carnetEmpleado
-             WHERE r.estadoA = 1
-               AND r.idRecibo = ?
-             LIMIT 1',
-            [$id]
-        );
+        $recibo = DB::table('TRecibos as r')
+            ->join('TCajas as c', 'c.idCaja', '=', 'r.idCaja')
+            ->join('TSucursales as s', 's.idSucursal', '=', 'c.idSucursal')
+            ->join('TMembresias as m', 'm.idMembresia', '=', 'r.idMembresia')
+            ->join('TSocios as so', 'so.carnetSocio', '=', 'm.carnetSocio')
+            ->join('TUsuarios as u', 'u.idUsuario', '=', 'so.idUsuario')
+            ->where('r.idRecibo', $id)
+            ->select(
+                'r.idRecibo', 'r.montoTotal', 'r.fechaPago', 'r.estadoRecibo',
+                'c.idCaja', 'c.idSucursal', 's.nombre as sucursal',
+                'u.nombre1', 'u.apellido1',
+                'm.carnetSocio', 'm.idMembresia'
+            )
+            ->first();
 
-        if (empty($recibo)) {
+        if (!$recibo) {
             return response()->json(['success' => false, 'message' => 'Recibo no encontrado.'], 404);
         }
 
-        return response()->json(['success' => true, 'recibo' => $recibo[0]]);
+        $metodos = DB::table('TDetalleMetodoPagos as dmp')
+            ->join('TMetodoPagos as mp', 'mp.idMetodoPago', '=', 'dmp.idMetodoPagoFK')
+            ->where('dmp.idRecibo', $id)
+            ->select('mp.nombreMetodoPago', 'dmp.monto')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'recibo' => $recibo,
+            'metodos' => $metodos,
+        ]);
     }
 }

@@ -71,6 +71,9 @@ Route::middleware('auth.usuario')->group(function () {
             Route::post('/', [SocioController::class, 'store'])->name('store');
             Route::put('/{id}', [SocioController::class, 'update'])->name('update');
             Route::patch('/{id}/congelar', [SocioController::class, 'congelar'])->name('congelar');
+            Route::post('/{carnet}/congelar-membresia', [SocioController::class, 'congelarMembresia'])->name('congelarMembresia');
+            Route::post('/{carnet}/activar-membresia', [SocioController::class, 'activarMembresia'])->name('activarMembresia');
+            Route::get('/{carnet}/notificaciones', [SocioController::class, 'notificaciones'])->name('notificaciones');
             Route::delete('/{id}', [SocioController::class, 'destroy'])->name('destroy');
         });
 
@@ -100,6 +103,8 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/admin/caja/movimientos', [CajaController::class, 'movimientos'])->name('admin.caja.movimientos');
         Route::post('/admin/caja/recibo', [CajaController::class, 'crearRecibo'])->name('admin.caja.recibo');
         Route::get('/admin/caja/recibo/{id}', [CajaController::class, 'mostrarRecibo'])->name('admin.caja.recibo.mostrar');
+        Route::get('/admin/caja/buscar-socio/{carnet}', [CajaController::class, 'buscarSocio'])->name('admin.caja.buscarSocio');
+        Route::get('/admin/caja/planes', [CajaController::class, 'planes'])->name('admin.caja.planes');
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
         Route::get('/admin/reportes/financiero', [ReporteController::class, 'reporteFinanciero'])->name('admin.reportes.financiero');
         Route::get('/admin/reportes/equipos', [ReporteController::class, 'reporteEquipos'])->name('admin.reportes.equipos');
@@ -114,9 +119,16 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/{id}/json', [MantenimientoController::class, 'getJson'])->name('json');
         });
 
+        Route::prefix('admin/esquema-sueldos')->name('admin.esquema-sueldos.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'index'])->name('index');
+            Route::get('/data', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'listar'])->name('data');
+            Route::post('/', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'destroy']);
+        });
+
         Route::get('/admin/auditoria', [AuditoriaController::class, 'index'])->name('admin.auditoria');
-        Route::get('/admin/settings/caja', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings.caja');
-        Route::post('/admin/settings/caja', [\App\Http\Controllers\Admin\SettingsController::class, 'toggle'])->name('admin.settings.caja.toggle');
+
 
         Route::prefix('equipamiento')->name('equipamiento.')->group(function () {
             Route::get('/', [EquipamientoController::class, 'index'])->name('index');
@@ -156,6 +168,8 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/recepcionista/caja/movimientos', [RecepcionistaController::class, 'movimientos'])->name('recepcionista.caja.movimientos');
         Route::post('/recepcionista/caja/recibo', [RecepcionistaController::class, 'crearRecibo'])->name('recepcionista.caja.recibo');
         Route::get('/recepcionista/caja/recibo/{id}', [RecepcionistaController::class, 'mostrarRecibo'])->name('recepcionista.caja.mostrar_recibo');
+        Route::get('/recepcionista/caja/buscar-socio/{carnet}', [RecepcionistaController::class, 'buscarSocio'])->name('recepcionista.caja.buscarSocio');
+        Route::get('/recepcionista/caja/planes', [RecepcionistaController::class, 'planes'])->name('recepcionista.caja.planes');
     });
 
     // Portal de Entrenador (idRol = 3)
@@ -178,6 +192,7 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/socio/perfil', [SocioPortalController::class, 'perfil'])->name('socio.perfil');
         Route::get('/socio/asistencias', [SocioPortalController::class, 'asistencias'])->name('socio.asistencias');
         Route::get('/socio/historial-membresias', [SocioPortalController::class, 'historialMembresias'])->name('socio.historial-membresias');
+        Route::get('/socio/notificaciones', [SocioPortalController::class, 'notificaciones'])->name('socio.notificaciones');
 
         Route::prefix('socio/reservas')->name('socio.reservas.')->group(function () {
             Route::get('/', [SocioPortalController::class, 'reservas'])->name('index');

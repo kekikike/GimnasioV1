@@ -12,7 +12,6 @@ return new class extends Migration
             $table->increments('idRecibo');
             $table->unsignedInteger('idCaja');
             $table->unsignedInteger('idMembresia');
-            $table->string('nroRecibo', 50)->unique();
             $table->decimal('montoTotal', 10, 2);
             $table->dateTime('fechaPago');
             $table->enum('estadoRecibo', ['Emitido', 'Anulado']);

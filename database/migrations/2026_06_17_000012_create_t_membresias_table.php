@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('TMembresias', function (Blueprint $table) {
             $table->increments('idMembresia');
-            $table->unsignedInteger('idPlan');
+            $table->unsignedInteger('idPlan')->default(1);
             $table->unsignedInteger('carnetSocio');
             $table->unsignedInteger('idSucursal');
             $table->date('fechaInicioMembresia');
             $table->date('fechaFinMembresia');
+            $table->dateTime('fechaCongelamiento')->nullable();
             $table->string('estadoMembresia', 50);
             $table->boolean('estadoA')->default(true);
             $table->dateTime('fechaA')->useCurrent();

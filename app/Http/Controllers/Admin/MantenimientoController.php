@@ -42,9 +42,9 @@ class MantenimientoController extends Controller
             'fechaProgramada'          => 'required|date|after:today',
             'fechaRealizada'           => [
                 'nullable', 'date',
-                function ($attribute, $value, $fail) use ($data) {
-                    if ($value && isset($data['fechaProgramada'])) {
-                        $min = \Carbon\Carbon::parse($data['fechaProgramada'])->addDays(3);
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && $request->filled('fechaProgramada')) {
+                        $min = \Carbon\Carbon::parse($request->input('fechaProgramada'))->addDays(3);
                         if (\Carbon\Carbon::parse($value)->lt($min)) {
                             $fail('La fecha realizada debe ser al menos 3 dias despues de la fecha programada.');
                         }

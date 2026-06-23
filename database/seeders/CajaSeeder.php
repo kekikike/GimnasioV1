@@ -13,19 +13,20 @@ class CajaSeeder extends Seeder
         $empleados = [1001, 1002];
         $estados = ['Cerrada', 'Cerrada', 'Cerrada', 'Auditada', 'Abierta'];
 
+        $hasta = date('Y-m-d', strtotime('-1 day'));
         $registros = [];
-        for ($dia = 0; $dia < 172; $dia++) {
-            if (count($registros) >= 105) break;
+        for ($dia = 0; $dia < 500; $dia++) {
             $fecha = date('Y-m-d', strtotime("2026-01-01 + $dia days"));
+            if ($fecha > $hasta) break;
             $diaSemana = date('w', strtotime($fecha));
             if ($diaSemana == 0 || $diaSemana == 6) continue;
 
             $empleado = $empleados[array_rand($empleados)];
-            $estado = $estados[array_rand($estados)];
+            $estado = 'Cerrada';
             $montoApertura = round(rand(200, 1000), 2);
-            $montoCierre = $estado !== 'Abierta' ? round($montoApertura + rand(100, 3000), 2) : null;
-            $montoCalculado = $montoCierre ? round($montoCierre + rand(-50, 50), 2) : null;
-            $diferencia = $montoCierre && $montoCalculado ? round($montoCalculado - $montoCierre, 2) : null;
+            $montoCierre = round($montoApertura + rand(100, 3000), 2);
+            $montoCalculado = round($montoCierre + rand(-50, 50), 2);
+            $diferencia = round($montoCalculado - $montoCierre, 2);
 
             $registros[] = [
                 'idSucursal' => 1,

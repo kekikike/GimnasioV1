@@ -75,6 +75,9 @@
             <a href="{{ route('socio.reservas.index') }}" class="{{ request()->routeIs('socio.reservas*') ? 'active' : '' }}">
                 Mis Reservas
             </a>
+            <a href="{{ route('socio.notificaciones') }}" class="{{ request()->routeIs('socio.notificaciones') ? 'active' : '' }}">
+                Notificaciones
+            </a>
         </nav>
         <div class="user-info">
             <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">

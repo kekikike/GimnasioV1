@@ -12,18 +12,16 @@ class EsquemaSueldoSeeder extends Seeder
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
 
         $esquemas = [
-            ['carnet' => 1001, 'modalidad' => 'Mensual', 'base' => 1500.00, 'tarifa' => 0],
-            ['carnet' => 1001, 'modalidad' => 'Bonificacion', 'base' => 200.00, 'tarifa' => 0],
-            ['carnet' => 1001, 'modalidad' => 'Horas Extra', 'base' => 0, 'tarifa' => 25.00],
-            ['carnet' => 1001, 'modalidad' => 'Comision', 'base' => 0, 'tarifa' => 50.00],
-            ['carnet' => 1002, 'modalidad' => 'Mensual', 'base' => 2000.00, 'tarifa' => 0],
-            ['carnet' => 1002, 'modalidad' => 'Bonificacion', 'base' => 300.00, 'tarifa' => 0],
-            ['carnet' => 1002, 'modalidad' => 'Horas Extra', 'base' => 0, 'tarifa' => 35.00],
-            ['carnet' => 1002, 'modalidad' => 'Comision', 'base' => 0, 'tarifa' => 75.00],
-            ['carnet' => 1001, 'modalidad' => 'Mensual', 'base' => 1600.00, 'tarifa' => 0],
-            ['carnet' => 1002, 'modalidad' => 'Mensual', 'base' => 2100.00, 'tarifa' => 0],
-            ['carnet' => 1001, 'modalidad' => 'Bono Productividad', 'base' => 150.00, 'tarifa' => 0],
-            ['carnet' => 1002, 'modalidad' => 'Bono Productividad', 'base' => 200.00, 'tarifa' => 0],
+            // 1001 - Recepcionista (idRol=2)
+            ['carnet' => 1001, 'modalidad' => 'Fijo Mensual', 'base' => 1500.00, 'tarifa' => 0],
+            // 1002 - Entrenador (idRol=3)
+            ['carnet' => 1002, 'modalidad' => 'Fijo Mensual', 'base' => 2000.00, 'tarifa' => 35],
+            // 2001 - Recepcionista (idRol=2)
+            ['carnet' => 2001, 'modalidad' => 'Fijo Mensual', 'base' => 1800.00, 'tarifa' => 0],
+            // 2002 - Entrenador (idRol=3)
+            ['carnet' => 2002, 'modalidad' => 'Fijo Mensual', 'base' => 2200.00, 'tarifa' => 30],
+            // 2003 - Entrenador (idRol=3)
+            ['carnet' => 2003, 'modalidad' => 'Fijo Mensual', 'base' => 2500.00, 'tarifa' => 40],
         ];
 
         foreach ($esquemas as $e) {

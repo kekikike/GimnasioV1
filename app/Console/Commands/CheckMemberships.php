@@ -80,7 +80,7 @@ class CheckMemberships extends Command
 
     private function notifyEndingSoonMemberships()
     {
-        $daysToNotify = 7; // Notificar con 7 días de antelación
+        $daysToNotify = 7;
         $notificationDate = Carbon::today()->addDays($daysToNotify)->toDateString();
         $this->line("⏳ Buscando socios que vencen en exactamente 7 días ({$notificationDate})...");
 
@@ -90,25 +90,47 @@ class CheckMemberships extends Command
                 ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
                 ->where('m.fechaFinMembresia', '=', $notificationDate)
                 ->where('m.estadoMembresia', 'Activa')
-                ->select('u.correo', 'u.nombre1', 'm.fechaFinMembresia')
+                ->select('u.correo', 'u.nombre1', 'u.nombre2', 'u.apellido1', 's.carnetSocio', 'm.fechaFinMembresia', 'm.idSucursal')
                 ->get();
 
             $contador = 0;
             foreach ($socios as $socio) {
-                // Simulación visual del envío de correo para la defensa
-                $this->line("   📧 SIMULACIÓN EMAIL -> Enviando alerta a: {$socio->correo} (Socio: {$socio->nombre1})");
-                Log::info("Notificación enviada a {$socio->correo}. Vence el {$socio->fechaFinMembresia}.");
+                $existe = DB::table('tnotificaciones')
+                    ->where('carnetSocio', $socio->carnetSocio)
+                    ->where('tipoNotificacion', 'Recordatorio')
+                    ->whereDate('fechaEnvio', now()->format('Y-m-d'))
+                    ->exists();
+
+                if ($existe) {
+                    $this->line("   ⏭ Ya se notificó a {$socio->nombre1} {$socio->apellido1} hoy. Saltando.");
+                    continue;
+                }
+
+                $nombreCompleto = trim("{$socio->nombre1} {$socio->nombre2} {$socio->apellido1}");
+                $fechaVen = \Carbon\Carbon::parse($socio->fechaFinMembresia)->format('d/m/Y');
+
+                DB::table('tnotificaciones')->insert([
+                    'carnetSocio' => $socio->carnetSocio,
+                    'tipoNotificacion' => 'Recordatorio',
+                    'mensaje' => "Hola {$nombreCompleto}, su membresia vencera el {$fechaVen}. Renueve ahora para no perder el acceso.",
+                    'fechaEnvio' => now()->format('Y-m-d'),
+                    'estado' => 'Enviado',
+                    'usuarioA' => 1,
+                ]);
+
+                $this->line("   ✅ Notificacion registrada para: {$socio->correo} (Socio: {$socio->nombre1})");
+                Log::info("Notificacion creada para {$socio->correo}. Vence el {$socio->fechaFinMembresia}.");
                 $contador++;
             }
 
             if ($contador > 0) {
-                $this->info("✅ Se enviaron {$contador} correos de alerta de próximo vencimiento.");
+                $this->info("✅ Se registraron {$contador} notificaciones de proximo vencimiento.");
             } else {
-                $this->info("✨ Ningún socio vence en los próximos 7 días.");
+                $this->info("✨ Ningun socio vence en los proximos 7 dias, o ya fueron notificados.");
             }
 
         } catch (\Exception $e) {
-            $this->error('❌ Error al notificar membresías por vencer: ' . $e->getMessage());
+            $this->error('❌ Error al notificar membresias por vencer: ' . $e->getMessage());
             Log::error('Error en CheckMemberships@notifyEndingSoon: ' . $e->getMessage());
         }
     }

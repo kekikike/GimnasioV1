@@ -21,7 +21,6 @@ class Recibo
         return DB::table('TRecibos')->insertGetId([
             'idCaja' => $data['idCaja'],
             'idMembresia' => $data['idMembresia'],
-            'nroRecibo' => $data['nroRecibo'],
             'montoTotal' => $data['montoTotal'],
             'fechaPago' => $data['fechaPago'],
             'estadoRecibo' => $data['estadoRecibo'],
@@ -36,7 +35,6 @@ class Recibo
         DB::table('TRecibos')->where('idRecibo', $id)->update([
             'idCaja' => $data['idCaja'],
             'idMembresia' => $data['idMembresia'],
-            'nroRecibo' => $data['nroRecibo'],
             'montoTotal' => $data['montoTotal'],
             'fechaPago' => $data['fechaPago'],
             'estadoRecibo' => $data['estadoRecibo'],

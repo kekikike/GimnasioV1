@@ -13,7 +13,6 @@ return new class extends Migration
             $table->unsignedInteger('carnetSocio');
             $table->string('tipoNotificacion', 50);
             $table->text('mensaje');
-            $table->string('canal', 50);
             $table->date('fechaEnvio');
             $table->string('estado', 50);
             $table->boolean('estadoA')->default(true);

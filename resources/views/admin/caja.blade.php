@@ -1,351 +1,409 @@
 @extends('layouts.admin')
 @section('title', 'Caja')
 @section('content')
-<div class="card" style="padding: 24px;">
-    <h2 style="margin-bottom: 1rem; color: #0f172a;">Módulo de Caja - Apertura, Cobros, Cierre y Movimientos</h2>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<style>
+.caja-info-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+.caja-info-card { background:var(--bg,#f8fafc); padding:0.75rem 1rem; border-radius:0.5rem; }
+.caja-info-card .lbl { font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; }
+.caja-info-card .val { font-size:1.1rem; font-weight:700; color:#0f172a; }
+.metodo-row { display:grid; grid-template-columns:1fr 1fr auto; gap:0.75rem; align-items:end; margin-bottom:0.5rem; }
+</style>
 
-    <div id="cajaStatus" style="margin-bottom: 1.5rem;">
-        <strong>Estado actual:</strong>
-        <span id="statusBadge" style="padding: 0.35rem 0.75rem; border-radius: 999px; background: #f8fafc; color: #334155;">Cargando...</span>
-    </div>
+@verbatim
+<div id="appCaja">
+    <div class="card" style="padding:24px;">
+        <h2 style="margin-bottom:1rem; color:#0f172a;">Modulo de Caja</h2>
 
-    <div id="formApertura" style="margin-bottom: 1.5rem; display: none; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem;">
-        <h3 style="margin-bottom: 1rem; color: #1e293b;">Abrir caja</h3>
-        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;">
-            <div>
-                <label>Sucursal</label>
-                <select id="idSucursal" class="form-control"></select>
-            </div>
-            <div>
-                <label>Monto apertura (Bs)</label>
-                <input id="montoApertura" type="number" step="0.01" class="form-control" min="0">
-            </div>
-            <div style="align-self: end;">
-                <button id="btnAbrir" class="btn btn-primary" style="width: 100%;">Abrir Caja</button>
+        <div style="margin-bottom:1.5rem;">
+            <strong>Estado:</strong>
+            <span id="statusBadge" :style="estiloStatus">{{ textoStatus }}</span>
+        </div>
+
+        <!-- Form Apertura -->
+        <div v-if="!cajaAbierta" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Abrir Caja</h3>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; align-items:end;">
+                <div>
+                    <label>Sucursal (automatica)</label>
+                    <input class="form-control" :value="sucursalNombre" readonly style="background:#f1f5f9;">
+                </div>
+                <div>
+                    <label>Monto apertura (Bs)</label>
+                    <input v-model="montoApertura" type="number" step="0.01" class="form-control" min="0" placeholder="0.00">
+                </div>
+                <div>
+                    <button @click="abrirCaja" class="btn btn-primary" style="width:100%;" :disabled="!montoApertura">Abrir Caja</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="cajaAbiertaPanel" style="margin-bottom: 1.5rem; display: none; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem;">
-        <h3 style="margin-bottom: 1rem; color: #1e293b;">Caja Abierta</h3>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-            <div><strong>ID Caja:</strong> <span id="cajaId">-</span></div>
-            <div><strong>Sucursal:</strong> <span id="cajaSucursal">-</span></div>
-            <div><strong>Apertura:</strong> <span id="cajaFecha">-</span> <span id="cajaHora">-</span></div>
-            <div><strong>Monto Apertura:</strong> <span id="cajaMontoApertura">-</span></div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: end;">
-            <div>
-                <label>Monto cierre (Bs)</label>
-                <input id="montoCierre" type="number" step="0.01" class="form-control" min="0">
+        <!-- Panel Caja Abierta -->
+        <div v-if="cajaAbierta" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Caja Abierta</h3>
+            <div class="caja-info-grid">
+                <div class="caja-info-card"><div class="lbl">ID Caja</div><div class="val">{{ cajaAbierta.idCaja }}</div></div>
+                <div class="caja-info-card"><div class="lbl">Sucursal</div><div class="val">{{ sucursalNombre }}</div></div>
+                <div class="caja-info-card"><div class="lbl">Apertura</div><div class="val">{{ cajaAbierta.fechaApertura }} {{ cajaAbierta.horaApertura }}</div></div>
+                <div class="caja-info-card"><div class="lbl">Monto Apertura</div><div class="val">Bs. {{ formatNum(cajaAbierta.montoApertura) }}</div></div>
             </div>
-            <div>
-                <label>Monto cierre calculado (Bs)</label>
-                <input id="montoCierreCalculado" type="number" step="0.01" class="form-control" min="0">
-            </div>
-            <div>
-                <button id="btnCerrar" class="btn btn-danger" style="width: 100%;">Cerrar Caja</button>
-            </div>
-        </div>
-    </div>
 
-    <div class="card" style="padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px;">
-        <h3 style="margin-bottom: 1rem; color: #1e293b;">Registrar recibo</h3>
-        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;">
-            <div>
-                <label>Número de recibo</label>
-                <input id="nroRecibo" type="text" class="form-control" placeholder="REC-000001">
+            <div v-if="cajaAbierta.estadoCaja === 'Abierta'" style="display:flex; gap:1rem; align-items:end;">
+                <div style="flex:1;">
+                    <label>Monto cierre real (Bs)</label>
+                    <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0">
+                </div>
+                <div style="flex:1;">
+                    <label>Calculado automaticamente</label>
+                    <input class="form-control" :value="formatNum(montoCierreCalculado)" readonly style="background:#f1f5f9;">
+                </div>
+                <div>
+                    <button @click="cerrarCaja" class="btn btn-danger" style="width:100%;" :disabled="!montoCierre">Cerrar Caja</button>
+                </div>
             </div>
-            <div>
-                <label>Fecha de pago</label>
-                <input id="fechaPago" type="date" class="form-control" value="{{ date('Y-m-d') }}">
-            </div>
-            <div>
-                <label>Monto total (Bs)</label>
-                <input id="montoTotal" type="number" step="0.01" class="form-control" min="0">
-            </div>
-            <div>
-                <label>Método de pago</label>
-                <select id="idMetodoPago" class="form-control"></select>
-            </div>
-            <div>
-                <label>Monto con método (Bs)</label>
-                <input id="montoMetodo" type="number" step="0.01" class="form-control" min="0">
-            </div>
-            <div style="align-self: end;">
-                <button id="btnRegistrarRecibo" class="btn btn-success" style="width: 100%;">Registrar Recibo</button>
-            </div>
-            <div style="grid-column: span 3;">
-                <label>Membresía</label>
-                <select id="idMembresia" class="form-control"></select>
+            <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">
+                Caja cerrada. Monto cierre: Bs. {{ formatNum(cajaAbierta.montoCierre) }} | Calculado: Bs. {{ formatNum(cajaAbierta.montoCierreCalculado) }} | Diferencia: Bs. {{ formatNum(cajaAbierta.diferenciaArqueo) }}
             </div>
         </div>
-    </div>
 
-    <div class="card" style="padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px;">
-        <h3 style="margin-bottom: 1rem; color: #1e293b;">Movimientos de caja</h3>
-        <div style="overflow-x:auto;">
-            <table class="table" style="width:100%; border-collapse: collapse;">
-                <thead style="background:#f8fafc;">
-                    <tr>
-                        <th style="padding: 0.75rem; text-align:left;"># Recibo</th>
-                        <th style="padding: 0.75rem; text-align:left;">Fecha</th>
-                        <th style="padding: 0.75rem; text-align:left;">Socio</th>
-                        <th style="padding: 0.75rem; text-align:left;">Monto</th>
-                        <th style="padding: 0.75rem; text-align:left;">Método</th>
-                        <th style="padding: 0.75rem; text-align:left;">Cajero</th>
-                        <th style="padding: 0.75rem; text-align:left;">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="movimientosBody">
-                    <tr><td colspan="7" style="padding: 1rem; color: #64748b; text-align:center;">No hay movimientos cargados.</td></tr>
-                </tbody>
-            </table>
+        <!-- Registrar Recibo -->
+        <div v-if="cajaAbierta && cajaAbierta.estadoCaja === 'Abierta'" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Registrar Recibo</h3>
+
+            <div style="display:grid; grid-template-columns:2fr 3fr; gap:1rem; margin-bottom:1rem; align-items:end;">
+                <div>
+                    <label>Buscar Socio por CI</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input v-model="socioCarnet" @keyup.enter="buscarSocio" type="text" class="form-control" placeholder="Ingrese CI...">
+                        <button @click="buscarSocio" class="btn btn-sm btn-primary">Buscar</button>
+                    </div>
+                </div>
+                <div v-if="socioInfo">
+                    <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:0.5rem; padding:0.5rem 1rem; display:flex; align-items:center; gap:1rem;">
+                        <strong>{{ socioInfo.nombre1 }} {{ socioInfo.nombre2 ? socioInfo.nombre2+' ' : '' }}{{ socioInfo.apellido1 }} {{ socioInfo.apellido2 ? socioInfo.apellido2 : '' }}</strong>
+                        <span class="badge" :class="socioInfo.estadoSocio === 'Activo' ? 'badge-success' : 'badge-warning'">{{ socioInfo.estadoSocio }}</span>
+                        <small style="color:#64748b;">CI: {{ socioInfo.carnetSocio }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="socioInfo" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; align-items:end;">
+                <div>
+                    <label>Plan</label>
+                    <select v-model="idPlan" @change="onPlanChange" class="form-control">
+                        <option value="">Seleccione plan...</option>
+                        <option v-for="p in planes" :key="p.idPlan" :value="p.idPlan">{{ p.nombrePlan }} - Bs. {{ formatNum(p.costoPlan) }} ({{ p.duracionDias }} dias)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Monto total (Bs)</label>
+                    <input v-model="montoTotal" type="number" step="0.01" class="form-control" min="0">
+                </div>
+            </div>
+
+            <!-- Metodos de Pago -->
+            <div v-if="socioInfo && idPlan">
+                <label>Metodos de Pago <small style="color:#64748b;">(suma debe ser Bs. {{ formatNum(parseFloat(montoTotal||0)) }})</small></label>
+                <div v-for="(m, i) in metodosPagoArr" :key="i" class="metodo-row">
+                    <select v-model="m.idMetodoPago" class="form-control">
+                        <option value="">Seleccione metodo...</option>
+                        <option v-for="mp in metodosPago" :key="mp.idMetodoPago" :value="mp.idMetodoPago">{{ mp.nombreMetodoPago }}</option>
+                    </select>
+                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" placeholder="Monto">
+                    <button @click="quitarMetodo(i)" class="btn btn-sm btn-danger" style="white-space:nowrap;">X</button>
+                </div>
+                <div style="display:flex; gap:0.75rem; margin-top:0.5rem; align-items:center;">
+                    <button @click="agregarMetodo" class="btn btn-sm btn-outline">+ Agregar metodo</button>
+                    <span v-if="diferenciaMetodos > 0.01" style="color:#dc2626; font-size:0.85rem; font-weight:600;">
+                        Diferencia: Bs. {{ formatNum(diferenciaMetodos) }}
+                    </span>
+                    <span v-else style="color:#059669; font-size:0.85rem; font-weight:600;">
+                        Montos correctos
+                    </span>
+                </div>
+                <button @click="registrarRecibo" class="btn btn-success" style="margin-top:1rem;" :disabled="!puedeRegistrar">
+                    Registrar Recibo
+                </button>
+            </div>
         </div>
-    </div>
 
-    <div id="reciboPreview" class="card" style="padding: 1rem; display: none; border: 1px solid #e2e8f0; border-radius: 12px;">
-        <h3 style="margin-bottom: 1rem; color: #1e293b;">Vista previa del recibo</h3>
-        <div id="reciboHtml" style="background:#ffffff; padding:1rem; border:1px solid #e2e8f0; border-radius:8px;"></div>
-        <button id="btnImprimir" class="btn btn-primary" style="margin-top:1rem;">Imprimir Recibo</button>
+        <!-- Movimientos -->
+        <div style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Movimientos de Caja</h3>
+            <div style="overflow-x:auto;">
+                <table class="table" style="width:100%; border-collapse:collapse;">
+                    <thead style="background:#f8fafc;">
+                        <tr>
+                            <th style="padding:0.75rem; text-align:left;"># Recibo</th>
+                            <th style="padding:0.75rem; text-align:left;">Fecha</th>
+                            <th style="padding:0.75rem; text-align:left;">Socio</th>
+                            <th style="padding:0.75rem; text-align:left;">Monto</th>
+                            <th style="padding:0.75rem; text-align:left;">Metodo</th>
+                            <th style="padding:0.75rem; text-align:left;">Cajero</th>
+                            <th style="padding:0.75rem; text-align:left;">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="movimientos.length === 0">
+                            <td colspan="7" style="padding:1rem; color:#64748b; text-align:center;">No hay movimientos.</td>
+                        </tr>
+                        <tr v-for="m in movimientos" :key="m.idRecibo">
+                            <td style="padding:0.75rem;">{{ m.idRecibo }}</td>
+                            <td style="padding:0.75rem;">{{ formatFecha(m.fechaPago) }}</td>
+                            <td style="padding:0.75rem;">{{ m.carnetSocio }}</td>
+                            <td style="padding:0.75rem;">Bs. {{ formatNum(m.montoTotal) }}</td>
+                            <td style="padding:0.75rem;">{{ m.metodos_pago }}</td>
+                            <td style="padding:0.75rem;">{{ m.nombre1 ? m.nombre1+' '+m.apellido1 : '-' }}</td>
+                            <td style="padding:0.75rem;"><button @click="verRecibo(m.idRecibo)" class="btn btn-sm btn-outline">Ver</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recibo Preview -->
+        <div v-if="reciboPreview" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-top:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Vista previa del Recibo #{{ reciboPreview.idRecibo }}</h3>
+            <div style="background:#fff; padding:1rem; border:1px solid #e2e8f0; border-radius:8px;">
+                <p><strong>Fecha:</strong> {{ formatFecha(reciboPreview.fechaPago) }}</p>
+                <p><strong>Sucursal:</strong> {{ reciboPreview.sucursal }}</p>
+                <p><strong>Socio:</strong> {{ reciboPreview.carnetSocio }}</p>
+                <p><strong>Monto total:</strong> Bs. {{ formatNum(reciboPreview.montoTotal) }}</p>
+                <p><strong>Metodos de pago:</strong></p>
+                <ul v-if="reciboMetodos.length">
+                    <li v-for="rm in reciboMetodos">{{ rm.nombreMetodoPago }}: Bs. {{ formatNum(rm.monto) }}</li>
+                </ul>
+                <p><strong>Estado:</strong> {{ reciboPreview.estadoRecibo }}</p>
+            </div>
+            <button @click="imprimirRecibo" class="btn btn-primary" style="margin-top:1rem;">Imprimir Recibo</button>
+        </div>
     </div>
 </div>
+@endverbatim
 
 <script>
-    const cajaEstadoUrl = '{{ route('admin.caja.estado') }}';
-    const cajaAbrirUrl = '{{ route('admin.caja.abrir') }}';
-    const cajaMovimientosUrl = '{{ route('admin.caja.movimientos') }}';
-    const cajaReciboUrl = '{{ route('admin.caja.recibo') }}';
-    const cajaCerrarBase = '{{ url('/admin/caja') }}';
-    const cajaMostrarReciboBase = '{{ url('/admin/caja/recibo') }}';
+const { createApp, ref, computed, onMounted, watch } = Vue;
 
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': token,
-    };
-    let cajaAbierta = null;
-    let ultimoRecibo = null;
+createApp({
+    setup() {
+        const cajaAbierta = ref(null);
+        const sucursalNombre = ref('{{ $sucursalNombre }}');
+        const montoApertura = ref('');
+        const montoCierre = ref('');
+        const metodosPago = ref([]);
+        const planes = ref([]);
+        const movimientos = ref([]);
+        const socioCarnet = ref('');
+        const socioInfo = ref(null);
+        const idPlan = ref('');
+        const montoTotal = ref('');
+        const metodosPagoArr = ref([]);
+        const reciboPreview = ref(null);
+        const reciboMetodos = ref([]);
+        const totalMantenimientosHoy = ref(0);
 
-    const setStatus = (text, color, background) => {
-        const badge = document.getElementById('statusBadge');
-        badge.textContent = text;
-        badge.style.color = color;
-        badge.style.background = background;
-    };
-
-    const cargarSelects = () => {
-        const sucursalSelect = document.getElementById('idSucursal');
-        const metodoSelect = document.getElementById('idMetodoPago');
-        const membresiaSelect = document.getElementById('idMembresia');
-        sucursalSelect.innerHTML = '<option value="">Seleccione sucursal</option>';
-        metodoSelect.innerHTML = '<option value="">Seleccione método</option>';
-        membresiaSelect.innerHTML = '<option value="">Seleccione membresía</option>';
-
-        const sucursales = @json($sucursales);
-        const metodosPago = @json($metodosPago);
-        const membresias = @json($membresias).filter(m => m.estadoMembresia === 'Activa');
-
-        sucursales.forEach(s => {
-            const option = document.createElement('option');
-            option.value = s.idSucursal;
-            option.textContent = s.nombre;
-            sucursalSelect.appendChild(option);
+        const textoStatus = computed(() => {
+            if (!cajaAbierta.value) return 'Caja cerrada / no abierta';
+            if (cajaAbierta.value.estadoCaja === 'Abierta') return 'Caja abierta';
+            return 'Caja cerrada hoy';
+        });
+        const estiloStatus = computed(() => {
+            if (!cajaAbierta.value || cajaAbierta.value.estadoCaja === 'Cerrada') return 'padding:0.35rem 0.75rem; border-radius:999px; background:#fff3cd; color:#713f12; font-weight:600;';
+            return 'padding:0.35rem 0.75rem; border-radius:999px; background:#d1e7dd; color:#0f5132; font-weight:600;';
         });
 
-        metodosPago.forEach(m => {
-            const option = document.createElement('option');
-            option.value = m.idMetodoPago;
-            option.textContent = m.nombreMetodoPago;
-            metodoSelect.appendChild(option);
+        const totalRecibos = computed(() => {
+            let t = 0;
+            movimientos.value.forEach(m => { t += parseFloat(m.montoTotal || 0); });
+            return t;
         });
 
-        membresias.forEach(m => {
-            const option = document.createElement('option');
-            option.value = m.idMembresia;
-            option.textContent = `#${m.carnetSocio} - ${m.estadoMembresia}`;
-            membresiaSelect.appendChild(option);
+        const montoCierreCalculado = computed(() => {
+            if (!cajaAbierta.value) return 0;
+            return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalMantenimientosHoy.value;
         });
-    };
 
-    const mostrarApertura = (caja) => {
-        document.getElementById('cajaAbiertaPanel').style.display = 'block';
-        document.getElementById('formApertura').style.display = 'none';
-        document.getElementById('cajaId').textContent = caja.idCaja;
-        document.getElementById('cajaSucursal').textContent = caja.idSucursal || '-';
-        document.getElementById('cajaFecha').textContent = caja.fechaApertura;
-        document.getElementById('cajaHora').textContent = caja.horaApertura;
-        document.getElementById('cajaMontoApertura').textContent = parseFloat(caja.montoApertura).toFixed(2);
-        cajaAbierta = caja;
-    };
+        const diferenciaMetodos = computed(() => {
+            const totalMetodos = metodosPagoArr.value.reduce((s, m) => s + parseFloat(m.monto || 0), 0);
+            return Math.abs(parseFloat(montoTotal.value || 0) - totalMetodos);
+        });
 
-    const mostrarCierre = () => {
-        document.getElementById('cajaAbiertaPanel').style.display = 'none';
-        document.getElementById('formApertura').style.display = 'block';
-        cajaAbierta = null;
-    };
+        const puedeRegistrar = computed(() => {
+            return socioInfo.value && idPlan.value && montoTotal.value > 0
+                && metodosPagoArr.value.length > 0
+                && diferenciaMetodos.value <= 0.01
+                && metodosPagoArr.value.every(m => m.idMetodoPago && m.monto > 0);
+        });
 
-    const actualizarEstado = async () => {
-        try {
-            const res = await fetch(cajaEstadoUrl);
+        const cargarEstado = async () => {
+            try {
+                const res = await fetch('{{ route("admin.caja.estado") }}');
+                const data = await res.json();
+                if (data.caja) {
+                    cajaAbierta.value = data.caja;
+                } else {
+                    cajaAbierta.value = null;
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        const formatNum = (n) => parseFloat(n || 0).toFixed(2);
+        const formatFecha = (d) => { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('es-ES'); };
+
+        const abrirCaja = async () => {
+            const res = await fetch('{{ route("admin.caja.abrir") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ montoApertura: montoApertura.value })
+            });
             const data = await res.json();
-            if (data.open) {
-                setStatus('Caja abierta', '#0f5132', '#d1e7dd');
-                mostrarApertura(data.caja);
-            } else {
-                setStatus('Caja cerrada / no abierta', '#713f12', '#fff3cd');
-                mostrarCierre();
-            }
+            alert(data.message);
+            if (data.success) { montoApertura.value = ''; cargarEstado(); cargarMovimientos(); }
+        };
+
+        const cerrarCaja = async () => {
+            if (!cajaAbierta.value) return;
+            const res = await fetch('{{ url("/admin/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ montoCierre: montoCierre.value })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) { montoCierre.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
+        };
+
+        const cargarMovimientos = async () => {
+            try {
+                const res = await fetch('{{ route("admin.caja.movimientos") }}');
+                const data = await res.json();
+                movimientos.value = data.movimientos || [];
+                totalMantenimientosHoy.value = parseFloat(data.totalMantenimientosHoy || 0);
+                if (data.caja) cajaAbierta.value = data.caja;
+            } catch (e) { movimientos.value = []; }
+        };
+
+        const buscarSocio = async () => {
+            if (!socioCarnet.value) return;
+            socioInfo.value = null;
+            idPlan.value = '';
+            montoTotal.value = '';
+            metodosPagoArr.value = [];
+            try {
+                const res = await fetch('{{ url("/admin/caja/buscar-socio") }}/' + socioCarnet.value);
+                if (!res.ok) { alert('Socio no encontrado.'); return; }
+                const data = await res.json();
+                if (data.success) {
+                    socioInfo.value = data.socio;
+                    if (data.tieneMembresiaActiva) {
+                        alert('El socio ya tiene una membresia activa. No puede comprar otra hasta que venza.');
+                        socioInfo.value = null;
+                    }
+                }
+            } catch (e) { alert('Error al buscar socio.'); }
+        };
+
+        const cargarPlanes = async () => {
+            try {
+                const res = await fetch('{{ route("admin.caja.planes") }}');
+                planes.value = await res.json();
+            } catch (e) { planes.value = []; }
+        };
+
+        const onPlanChange = () => {
+            const plan = planes.value.find(p => p.idPlan == idPlan.value);
+            if (plan) montoTotal.value = plan.costoPlan.toString();
+            metodosPagoArr.value = [{ idMetodoPago: '', monto: '' }];
+        };
+
+        const agregarMetodo = () => {
+            metodosPagoArr.value.push({ idMetodoPago: '', monto: '' });
+        };
+
+        const quitarMetodo = (i) => {
+            if (metodosPagoArr.value.length > 1) metodosPagoArr.value.splice(i, 1);
+        };
+
+        const registrarRecibo = async () => {
+            if (!puedeRegistrar.value) return;
+            const payload = {
+                carnetSocio: socioInfo.value.carnetSocio,
+                idPlan: idPlan.value,
+                montoTotal: montoTotal.value,
+                metodos: metodosPagoArr.value.map(m => ({ idMetodoPago: m.idMetodoPago, monto: m.monto }))
+            };
+            try {
+                const res = await fetch('{{ route("admin.caja.recibo") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    if (data.errors) { const msgs = Object.values(data.errors).flat().join('\n'); alert(msgs); }
+                    else alert(data.message || 'Error al registrar recibo.');
+                    return;
+                }
+                alert(data.message);
+                socioInfo.value = null;
+                socioCarnet.value = '';
+                idPlan.value = '';
+                montoTotal.value = '';
+                metodosPagoArr.value = [];
+                cargarMovimientos();
+                if (data.idRecibo) verRecibo(data.idRecibo);
+            } catch (e) { alert('Error: ' + e.message); }
+        };
+
+        const verRecibo = async (id) => {
+            try {
+                const res = await fetch('{{ url("/admin/caja/recibo") }}/' + id);
+                const data = await res.json();
+                if (data.success) {
+                    reciboPreview.value = data.recibo;
+                    reciboMetodos.value = data.metodos || [];
+                }
+            } catch (e) {}
+        };
+
+        const imprimirRecibo = () => {
+            if (!reciboPreview.value) return;
+            const contenido = `
+                <html><head><title>Recibo #${reciboPreview.value.idRecibo}</title></head>
+                <body>
+                    <h2>Recibo #${reciboPreview.value.idRecibo}</h2>
+                    <p><strong>Fecha:</strong> ${formatFecha(reciboPreview.value.fechaPago)}</p>
+                    <p><strong>Sucursal:</strong> ${reciboPreview.value.sucursal}</p>
+                    <p><strong>Socio CI:</strong> ${reciboPreview.value.carnetSocio}</p>
+                    <p><strong>Monto total:</strong> Bs. ${formatNum(reciboPreview.value.montoTotal)}</p>
+                    <p><strong>Metodos:</strong></p>
+                    <ul>${reciboMetodos.value.map(rm => `<li>${rm.nombreMetodoPago}: Bs. ${formatNum(rm.monto)}</li>`).join('')}</ul>
+                    <p><strong>Estado:</strong> ${reciboPreview.value.estadoRecibo}</p>
+                </body></html>`;
+            const ventana = window.open('', '_blank');
+            ventana.document.write(contenido);
+            ventana.document.close();
+            ventana.print();
+        };
+
+        onMounted(() => {
+            const metas = @json($metodosPago);
+            metodosPago.value = metas;
+            cargarEstado();
             cargarMovimientos();
-        } catch (e) {
-            setStatus('Error al cargar estado', '#842029', '#f8d7da');
-        }
-    };
-
-    const cargarMovimientos = async () => {
-        try {
-            const res = await fetch(cajaMovimientosUrl);
-            const data = await res.json();
-            const body = document.getElementById('movimientosBody');
-            if (!data.movimientos || data.movimientos.length === 0) {
-                body.innerHTML = '<tr><td colspan="7" style="padding: 1rem; color: #64748b; text-align:center;">No hay movimientos de caja disponibles.</td></tr>';
-                return;
-            }
-            body.innerHTML = data.movimientos.map(m => `
-                <tr>
-                    <td style="padding: 0.75rem;">${m.nroRecibo}</td>
-                    <td style="padding: 0.75rem;">${new Date(m.fechaPago).toLocaleDateString('es-ES')}</td>
-                    <td style="padding: 0.75rem;">${m.carnetSocio || '-'}</td>
-                    <td style="padding: 0.75rem;">Bs. ${parseFloat(m.montoTotal).toFixed(2)}</td>
-                    <td style="padding: 0.75rem;">${m.nombreMetodoPago}</td>
-                    <td style="padding: 0.75rem;">${m.nombre1 ? `${m.nombre1} ${m.apellido1}` : '-'}</td>
-                    <td style="padding: 0.75rem;"><button class="btn btn-outline" onclick="verRecibo(${m.idRecibo})">Ver</button></td>
-                </tr>
-            `).join('');
-        } catch (e) {
-            document.getElementById('movimientosBody').innerHTML = '<tr><td colspan="7" style="padding: 1rem; color: #ef4444; text-align:center;">Error al cargar movimientos.</td></tr>';
-        }
-    };
-
-    const crearRecibo = async () => {
-        if (!cajaAbierta) {
-            alert('Debe abrir caja antes de registrar recibos.');
-            return;
-        }
-        const data = {
-            idCaja: cajaAbierta.idCaja,
-            idMembresia: document.getElementById('idMembresia').value,
-            idMetodoPago: document.getElementById('idMetodoPago').value,
-            nroRecibo: document.getElementById('nroRecibo').value,
-            montoTotal: document.getElementById('montoTotal').value,
-            montoMetodo: document.getElementById('montoMetodo').value,
-            fechaPago: document.getElementById('fechaPago').value,
-        };
-
-        const res = await fetch(cajaReciboUrl, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify(data),
+            cargarPlanes();
         });
 
-        const result = await res.json();
-        if (!result.success) {
-            alert(result.message || 'Error al registrar recibo.');
-            return;
-        }
-        alert(result.message);
-        cargarMovimientos();
-        if (result.idRecibo) {
-            verRecibo(result.idRecibo);
-        }
-    };
-
-    const abrirCaja = async () => {
-        const data = {
-            idSucursal: document.getElementById('idSucursal').value,
-            montoApertura: document.getElementById('montoApertura').value,
+        return {
+            cajaAbierta, sucursalNombre, montoApertura, montoCierre, metodosPago, planes, movimientos,
+            socioCarnet, socioInfo, idPlan, montoTotal, metodosPagoArr,
+            reciboPreview, reciboMetodos,
+            textoStatus, estiloStatus, totalRecibos, totalMantenimientosHoy, montoCierreCalculado, diferenciaMetodos, puedeRegistrar,
+            formatNum, formatFecha,
+            abrirCaja, cerrarCaja, cargarMovimientos, buscarSocio, onPlanChange,
+            agregarMetodo, quitarMetodo, registrarRecibo, verRecibo, imprimirRecibo
         };
-        const res = await fetch(cajaAbrirUrl, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify(data),
-        });
-        const result = await res.json();
-        if (!result.success) {
-            alert(result.message || 'Error al abrir la caja.');
-            return;
-        }
-        alert(result.message);
-        actualizarEstado();
-    };
-
-    const cerrarCaja = async () => {
-        if (!cajaAbierta) return;
-        const data = {
-            montoCierre: document.getElementById('montoCierre').value,
-            montoCierreCalculado: document.getElementById('montoCierreCalculado').value,
-        };
-        const url = `${cajaCerrarBase}/${cajaAbierta.idCaja}/cerrar`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify(data),
-        });
-        const result = await res.json();
-        if (!result.success) {
-            alert(result.message || 'Error al cerrar la caja.');
-            return;
-        }
-        alert(result.message);
-        actualizarEstado();
-    };
-
-    const verRecibo = async (id) => {
-        const url = `${cajaMostrarReciboBase}/${id}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!data.success) {
-            alert(data.message || 'Recibo no encontrado.');
-            return;
-        }
-        ultimoRecibo = data.recibo;
-        document.getElementById('reciboPreview').style.display = 'block';
-        document.getElementById('reciboHtml').innerHTML = `
-            <div style="font-family:Arial, sans-serif;">
-                <h4>Recibo #${data.recibo.nroRecibo}</h4>
-                <p><strong>Fecha pago:</strong> ${new Date(data.recibo.fechaPago).toLocaleDateString('es-ES')}</p>
-                <p><strong>Sucursal:</strong> ${data.recibo.sucursal}</p>
-                <p><strong>Cajero:</strong> ${data.recibo.nombre1 ? `${data.recibo.nombre1} ${data.recibo.apellido1}` : '-'}</p>
-                <p><strong>Socio:</strong> ${data.recibo.carnetSocio || '-'}</p>
-                <p><strong>Método de pago:</strong> ${data.recibo.nombreMetodoPago || '-'}</p>
-                <p><strong>Monto total:</strong> Bs. ${parseFloat(data.recibo.montoTotal).toFixed(2)}</p>
-                <p><strong>Monto método:</strong> Bs. ${parseFloat(data.recibo.montoMetodo).toFixed(2)}</p>
-                <p><strong>Estado:</strong> ${data.recibo.estadoRecibo}</p>
-            </div>
-        `;
-    };
-
-    const imprimirRecibo = () => {
-        if (!ultimoRecibo) return;
-        const contenido = `
-            <html>
-            <head><title>Recibo #${ultimoRecibo.nroRecibo}</title></head>
-            <body>${document.getElementById('reciboHtml').innerHTML}</body>
-            </html>
-        `;
-        const ventana = window.open('', '_blank');
-        ventana.document.write(contenido);
-        ventana.document.close();
-        ventana.print();
-    };
-
-    document.getElementById('btnAbrir').addEventListener('click', abrirCaja);
-    document.getElementById('btnCerrar').addEventListener('click', cerrarCaja);
-    document.getElementById('btnRegistrarRecibo').addEventListener('click', crearRecibo);
-    document.getElementById('btnImprimir').addEventListener('click', imprimirRecibo);
-
-    cargarSelects();
-    actualizarEstado();
+    }
+}).mount('#appCaja');
 </script>
 @endsection

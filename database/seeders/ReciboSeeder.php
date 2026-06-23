@@ -27,7 +27,6 @@ class ReciboSeeder extends Seeder
             $recibos[] = [
                 'idCaja' => $idCaja,
                 'idMembresia' => $idMembresia,
-                'nroRecibo' => 'REC-' . str_pad($contador++, 6, '0', STR_PAD_LEFT),
                 'montoTotal' => $monto,
                 'fechaPago' => $fechaPago,
                 'estadoRecibo' => 'Emitido',

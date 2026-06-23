@@ -34,6 +34,7 @@ BEGIN
     DECLARE v_bloqueo INT DEFAULT 0;
     DECLARE v_motivo TEXT DEFAULT NULL;
     DECLARE v_nuevoId INT;
+    DECLARE v_fechaCong DATETIME;
     DECLARE v_fechaHoy DATE;
     DECLARE v_horaAhora TIME;
 
@@ -65,19 +66,30 @@ BEGIN
         SET v_motivo = CONCAT('Socio con estado: ', v_estadoSocio);
     END IF;
 
-    -- 2. Validar membresía activa y no vencida
-    SELECT 1, estadoMembresia, fechaFinMembresia
-    INTO v_membresiaEncontrada, v_membresiaEstado, v_fechaFin
+    -- 2. Validar membresía activa o congelada
+    SELECT 1, estadoMembresia, fechaFinMembresia, fechaCongelamiento
+    INTO v_membresiaEncontrada, v_membresiaEstado, v_fechaFin, v_fechaCong
     FROM TMembresias
     WHERE carnetSocio = p_carnetSocio
       AND estadoA = 1
-      AND estadoMembresia = 'Activa'
+      AND estadoMembresia IN ('Activa', 'Congelada')
       AND fechaInicioMembresia <= v_fechaHoy
-      AND fechaFinMembresia >= v_fechaHoy
     ORDER BY idMembresia DESC
     LIMIT 1;
 
-    IF v_membresiaEncontrada = 0 THEN
+    IF v_membresiaEncontrada = 1 AND v_membresiaEstado = 'Congelada' AND v_fechaCong IS NOT NULL THEN
+        -- Auto-reactivar: sumar días congelados a fechaFin
+        UPDATE TMembresias
+        SET fechaFinMembresia = DATE_ADD(fechaFinMembresia, INTERVAL DATEDIFF(v_fechaHoy, v_fechaCong) DAY),
+            estadoMembresia = 'Activa',
+            fechaCongelamiento = NULL
+        WHERE carnetSocio = p_carnetSocio AND estadoA = 1
+        ORDER BY idMembresia DESC
+        LIMIT 1;
+        SET v_membresiaEstado = 'Activa';
+    END IF;
+
+    IF v_membresiaEncontrada = 0 OR (v_membresiaEstado = 'Activa' AND v_fechaFin < v_fechaHoy) THEN
         SET v_bloqueo = 1;
         IF v_motivo IS NOT NULL THEN
             SET v_motivo = CONCAT(v_motivo, '. Membresía no vigente o vencida.');

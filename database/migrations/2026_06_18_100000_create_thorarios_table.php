@@ -17,9 +17,7 @@ return new class extends Migration
             $table->boolean('estado')->default(true);
 
             $table->unsignedInteger('usuarioA');
-            $table->ipAddress('ipA')->nullable();
             $table->timestamp('fechaA')->useCurrent();
-            $table->timestamp('fechaM')->useCurrentOnUpdate()->nullable();
 
             $table->foreign('carnetEmpleado')->references('carnetEmpleado')->on('TEmpleados')->onDelete('cascade');
         });
