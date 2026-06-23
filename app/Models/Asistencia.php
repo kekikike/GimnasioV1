@@ -7,22 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Asistencia extends Model
 {
-    protected $table = 'tcontrolasistencias';
+    protected $table = 'tasistenciaspersonal';
     protected $primaryKey = 'idAsistencia';
     public $timestamps = false;
     
     protected $fillable = [
         'carnetEmpleado',
-        'fecha',
-        'horaEntrada',
-        'horaSalida',
+        'fechaHoraEntrada',
+        'fechaHoraSalida',
         'estadoAsistencia',
         'estadoA',
         'fechaA',
         'usuarioA'
     ];
     
-    // Relación con Socio (para asistencias de socios)
     public function socio()
     {
         return $this->belongsTo(SocioEloquent::class, 'carnetEmpleado', 'carnetSocio');

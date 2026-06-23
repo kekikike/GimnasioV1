@@ -25,13 +25,13 @@
 
             <div style="display: flex; gap: 15px; justify-content: center;">
                 <button type="button" @click="marcar('entrada')" class="btn" style="background-color: #10b981; color: white; padding: 12px 24px; font-size: 1.1rem; font-weight: bold;" :disabled="!carnetEmpleado || cargando">
-                    <template v-if="cargando && tipoActual === 'entrada'">⏳ Procesando...</template>
-                    <template v-else>🟢 Marcar Entrada</template>
+                    <template v-if="cargando && tipoActual === 'entrada'">Procesando...</template>
+                    <template v-else>Marcar Entrada</template>
                 </button>
                 
                 <button type="button" @click="marcar('salida')" class="btn" style="background-color: #ef4444; color: white; padding: 12px 24px; font-size: 1.1rem; font-weight: bold;" :disabled="!carnetEmpleado || cargando">
-                    <template v-if="cargando && tipoActual === 'salida'">⏳ Procesando...</template>
-                    <template v-else>🔴 Marcar Salida</template>
+                    <template v-if="cargando && tipoActual === 'salida'">Procesando...</template>
+                    <template v-else>Marcar Salida</template>
                 </button>
             </div>
         </form>

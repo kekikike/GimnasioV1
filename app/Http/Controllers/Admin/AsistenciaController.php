@@ -15,17 +15,16 @@ class AsistenciaController extends Controller
         $usuarioA = Auth::id() ?? 1;
 
         try {
-            $entradaExistente = DB::table('tcontrolasistencias')
+            $entradaExistente = DB::table('tasistenciaspersonal')
                 ->where('carnetEmpleado', $request->carnetEmpleado)
-                ->where('fecha', Carbon::today()->toDateString())
-                ->whereNull('horaSalida')
+                ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
+                ->whereNull('fechaHoraSalida')
                 ->exists();
 
             if ($entradaExistente) {
                 return response()->json(['success' => false, 'message' => 'Ya existe una entrada registrada sin salida para hoy.'], 409);
             }
 
-            // --- LÓGICA PARA DETERMINAR PUNTUALIDAD ---
             $dias = [
                 'Monday'    => 'Lunes',
                 'Tuesday'   => 'Martes',
@@ -43,26 +42,24 @@ class AsistenciaController extends Controller
                 ->where('estadoA', 1)
                 ->first();
 
-            $estadoAsistencia = 'Puntual'; // Por defecto
+            $estadoAsistencia = 'Puntual';
             if ($horario) {
-                // Tolerancia de 5 minutos
                 $horaEntradaEsperada = Carbon::parse($horario->horaEntradaEsperada)->addMinutes(5);
                 if (Carbon::now()->gt($horaEntradaEsperada)) {
                     $estadoAsistencia = 'Tardanza';
                 }
             }
 
-            DB::table('tcontrolasistencias')->insert([
+            DB::table('tasistenciaspersonal')->insert([
                 'carnetEmpleado' => $request->carnetEmpleado,
-                'fecha' => Carbon::today()->toDateString(),
-                'horaEntrada' => Carbon::now()->toTimeString(),
+                'fechaHoraEntrada' => Carbon::now(),
                 'estadoAsistencia' => $estadoAsistencia,
                 'usuarioA' => $usuarioA,
                 'fechaA' => now(),
                 'estadoA' => 1
             ]);
 
-            return response()->json(['success' => true, 'message' => '✅ Entrada registrada exitosamente.']);
+            return response()->json(['success' => true, 'message' => 'Entrada registrada exitosamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
@@ -74,24 +71,23 @@ class AsistenciaController extends Controller
         $usuarioA = Auth::id() ?? 1;
 
         try {
-            $asistenciaAbierta = DB::table('tcontrolasistencias')
+            $asistenciaAbierta = DB::table('tasistenciaspersonal')
                 ->where('carnetEmpleado', $request->carnetEmpleado)
-                ->whereNull('horaSalida')
-                ->orderBy('fecha', 'desc')
-                ->orderBy('horaEntrada', 'desc')
+                ->whereNull('fechaHoraSalida')
+                ->orderBy('fechaHoraEntrada', 'desc')
                 ->first();
 
             if (!$asistenciaAbierta) {
-                return response()->json(['success' => false, 'message' => 'No se encontró una entrada abierta para registrar la salida.'], 404);
+                return response()->json(['success' => false, 'message' => 'No se encontro una entrada abierta para registrar la salida.'], 404);
             }
 
-            DB::table('tcontrolasistencias')->where('idAsistencia', $asistenciaAbierta->idAsistencia)->update([
-                'horaSalida' => Carbon::now()->toTimeString(),
+            DB::table('tasistenciaspersonal')->where('idAsistencia', $asistenciaAbierta->idAsistencia)->update([
+                'fechaHoraSalida' => Carbon::now(),
                 'usuarioA' => $usuarioA,
                 'fechaA' => now()
             ]);
 
-            return response()->json(['success' => true, 'message' => '✅ Salida registrada correctamente.']);
+            return response()->json(['success' => true, 'message' => 'Salida registrada correctamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }

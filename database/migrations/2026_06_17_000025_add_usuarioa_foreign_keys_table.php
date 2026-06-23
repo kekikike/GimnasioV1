@@ -12,7 +12,7 @@ return new class extends Migration
         'TSucursales'           => 'fk_tsucursales_usuarioA',
         'TEmpleados'           => 'fk_templeados_usuarioA',
         'THorarioLaborales'     => 'fk_thorario_usuarioA',
-        'TControlAsistencias'  => 'fk_tasistencias_usuarioA',
+
         'TEsquemaSueldos'      => 'fk_tesquemasueldos_usuarioA',
         'TSocios'              => 'fk_tsocios_usuarioA',
         'TPlanes'               => 'fk_tplanes_usuarioA',
