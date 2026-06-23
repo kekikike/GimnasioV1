@@ -15,25 +15,14 @@ class PersonalController extends Controller
     {
         $roles = DB::select('CALL sp_TRoles_Select()');
         $sucursales = DB::select('CALL sp_TSucursales_Select()');
-
-        $adminSucursalId = null;
-        $usuarioA = session('usuario')->idUsuario ?? null;
-        if ($usuarioA) {
-            $empleado = DB::table('TEmpleados')
-                ->where('idUsuario', $usuarioA)
-                ->where('estadoA', 1)
-                ->first();
-            $adminSucursalId = $empleado->idSucursal ?? null;
-        }
-
-        return view('admin.personal', compact('roles', 'sucursales', 'adminSucursalId'));
+        return view('admin.personal', compact('roles', 'sucursales'));
     }
 
     public function listar()
     {
         $empleados = DB::select("
             SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.sueldo, e.fechaContratoInicio,
-                   u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono,
+                   u.idRol, u.nombre1, u.apellido1, u.correo, u.telefono,
                    r.nombreRol, s.nombre as nombreSucursal
             FROM templeados e
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
@@ -48,33 +37,29 @@ class PersonalController extends Controller
     {
         $socioRoleId = DB::table('troles')->where('nombreRol', 'Socio')->value('idRol');
 
+        // Validaciones estrictas RF3
         $validator = Validator::make($request->all(), [
             'idRol'               => ['required', 'integer', Rule::notIn([$socioRoleId])],
             'nombre1'             => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'nombre2'             => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'apellido2'           => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo',
-            'telefono'            => ['required', 'regex:/^[67]\d{7,14}$/'],
-            'contrasena'          => 'required|string|min:8|confirmed',
-            'carnetEmpleado'      => ['required', 'integer', 'digits_between:5,10', 'confirmed', 'unique:templeados,carnetEmpleado', function ($attr, $val, $fail) { if ($val > 2147483647) $fail('El número de carnet supera el límite permitido.'); }],
+            'telefono'            => 'required|numeric|digits_between:7,15',
+            'contrasena'          => 'required|string|min:8|confirmed', // Exige contrasena_confirmation
+            'carnetEmpleado'      => 'required|numeric|max:2147483647|confirmed|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'sueldo'              => 'required|numeric|min:0',
-            'fechaContratoInicio' => 'required|date|before_or_equal:today',
+            'fechaContratoInicio' => 'required|date|before_or_equal:today', // No puede ser en el futuro
         ], [
             'idRol.not_in' => 'No se puede registrar un Socio desde este formulario.',
             'nombre1.regex' => 'El nombre solo puede contener letras y espacios.',
-            'nombre2.regex' => 'El segundo nombre solo puede contener letras y espacios.',
             'apellido1.regex' => 'El apellido solo puede contener letras y espacios.',
-            'apellido2.regex' => 'El apellido materno solo puede contener letras y espacios.',
             'correo.unique' => 'Este correo electrónico ya está en uso.',
-            'telefono.regex' => 'El teléfono debe iniciar con 6 o 7 y contener 8 a 15 dígitos.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
             'contrasena.confirmed' => 'Las contraseñas no coinciden.',
             'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'carnetEmpleado.unique' => 'Este carnet ya está registrado en el sistema.',
+            'carnetEmpleado.max' => 'El número de carnet es demasiado grande para el sistema.',
             'carnetEmpleado.confirmed' => 'Los números de carnet no coinciden.',
-            'carnetEmpleado.digits_between' => 'El carnet debe tener entre 5 y 10 dígitos numéricos.',
-            'carnetEmpleado.integer' => 'El carnet debe contener solo números.',
             'fechaContratoInicio.before_or_equal' => 'La fecha de inicio no puede ser en el futuro.',
         ]);
 
@@ -87,14 +72,25 @@ class PersonalController extends Controller
 
         DB::beginTransaction(); 
         try {
-            $usuario = DB::select('CALL sp_TUsuarios_Insert(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $request->idRol, $request->nombre1, $request->nombre2, $request->apellido1, $request->apellido2,
-                $request->correo, $request->telefono, bcrypt($request->contrasena), 1, $usuarioA, $ip
+            // Se reemplaza el Stored Procedure por un Insert directo de Laravel para mayor fiabilidad y mantenibilidad.
+            // El SP `sp_TUsuarios_Insert` no devolvía un ID de forma consistente.
+            $idUsuario = DB::table('tusuarios')->insertGetId([
+                'idRol'      => $request->idRol,
+                'nombre1'    => $request->nombre1,
+                'nombre2'    => null,
+                'apellido1'  => $request->apellido1,
+                'apellido2'  => null,
+                'correo'     => $request->correo,
+                'telefono'   => $request->telefono,
+                'contrasena' => bcrypt($request->contrasena),
+                'estadoA'    => 1,
+                'usuarioA'   => $usuarioA,
+                'fechaA'     => now(),
+                // El SP original recibía una IP, que probablemente se usaba para auditoría.
+                // Si la tabla 'tusuarios' tiene una columna para IP, se debe añadir aquí.
             ]);
 
-            $idUsuario = $usuario[0]->idUsuario ?? $usuario[0]->id ?? 0;
-
-            if ($idUsuario == 0) throw new \Exception("No se pudo obtener el ID del usuario.");
+            if (!$idUsuario) throw new \Exception("No se pudo crear el registro de usuario.");
 
             DB::table('templeados')->insert([
                 'carnetEmpleado'      => $request->carnetEmpleado,
@@ -114,16 +110,22 @@ class PersonalController extends Controller
             
         } catch (\Exception $e) {
             DB::rollBack(); 
-            \Log::error('Error en PersonalController@store: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error al registrar al personal: ' . $e->getMessage()], 500);
+            \Log::error('Error en PersonalController@store: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
+            // Proporcionar un mensaje de error más descriptivo
+            $errorMessage = 'Error al registrar al personal. ';
+            // En modo debug, mostrar el error real para facilitar la depuración
+            if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
+            return response()->json(['success' => false, 'message' => $errorMessage], 500);
         }
     }
 
+    // 4. Actualizar información del empleado
     public function update(Request $request, $id)
     {
+        // Solución al texto vacío: Si la contraseña viene vacía, la volvemos NULL para que 'nullable' actúe perfectamente
         if ($request->input('contrasena') === '') {
             $request->merge([
-                'contrasena' => null,
+                'contrasena' => null, 
                 'contrasena_confirmation' => null
             ]);
         }
@@ -134,23 +136,19 @@ class PersonalController extends Controller
             'idUsuario'           => 'required|integer|exists:tusuarios,idUsuario',
             'idRol'               => ['required', 'integer', Rule::notIn([$socioRoleId])],
             'nombre1'             => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'nombre2'             => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'apellido2'           => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo,' . $request->idUsuario . ',idUsuario',
-            'telefono'            => ['required', 'regex:/^[67]\d{7,14}$/'],
-            'contrasena'          => 'nullable|string|min:8|confirmed',
+            'telefono'            => 'required|numeric|digits_between:7,15',
+            'contrasena'          => 'nullable|string|min:8|confirmed', 
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'sueldo'              => 'required|numeric|min:0',
             'fechaContratoInicio' => 'required|date|before_or_equal:today',
         ], [
             'idRol.not_in' => 'No se puede asignar el rol de Socio a un empleado.',
-            'nombre1.regex' => 'El nombre solo puede contener letras y espacios.',
-            'nombre2.regex' => 'El segundo nombre solo puede contener letras y espacios.',
-            'apellido1.regex' => 'El apellido solo puede contener letras y espacios.',
-            'apellido2.regex' => 'El apellido materno solo puede contener letras y espacios.',
+            'nombre1.regex' => 'El nombre solo puede contener letras.',
+            'apellido1.regex' => 'El apellido solo puede contener letras.',
             'correo.unique' => 'El correo electrónico ya está en uso.',
-            'telefono.regex' => 'El teléfono debe iniciar con 6 o 7 y contener 8 a 15 dígitos.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
             'contrasena.confirmed' => 'Las contraseñas no coinciden.',
             'fechaContratoInicio.before_or_equal' => 'La fecha no puede ser en el futuro.',
         ]);
@@ -165,12 +163,25 @@ class PersonalController extends Controller
         DB::beginTransaction();
         try {
             $usuarioActual = DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->first();
-            $contrasena = $request->filled('contrasena') ? bcrypt($request->contrasena) : $usuarioActual->contrasena;
 
-            DB::statement('CALL sp_TUsuarios_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $request->idUsuario, $request->idRol, $request->nombre1, $request->nombre2, $request->apellido1, $request->apellido2,
-                $request->correo, $request->telefono, $contrasena, 1, $usuarioA, $ip
-            ]);
+            // Se reemplaza el SP por un Update directo para consistencia y claridad.
+            $updateData = [
+                'idRol'      => $request->idRol,
+                'nombre1'    => $request->nombre1,
+                'apellido1'  => $request->apellido1,
+                'correo'     => $request->correo,
+                'telefono'   => $request->telefono,
+                'usuarioA'   => $usuarioA,
+                'fechaA'     => now(),
+            ];
+
+            // Actualizar la contraseña solo si se proporciona una nueva
+            if ($request->filled('contrasena')) {
+                $updateData['contrasena'] = bcrypt($request->contrasena);
+            }
+
+            DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->update($updateData);
+
 
             // CORRECCIÓN DE COLUMNAS: Cambiamos usuarioM y fechaM por usuarioA y fechaA para acoplarnos a las tablas de Kike
             DB::table('templeados')->where('carnetEmpleado', $id)->update([
@@ -186,8 +197,11 @@ class PersonalController extends Controller
             return response()->json(['success' => true, 'message' => '✅ Información del empleado actualizada.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error en PersonalController@update: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error interno al actualizar: ' . $e->getMessage()], 500);
+            \Log::error('Error en PersonalController@update: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
+            // Proporcionar un mensaje de error más descriptivo
+            $errorMessage = 'Error interno al actualizar. ';
+            if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
+            return response()->json(['success' => false, 'message' => $errorMessage], 500);
         }
     }
 
