@@ -3,56 +3,80 @@
 
 @section('content')
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<style>
+    .text-danger { color: #ef4444; }
+    .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .alert { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .form-control.is-invalid { border-color: #ef4444; }
+</style>
 
 <div id="appPersonal">
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
         <h3 style="margin-bottom: 15px; color: #1e293b;">
-            <template v-if="modoEdicion">✏️ Editar Personal</template>
-            <template v-else>🏢 Registrar Nuevo Empleado</template>
+            <template v-if="modoEdicion">Editar Personal</template>
+            <template v-else>Registrar Nuevo Empleado</template>
         </h3>
+
+        <div v-if="Object.keys(errores).length > 0" class="alert alert-danger">
+            <strong style="display:block;margin-bottom:4px;">Se encontraron errores:</strong>
+            <ul style="margin:0;padding-left:1.2rem;">
+                <li v-for="(msg, campo) in errores" :key="campo">@{{ msg }}</li>
+            </ul>
+        </div>
 
         <form @submit.prevent="guardarEmpleado" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
 
             <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; color: #3b82f6; font-weight: 600;">Datos de Usuario (Acceso al Sistema)</div>
 
             <div>
-                <label style="font-weight: 600; font-size: 0.85rem;">Nombres <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.nombre1" @input="validarLetras('nombre1')" class="form-control" required>
-                <small v-if="errores.nombre1" style="color:#ef4444; font-size: 0.8em;">@{{ errores.nombre1 }}</small>
+                <label style="font-weight: 600; font-size: 0.85rem;">Primer Nombre <span style="color:#ef4444;">*</span></label>
+                <input type="text" v-model="formulario.nombre1" @input="validarLetras('nombre1')" class="form-control" :class="{ 'is-invalid': errores.nombre1 }" required>
+                <small v-if="errores.nombre1" class="text-danger">@{{ errores.nombre1 }}</small>
             </div>
             <div>
-                <label style="font-weight: 600; font-size: 0.85rem;">Apellidos <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.apellido1" @input="validarLetras('apellido1')" class="form-control" required>
-                <small v-if="errores.apellido1" style="color:#ef4444; font-size: 0.8em;">@{{ errores.apellido1 }}</small>
+                <label style="font-weight: 600; font-size: 0.85rem;">Segundo Nombre</label>
+                <input type="text" v-model="formulario.nombre2" @input="validarLetras('nombre2')" class="form-control" :class="{ 'is-invalid': errores.nombre2 }">
+                <small v-if="errores.nombre2" class="text-danger">@{{ errores.nombre2 }}</small>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem;">Apellido Paterno <span style="color:#ef4444;">*</span></label>
+                <input type="text" v-model="formulario.apellido1" @input="validarLetras('apellido1')" class="form-control" :class="{ 'is-invalid': errores.apellido1 }" required>
+                <small v-if="errores.apellido1" class="text-danger">@{{ errores.apellido1 }}</small>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem;">Apellido Materno</label>
+                <input type="text" v-model="formulario.apellido2" @input="validarLetras('apellido2')" class="form-control" :class="{ 'is-invalid': errores.apellido2 }">
+                <small v-if="errores.apellido2" class="text-danger">@{{ errores.apellido2 }}</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Rol Asignado <span style="color:#ef4444;">*</span></label>
-                <select v-model="formulario.idRol" class="form-control" required>
+                <select v-model="formulario.idRol" class="form-control" :class="{ 'is-invalid': errores.idRol }" required>
                     <option value="" disabled>Seleccione un rol...</option>
-                    <option v-for="rol in roles" :key="rol.idRol" :value="rol.idRol">@{{ rol.nombreRol }}</option>
+                    <option v-for="rol in rolesFiltrados" :key="rol.idRol" :value="rol.idRol">@{{ rol.nombreRol }}</option>
                 </select>
-                <small v-if="errores.idRol" style="color:#ef4444; font-size: 0.8em;">@{{ errores.idRol }}</small>
+                <small v-if="errores.idRol" class="text-danger">@{{ errores.idRol }}</small>
             </div>
 
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Correo Electrónico <span style="color:#ef4444;">*</span></label>
-                <input type="email" v-model="formulario.correo" class="form-control" required>
-                <small v-if="errores.correo" style="color:#ef4444; font-size: 0.8em;">@{{ errores.correo }}</small>
+                <input type="email" v-model="formulario.correo" class="form-control" :class="{ 'is-invalid': errores.correo }" required>
+                <small v-if="errores.correo" class="text-danger">@{{ errores.correo }}</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Teléfono <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarNumeros('telefono')" class="form-control" required maxlength="15">
-                <small v-if="errores.telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.telefono }}</small>
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :class="{ 'is-invalid': errores.telefono }" required maxlength="15" placeholder="Ej: 71234567">
+                <small v-if="errores.telefono" class="text-danger">@{{ errores.telefono }}</small>
+                <small v-else style="color:#64748b;font-size:0.75em;">Debe iniciar con 6 o 7 (8-15 dígitos)</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">
                     @{{ modoEdicion ? 'Nueva Contraseña (Opcional)' : 'Contraseña *' }}
                 </label>
-                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
-                <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
+                <input type="password" v-model="formulario.contrasena" class="form-control" :class="{ 'is-invalid': errores.contrasena }" :required="!modoEdicion">
+                <small v-if="errores.contrasena" class="text-danger">@{{ errores.contrasena }}</small>
             </div>
 
-            <div style="grid-column: 3;">
+            <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
                 <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
             </div>
@@ -61,42 +85,45 @@
 
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Nro. Carnet (CI) <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetEmpleado" @input="validarNumeros('carnetEmpleado')" class="form-control" :disabled="modoEdicion" required>
-                <small v-if="errores.carnetEmpleado" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetEmpleado }}</small>
+                <input type="text" v-model="formulario.carnetEmpleado" @input="validarCarnet" class="form-control" :class="{ 'is-invalid': errores.carnetEmpleado }" :disabled="modoEdicion" required maxlength="10" placeholder="Máx. 10 dígitos">
+                <small v-if="errores.carnetEmpleado" class="text-danger">@{{ errores.carnetEmpleado }}</small>
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: 600; font-size: 0.85rem;">Confirmar Nro. Carnet <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetEmpleado_confirmation" @input="validarNumeros('carnetEmpleado_confirmation')" class="form-control" required>
+                <input type="text" v-model="formulario.carnetEmpleado_confirmation" @input="validarCarnetConfirm" class="form-control" maxlength="10" required>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Sucursal Base <span style="color:#ef4444;">*</span></label>
-                <select v-model="formulario.idSucursal" class="form-control" required>
+                <select v-model="formulario.idSucursal" class="form-control" :class="{ 'is-invalid': errores.idSucursal }" required>
                     <option value="" disabled>Seleccione sede...</option>
                     <option v-for="suc in sucursales" :key="suc.idSucursal" :value="suc.idSucursal">@{{ suc.nombre }}</option>
                 </select>
+                <small v-if="errores.idSucursal" class="text-danger">@{{ errores.idSucursal }}</small>
+                <small v-else-if="adminSucursalId" style="color:#64748b;font-size:0.75em;">Sucursal pre-seleccionada según tu perfil.</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Sueldo Base Mensual (Bs) <span style="color:#ef4444;">*</span></label>
                 <input type="number" v-model="formulario.sueldo" class="form-control" required min="0" step="0.1">
+                <small v-if="errores.sueldo" class="text-danger">@{{ errores.sueldo }}</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Fecha Contrato Inicio <span style="color:#ef4444;">*</span></label>
-                <input type="date" v-model="formulario.fechaContratoInicio" class="form-control" required>
-                <small v-if="errores.fechaContratoInicio" style="color:#ef4444; font-size: 0.8em;">@{{ errores.fechaContratoInicio }}</small>
+                <input type="date" v-model="formulario.fechaContratoInicio" class="form-control" :class="{ 'is-invalid': errores.fechaContratoInicio }" required>
+                <small v-if="errores.fechaContratoInicio" class="text-danger">@{{ errores.fechaContratoInicio }}</small>
             </div>
 
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
-                    <template v-if="guardando">⏳ Guardando...</template>
-                    <template v-else>@{{ modoEdicion ? '💾 Guardar Cambios' : '➕ Guardar Empleado' }}</template>
+                    <template v-if="guardando">Guardando...</template>
+                    <template v-else>@{{ modoEdicion ? 'Guardar Cambios' : 'Guardar Empleado' }}</template>
                 </button>
-                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">Cancelar</button>
             </div>
         </form>
     </div>
 
     <div class="card" style="padding: 20px;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Listado de Personal Activo</h3>
+        <h3 style="margin-bottom: 15px; color: #1e293b;">Listado de Personal Activo</h3>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f1f5f9;">
                 <tr>
@@ -109,21 +136,21 @@
             <tbody>
                 <tr v-for="emp in empleados" :key="emp.carnetEmpleado" style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 12px;">
-                        <strong>@{{ emp.nombre1 }} @{{ emp.apellido1 }}</strong><br>
+                        <strong>@{{ nombreCompleto(emp) }}</strong><br>
                         <span style="color:#64748b; font-size:0.85em;">CI: @{{ emp.carnetEmpleado }}</span><br>
                         <span class="badge badge-info" style="background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">@{{ emp.nombreRol }}</span>
                     </td>
                     <td style="padding: 12px;">
                         @{{ emp.correo }}<br>
-                        <span style="color:#64748b; font-size:0.85em;">📞 @{{ emp.telefono }}</span>
+                        <span style="color:#64748b; font-size:0.85em;">@{{ emp.telefono }}</span>
                     </td>
                     <td style="padding: 12px;">
                         @{{ emp.nombreSucursal }}<br>
                         <span style="color:#64748b; font-size:0.85em;">Sueldo: Bs. @{{ emp.sueldo }}</span>
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 5px;">✏️ Editar</button>
-                        <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger">🗑️ Baja</button>
+                        <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
+                        <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger">Baja</button>
                     </td>
                 </tr>
             </tbody>
@@ -132,33 +159,31 @@
 </div>
 
 <script>
-    const { createApp, ref, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
         setup() {
             const empleados = ref([]);
             const roles = ref([]);
+            const rolesFiltrados = ref([]);
             const sucursales = ref([]);
+            const adminSucursalId = {{ $adminSucursalId ?? 'null' }};
             const modoEdicion = ref(false);
             const idActual = ref(null);
             const guardando = ref(false);
 
             const formularioBase = {
-                carnetEmpleado: '', carnetEmpleado_confirmation: '', idUsuario: '', nombre1: '', apellido1: '', idRol: '', 
-                correo: '', telefono: '', contrasena: '', contrasena_confirmation: '', idSucursal: '', sueldo: '', fechaContratoInicio: ''
+                carnetEmpleado: '', carnetEmpleado_confirmation: '', idUsuario: '',
+                nombre1: '', nombre2: '', apellido1: '', apellido2: '',
+                idRol: '', correo: '', telefono: '', contrasena: '',
+                contrasena_confirmation: '', idSucursal: '', sueldo: '', fechaContratoInicio: ''
             };
             const formulario = ref({ ...formularioBase });
-            const errores = ref({}); // Capturador de errores de validación de Laravel
+            const errores = ref({});
 
-            const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
-
-            const cargarDataBase = async () => {
-                try {
-                    const html = await (await fetch('{{ route("admin.personal.index") }}')).text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    // Extraemos los options directamente del HTML generado por Blade temporalmente si no hay endpoint JSON
-                } catch(e){}
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             };
 
             const cargarEmpleados = async () => {
@@ -166,22 +191,44 @@
                 empleados.value = await res.json();
             };
 
+            const nombreCompleto = (emp) => {
+                const partes = [emp.nombre1, emp.nombre2, emp.apellido1, emp.apellido2].filter(Boolean);
+                return partes.join(' ');
+            };
+
             const validarLetras = (campo) => {
                 formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, '');
             };
 
-            const validarNumeros = (campo) => {
-                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '');
+            const validarTelefono = () => {
+                let val = formulario.value.telefono.replace(/[^0-9]/g, '');
+                if (val.length > 0 && val[0] !== '6' && val[0] !== '7') {
+                    val = val.substring(1);
+                }
+                if (val.length > 15) val = val.substring(0, 15);
+                formulario.value.telefono = val;
+            };
+
+            const validarCarnet = () => {
+                let val = formulario.value.carnetEmpleado.replace(/[^0-9]/g, '');
+                if (val.length > 10) val = val.substring(0, 10);
+                formulario.value.carnetEmpleado = val;
+            };
+
+            const validarCarnetConfirm = () => {
+                let val = formulario.value.carnetEmpleado_confirmation.replace(/[^0-9]/g, '');
+                if (val.length > 10) val = val.substring(0, 10);
+                formulario.value.carnetEmpleado_confirmation = val;
             };
 
             const guardarEmpleado = async () => {
                 guardando.value = true;
-                errores.value = {}; 
+                errores.value = {};
 
                 try {
                     const url = modoEdicion.value ? `/admin/personal/${idActual.value}` : `/admin/personal`;
                     const metodo = modoEdicion.value ? 'PUT' : 'POST';
-                    
+
                     const res = await fetch(url, { method: metodo, headers: headers, body: JSON.stringify(formulario.value) });
                     const data = await res.json();
 
@@ -190,15 +237,16 @@
                         cancelarEdicion();
                         cargarEmpleados();
                     } else if (res.status === 422) {
-                        // Atrapamos validaciones de Laravel y las mostramos en la interfaz
                         for (const campo in data.errors) {
                             errores.value[campo] = data.errors[campo][0];
                         }
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     } else {
-                        alert(data.message || 'Error inesperado.');
+                        alert(data.message || 'Error inesperado. Intente nuevamente.');
                     }
                 } catch(e) {
                     console.error("Error guardando:", e);
+                    alert('Error de conexión. Verifique su red e intente nuevamente.');
                 } finally {
                     guardando.value = false;
                 }
@@ -211,8 +259,10 @@
                 formulario.value = {
                     carnetEmpleado: emp.carnetEmpleado,
                     idUsuario: emp.idUsuario,
-                    nombre1: emp.nombre1,
-                    apellido1: emp.apellido1,
+                    nombre1: emp.nombre1 || '',
+                    nombre2: emp.nombre2 || '',
+                    apellido1: emp.apellido1 || '',
+                    apellido2: emp.apellido2 || '',
                     idRol: emp.idRol,
                     correo: emp.correo,
                     telefono: emp.telefono,
@@ -229,24 +279,35 @@
                 idActual.value = null;
                 errores.value = {};
                 formulario.value = { ...formularioBase };
+                if (adminSucursalId) {
+                    formulario.value.idSucursal = adminSucursalId;
+                }
             };
 
             const eliminarEmpleado = async (id) => {
-                if(confirm("¿Esta accion dará de baja al empleado y quedará registrada en la auditoría. Continuar?")) {
+                if (confirm("Esta accion dará de baja al empleado y quedará registrada en la auditoria. Continuar?")) {
                     const res = await fetch(`/admin/personal/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
-                    if(data.success) cargarEmpleados();
+                    if (data.success) cargarEmpleados();
                 }
             };
 
             onMounted(() => {
                 cargarEmpleados();
-                // Rellenar selects manualmente ya que los pasas por compact()
                 roles.value = @json($roles);
+                rolesFiltrados.value = roles.value.filter(r => r.nombreRol.toLowerCase() !== 'socio');
                 sucursales.value = @json($sucursales);
+                if (adminSucursalId) {
+                    formulario.value.idSucursal = adminSucursalId;
+                }
             });
 
-            return { empleados, roles, sucursales, formulario, errores, modoEdicion, guardando, validarLetras, validarNumeros, guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion };
+            return {
+                empleados, roles, rolesFiltrados, sucursales, adminSucursalId,
+                formulario, errores, modoEdicion, guardando,
+                nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
+                guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion
+            };
         }
     }).mount('#appPersonal');
 </script>
