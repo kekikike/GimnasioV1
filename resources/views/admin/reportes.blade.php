@@ -166,6 +166,33 @@ tbody tr:hover { background:#f8fafc; }
                 <label>Fecha Fin</label>
                 <input type="date" id="fin_fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
             </div>
+            <div class="form-group">
+                <label>Sucursal</label>
+                <select id="fin_sucursal" class="form-control">
+                    <option value="">Todas</option>
+                    @foreach($sucursales as $s)
+                        <option value="{{ $s->idSucursal }}">{{ $s->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Metodo de Pago</label>
+                <select id="fin_metodo" class="form-control">
+                    <option value="">Todos</option>
+                    @foreach($metodosPago as $mp)
+                        <option value="{{ $mp->idMetodoPago }}">{{ $mp->nombreMetodoPago }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Operador</label>
+                <select id="fin_operador" class="form-control">
+                    <option value="">Todos</option>
+                    @foreach($empleados as $e)
+                        <option value="{{ $e->carnetEmpleado }}">{{ $e->nombre1 }} {{ $e->apellido1 }}</option>
+                    @endforeach
+                </select>
+            </div>
             <button class="btn btn-primary" onclick="cargarAdminFinanciero(this)">Generar Reporte</button>
         </div>
         <div id="admin-financiero-content"><div class="empty-state">Presione Generar Reporte</div></div>
@@ -178,8 +205,20 @@ tbody tr:hover { background:#f8fafc; }
 
 <div id="tab-admin-equipos" class="tab-pane">
     <div class="card" style="padding:20px;">
-        <button class="btn btn-primary" onclick="cargarAdminEquipos(this)" style="margin-bottom:1rem;">Cargar Datos</button>
-        <div id="admin-equipos-content"><div class="empty-state">Presione Cargar Datos</div></div>
+        <div class="filter-row">
+            <div class="form-group">
+                <label>Filtrar por Estado</label>
+                <select id="eq_estado" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="Operativo">Operativo</option>
+                    <option value="En Mantenimiento">En Mantenimiento</option>
+                    <option value="Fuera de Servicio">Fuera de Servicio</option>
+                    <option value="De Baja">De Baja</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="cargarAdminEquipos(this)">Generar Reporte</button>
+        </div>
+        <div id="admin-equipos-content"><div class="empty-state">Seleccione un filtro y presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-primary">Exportar PDF</button>
             <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-outline">Imprimir</button>
@@ -389,16 +428,28 @@ function imprimirContenido(id) {
 
 function cargarAdminFinanciero(btn) {
     if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
-    var fi=document.getElementById('fin_fecha_inicio').value,ff=document.getElementById('fin_fecha_fin').value;
-    fetch('/admin/reportes/financiero?fecha_desde='+fi+'&fecha_hasta='+ff,{headers:{'Accept':'application/json'}})
+    var fi=document.getElementById('fin_fecha_inicio').value;
+    var ff=document.getElementById('fin_fecha_fin').value;
+    var fs=document.getElementById('fin_sucursal').value;
+    var fm=document.getElementById('fin_metodo').value;
+    var fo=document.getElementById('fin_operador').value;
+    var params='fecha_desde='+encodeURIComponent(fi)+'&fecha_hasta='+encodeURIComponent(ff);
+    if(fs) params+='&idSucursal='+fs;
+    if(fm) params+='&idMetodoPago='+fm;
+    if(fo) params+='&carnetEmpleado='+fo;
+    fetch('/admin/reportes/financiero?'+params,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
             var c=document.getElementById('admin-financiero-content');
             if(!d||!d.ingresos){c.innerHTML='<div class="empty-state">No hay datos</div>';return;}
             var h='<div class="stats-grid"><div class="stat-card"><div class="number green">$'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
             h+='<div class="stat-card"><div class="number blue">'+d.ingresos.length+'</div><div class="label">Transacciones</div></div>';
             h+='<div class="stat-card"><div class="number amber">$'+Number(d.ingresos.length>0?d.totalGeneral/d.ingresos.length:0).toFixed(2)+'</div><div class="label">Promedio</div></div></div>';
-            if(d.ingresos.length){h+='<table><thead><tr><th>ID</th><th>Fecha</th><th>Monto</th></tr></thead><tbody>';
-            d.ingresos.forEach(function(r){h+='<tr><td>'+(r.idRecibo||r.idCaja||'')+'</td><td>'+(r.fechaEmision||r.fechaApertura||'')+'</td><td>$'+Number(r.montoTotal||r.montoApertura||0).toFixed(2)+'</td></tr>';});
+            if(d.ingresos.length){h+='<table><thead><tr><th>Recibo</th><th>Sucursal</th><th>Socio</th><th>Fecha</th><th>Metodos de Pago</th><th>Total</th><th>Estado</th></tr></thead><tbody>';
+            d.ingresos.forEach(function(r){
+                var bc=r.estadoRecibo==='Emitido'?'badge-green':'badge-red';
+                var socio=r.nombre1+' '+r.apellido1+(r.carnetSocio?' ('+r.carnetSocio+')':'');
+                h+='<tr><td><strong>#'+r.idRecibo+'</strong></td><td>'+(r.sucursal||'')+'</td><td>'+socio+'</td><td>'+(r.fechaPago||'')+'</td><td style="font-size:0.8rem;">'+(r.metodos_pago||'')+'</td><td><strong>$'+Number(r.montoTotal||0).toFixed(2)+'</strong></td><td><span class="badge '+bc+'">'+r.estadoRecibo+'</span></td></tr>';
+            });
             h+='</tbody></table>';}else{h+='<div class="empty-state">No hay transacciones</div>';}
             c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-financiero-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
@@ -407,26 +458,40 @@ function cargarAdminFinanciero(btn) {
 
 function cargarAdminEquipos(btn) {
     if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
-    fetch('/admin/reportes/equipos',{headers:{'Accept':'application/json'}})
+    var estado=document.getElementById('eq_estado').value;
+    var url='/admin/reportes/equipos?estado='+encodeURIComponent(estado);
+    fetch(url,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
             var c=document.getElementById('admin-equipos-content');
             if(!d){c.innerHTML='<div class="empty-state">No hay datos</div>';return;}
-            var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+((d.operativos||[]).length+(d.enMantenimiento||[]).length+(d.fueraServicio||[]).length)+'</div><div class="label">Total</div></div>';
-            h+='<div class="stat-card"><div class="number green">'+(d.operativos||[]).length+'</div><div class="label">Operativos</div></div>';
-            h+='<div class="stat-card"><div class="number amber">'+(d.enMantenimiento||[]).length+'</div><div class="label">En Mantenimiento</div></div>';
-            h+='<div class="stat-card"><div class="number red">'+(d.fueraServicio||[]).length+'</div><div class="label">Fuera de Servicio</div></div>';
-            h+='<div class="stat-card"><div class="number red">'+(d.historialFallas||[]).length+'</div><div class="label">Fallas Recientes</div></div></div>';
-            h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"><div><h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Fallas Recientes</h4>';
-            if(d.historialFallas&&d.historialFallas.length){h+='<table><thead><tr><th>Equipo</th><th>Fecha</th><th>Gravedad</th></tr></thead><tbody>';
-            d.historialFallas.forEach(function(f){var bc=f.gravedad==='Critica'||f.gravedad==='Alta'?'badge-red':f.gravedad==='Media'?'badge-amber':'badge-green';h+='<tr><td>'+(f.nombreEquipo||f.idEquipo||'')+'</td><td>'+(f.fechaReporte||'')+'</td><td><span class="badge '+bc+'">'+(f.gravedad||'')+'</span></td></tr>';});
-            h+='</tbody></table>';}else{h+='<div class="empty-state">Sin fallas</div>';}
-            h+='</div><div><h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Mantenimientos Recientes</h4>';
-            if(d.historialMantenimientos&&d.historialMantenimientos.length){h+='<table><thead><tr><th>Equipo</th><th>Programada</th><th>Estado</th></tr></thead><tbody>';
-            d.historialMantenimientos.forEach(function(m){var bc=m.estadoMantenimiento==='Realizado'?'badge-green':m.estadoMantenimiento==='Pendiente'?'badge-amber':'badge-red';h+='<tr><td>'+(m.nombreEquipo||m.idEquipo||'')+'</td><td>'+(m.fechaProgramada||'')+'</td><td><span class="badge '+bc+'">'+(m.estadoMantenimiento||'')+'</span></td></tr>';});
-            h+='</tbody></table>';}else{h+='<div class="empty-state">Sin mantenimientos</div>';}
+            var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.equipos||[]).length+'</div><div class="label">Total Equipos</div></div>';
+            h+='<div class="stat-card"><div class="number red">'+(d.historialFallas||[]).length+'</div><div class="label">Fallas Reportadas</div></div>';
+            h+='<div class="stat-card"><div class="number blue">'+(d.historialMantenimientos||[]).length+'</div><div class="label">Mantenimientos</div></div></div>';
+            h+='<h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Equipos'+(d.estado?' ('+d.estado+')':' (Todos)')+'</h4>';
+            if(d.equipos&&d.equipos.length){h+='<div style="overflow-x:auto;margin-bottom:1.5rem;"><table><thead><tr><th>ID</th><th>Nombre</th><th>Marca</th><th>Modelo</th><th>Sucursal</th><th>Estado</th><th>Adquisicion</th></tr></thead><tbody>';
+            d.equipos.forEach(function(eq){
+                var bc=eq.estadoEquipo==='Operativo'?'badge-green':eq.estadoEquipo==='En Mantenimiento'?'badge-amber':eq.estadoEquipo==='Fuera de Servicio'?'badge-red':'badge-gray';
+                h+='<tr><td>'+eq.idEquipo+'</td><td><strong>'+eq.nombreEquipo+'</strong></td><td>'+(eq.nombreMarca||'')+'</td><td>'+(eq.modelo||'')+'</td><td>'+(eq.sucursal||'')+'</td><td><span class="badge '+bc+'">'+eq.estadoEquipo+'</span></td><td>'+(eq.fechaAdquisicion||'')+'</td></tr>';
+            });
+            h+='</tbody></table></div>';}else{h+='<div class="empty-state" style="margin-bottom:1.5rem;">No hay equipos en este estado</div>';}
+            h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"><div><h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Historial de Fallas</h4>';
+            if(d.historialFallas&&d.historialFallas.length){h+='<div style="overflow-x:auto;"><table><thead><tr><th>Equipo</th><th>Fecha</th><th>Gravedad</th><th>Estado</th></tr></thead><tbody>';
+            d.historialFallas.forEach(function(f){
+                var bc=f.gravedad==='Critica'?'badge-red':f.gravedad==='Alta'?'badge-amber':f.gravedad==='Media'?'badge-blue':'badge-green';
+                var ec=f.estadoReporte==='Resuelto'?'badge-green':'badge-amber';
+                h+='<tr><td>'+(f.nombreEquipo||f.idEquipo||'')+'</td><td>'+(f.fechaReporte||'')+'</td><td><span class="badge '+bc+'">'+(f.gravedad||'')+'</span></td><td><span class="badge '+ec+'">'+(f.estadoReporte||'')+'</span></td></tr>';
+            });
+            h+='</tbody></table></div>';}else{h+='<div class="empty-state">Sin fallas registradas</div>';}
+            h+='</div><div><h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Historial de Mantenimientos</h4>';
+            if(d.historialMantenimientos&&d.historialMantenimientos.length){h+='<div style="overflow-x:auto;"><table><thead><tr><th>Equipo</th><th>Programada</th><th>Realizada</th><th>Costo</th><th>Estado</th></tr></thead><tbody>';
+            d.historialMantenimientos.forEach(function(m){
+                var bc=m.estadoMantenimiento==='Realizado'?'badge-green':m.estadoMantenimiento==='Pendiente'?'badge-amber':'badge-red';
+                h+='<tr><td>'+(m.nombreEquipo||m.idEquipo||'')+'</td><td>'+(m.fechaProgramada||'')+'</td><td>'+(m.fechaRealizada||'-')+'</td><td>$'+Number(m.costoMantenimiento||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+(m.estadoMantenimiento||'')+'</span></td></tr>';
+            });
+            h+='</tbody></table></div>';}else{h+='<div class="empty-state">Sin mantenimientos registrados</div>';}
             h+='</div></div>';c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-equipos-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
-        .finally(function(){if(btn){btn.innerHTML='Cargar Datos';btn.disabled=false;}});
+        .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
 
 function cargarAdminDesempeno(btn) {

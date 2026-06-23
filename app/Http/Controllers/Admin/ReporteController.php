@@ -31,16 +31,27 @@ class ReporteController extends Controller
         return response()->json(compact('ingresos', 'totalGeneral'));
     }
 
-    public function reporteEquipos()
+    public function reporteEquipos(Request $request)
     {
-        $operativos             = DB::select('CALL sp_TEquipamientos_GetByEstado(?)', ['Operativo']);
-        $enMantenimiento        = DB::select('CALL sp_TEquipamientos_GetByEstado(?)', ['En Mantenimiento']);
-        $fueraServicio          = DB::select('CALL sp_TEquipamientos_GetByEstado(?)', ['Fuera de Servicio']);
+        $estado = $request->filled('estado') ? $request->estado : null;
+
+        if ($estado) {
+            $equipos = DB::select('CALL sp_TEquipamientos_GetByEstado(?)', [$estado]);
+        } else {
+            $equipos = DB::table('TEquipamientos as e')
+                ->leftJoin('TMarcas as m', 'm.idMarca', '=', 'e.idMarca')
+                ->leftJoin('TSucursales as s', 's.idSucursal', '=', 'e.idSucursal')
+                ->where('e.estadoA', 1)
+                ->select('e.*', 'm.nombreMarca', 's.nombre as sucursal')
+                ->orderBy('e.nombreEquipo')
+                ->get();
+        }
+
         $historialFallas        = DB::select('CALL sp_TReporteFallas_GetHistorial(?)', [50]);
         $historialMantenimientos = DB::select('CALL sp_TMantenimientoPreventivos_GetHistorial(?)', [50]);
 
         return response()->json(compact(
-            'operativos', 'enMantenimiento', 'fueraServicio',
+            'equipos', 'estado',
             'historialFallas', 'historialMantenimientos'
         ));
     }
