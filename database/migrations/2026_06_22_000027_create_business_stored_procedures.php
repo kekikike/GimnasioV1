@@ -26,7 +26,7 @@ CREATE PROCEDURE sp_TControlAccesos_Registrar(
 BEGIN
     DECLARE v_estadoSocio VARCHAR(20);
     DECLARE v_strikes INT DEFAULT 0;
-    DECLARE v_membresiaValida INT DEFAULT 0;
+    DECLARE v_membresiaEncontrada INT DEFAULT 0;
     DECLARE v_membresiaEstado VARCHAR(20);
     DECLARE v_fechaFin DATE;
     DECLARE v_penalizacionActiva INT DEFAULT 0;
@@ -66,8 +66,8 @@ BEGIN
     END IF;
 
     -- 2. Validar membresía activa y no vencida
-    SELECT COUNT(*), estadoMembresia, fechaFinMembresia
-    INTO v_membresiaValida, v_membresiaEstado, v_fechaFin
+    SELECT 1, estadoMembresia, fechaFinMembresia
+    INTO v_membresiaEncontrada, v_membresiaEstado, v_fechaFin
     FROM TMembresias
     WHERE carnetSocio = p_carnetSocio
       AND estadoA = 1
@@ -77,7 +77,7 @@ BEGIN
     ORDER BY idMembresia DESC
     LIMIT 1;
 
-    IF v_membresiaValida = 0 THEN
+    IF v_membresiaEncontrada = 0 THEN
         SET v_bloqueo = 1;
         IF v_motivo IS NOT NULL THEN
             SET v_motivo = CONCAT(v_motivo, '. Membresía no vigente o vencida.');
