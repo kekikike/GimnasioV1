@@ -420,7 +420,7 @@ return new class extends Migration
             . "    FROM TEquipamientos e\n"
             . "    LEFT JOIN TMarcas m ON m.idMarca = e.idMarca\n"
             . "    LEFT JOIN TSucursales s ON s.idSucursal = e.idSucursal\n"
-            . "    WHERE e.estadoA = 1 AND e.estadoEquipo = p_estado\n"
+            . "    WHERE e.estadoA = 1 AND e.estadoEquipo = p_estado COLLATE utf8mb4_unicode_ci\n"
             . "    ORDER BY e.nombreEquipo;\n"
             . "END";
     }
@@ -495,7 +495,7 @@ return new class extends Migration
             . "    FROM TMantenimientoPreventivos mp\n"
             . "    INNER JOIN TEquipamientos e ON e.idEquipo = mp.idEquipo\n"
             . "    WHERE mp.estadoA = 1\n"
-            . "      AND (p_estado IS NULL OR mp.estadoMantenimiento = p_estado)\n"
+            . "      AND (p_estado IS NULL OR mp.estadoMantenimiento = p_estado COLLATE utf8mb4_unicode_ci)\n"
             . "      AND (p_fecha_desde IS NULL OR mp.fechaProgramada >= p_fecha_desde)\n"
             . "      AND (p_fecha_hasta IS NULL OR mp.fechaProgramada <= p_fecha_hasta)\n"
             . "    ORDER BY\n"
