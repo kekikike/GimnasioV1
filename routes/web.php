@@ -165,6 +165,11 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/entrenador/clases/{id}/participantes', [EntrenadorController::class, 'participantes'])->name('entrenador.clases.participantes');
         Route::get('/entrenador/fallas', [EntrenadorController::class, 'fallas'])->name('entrenador.fallas');
         Route::post('/entrenador/fallas', [EntrenadorController::class, 'reportarFalla'])->name('entrenador.fallas.store');
+
+        Route::get('/entrenador/asistencias-clase', [EntrenadorController::class, 'asistenciasClase'])->name('entrenador.asistencias');
+        Route::get('/entrenador/asistencias-clase/hoy', [EntrenadorController::class, 'clasesHoy'])->name('entrenador.asistencias.hoy');
+        Route::get('/entrenador/asistencias-clase/{id}/alumnos', [EntrenadorController::class, 'alumnosClase'])->name('entrenador.asistencias.alumnos');
+        Route::post('/entrenador/asistencias-clase/marcar', [EntrenadorController::class, 'marcarAsistencia'])->name('entrenador.asistencias.marcar');
     });
 
     // Portal del Socio (idRol = 4)

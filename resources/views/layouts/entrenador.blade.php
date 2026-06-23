@@ -69,6 +69,9 @@
             <a href="{{ route('entrenador.dashboard') }}" class="{{ request()->routeIs('entrenador.dashboard') ? 'active' : '' }}">
                 Mi Agenda
             </a>
+            <a href="{{ route('entrenador.asistencias') }}" class="{{ request()->routeIs('entrenador.asistencias') ? 'active' : '' }}">
+                Asistencias Clase
+            </a>
             <a href="{{ route('entrenador.fallas') }}" class="{{ request()->routeIs('entrenador.fallas') ? 'active' : '' }}">
                 Reportar Fallas
             </a>
