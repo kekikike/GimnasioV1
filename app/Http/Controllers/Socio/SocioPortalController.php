@@ -54,8 +54,14 @@ class SocioPortalController extends Controller
 
     public function asistencias()
     {
-        $this->loadSocio();
-        return view('socio.asistencias');
+        $socio = $this->loadSocio();
+
+        $accesos = [];
+        if ($socio) {
+            $accesos = DB::select('CALL sp_TControlAccesos_GetBySocio(?)', [$socio->carnetSocio]);
+        }
+
+        return view('socio.asistencias', compact('accesos'));
     }
 
     public function reservas()
