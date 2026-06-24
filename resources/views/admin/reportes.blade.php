@@ -34,6 +34,23 @@ tbody tr:hover { background:#f8fafc; }
 .badge-warning { background:#fef3c7; color:#92400e; }
 .empty-state { text-align:center; padding:2rem; color:#94a3b8; }
 .action-print { display:flex; gap:0.75rem; margin-top:1rem; padding-top:1rem; border-top:1px solid #e2e8f0; }
+.detalle-socio { margin-top:1.5rem; border:1px solid #e2e8f0; border-radius:8px; padding:1.25rem; background:#fff; display:none; }
+.detalle-socio.visible { display:block; }
+.detalle-socio h3 { font-size:1rem; font-weight:600; margin:0 0 1rem 0; color:#0f172a; }
+.detalle-socio h4 { font-size:0.9rem; font-weight:600; margin:1.25rem 0 0.5rem 0; color:#1e293b; }
+.detalle-socio .socio-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.detalle-socio .socio-header .nombre { font-size:1.1rem; font-weight:700; }
+.detalle-socio .socio-header .carnet { color:#64748b; font-size:0.85rem; }
+.detalle-socio table { margin-bottom:0.5rem; }
+.detalle-socio td, .detalle-socio th { font-size:0.82rem; }
+.row-clickable { cursor:pointer; position:relative; }
+.row-clickable:hover { background:#eef2ff !important; box-shadow:inset 0 -2px 0 #6366f1, inset 0 2px 0 #6366f1, inset 2px 0 0 #6366f1, inset -2px 0 0 #6366f1; }
+.row-clickable td:first-child { position:relative; }
+.row-clickable:hover td:first-child::before { content:'\2192'; position:absolute; left:2px; top:50%; transform:translateY(-50%); color:#6366f1; font-weight:700; font-size:1rem; }
+.ocupacion-bar { height:1.3rem; background:#e2e8f0; border:1px solid #94a3b8; border-radius:999px; overflow:hidden; min-width:100px; position:relative; }
+.ocupacion-fill { height:100%; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; transition:width 0.3s; }
+.ocupacion-text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:#0f172a; text-shadow:0 0 3px #fff, 0 0 3px #fff; z-index:1; pointer-events:none; }
+@media print{.no-print{display:none!important}}
 </style>
 
 <div class="tab-bar">
@@ -59,12 +76,19 @@ tbody tr:hover { background:#f8fafc; }
                 <option value="inactivos">Inactivos</option>
             </select>
         </div>
+        <div class="form-group">
+            <label>Nombre / Carnet</label>
+            <input type="text" name="nombre" class="form-control" placeholder="Buscar socio..." oninput="programarBusquedaSocios()">
+        </div>
         <button class="btn btn-primary" onclick="recargarRF('socios',this)">Generar Reporte</button>
     </div>
     <div id="contenido-socios" class="empty-state">Cargando...</div>
+    <div id="detalle-socio-container">
+        <div id="detalle-socio" class="detalle-socio"></div>
+    </div>
     <div class="action-print no-print">
-        <button onclick="window.print()" class="btn btn-primary">Exportar PDF</button>
-        <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
+        <button onclick="imprimirPDFGeneral()" class="btn btn-primary">Imprimir PDF General</button>
+        <button onclick="descargarPDF('contenido-socios','Reporte General de Socios','reporte_socios')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -87,12 +111,24 @@ tbody tr:hover { background:#f8fafc; }
                 <option value="Auditada">Auditada</option>
             </select>
         </div>
+        <div class="form-group">
+            <label>Sucursal</label>
+            <select name="id_sucursal" class="form-control">
+                <option value="">Todas</option>
+                @foreach($sucursales as $s)
+                    <option value="{{ $s->idSucursal }}">{{ $s->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
         <button class="btn btn-primary" onclick="recargarRF('financiero',this)">Generar Reporte</button>
     </div>
     <div id="contenido-financiero" class="empty-state">Cargando...</div>
+    <div id="detalle-financiero-container">
+        <div id="detalle-financiero" class="detalle-socio"></div>
+    </div>
     <div class="action-print no-print">
-        <button onclick="window.print()" class="btn btn-primary">Exportar PDF</button>
-        <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
+        <button onclick="imprimirPDFFinancieroGeneral()" class="btn btn-primary">Imprimir PDF General</button>
+        <button onclick="descargarPDF('contenido-financiero','Reporte Financiero','reporte_financiero')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -106,11 +142,16 @@ tbody tr:hover { background:#f8fafc; }
             <label>Fecha Fin</label>
             <input type="date" name="fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
         </div>
+        <div class="form-group">
+            <label>Nombre / Carnet</label>
+            <input type="text" name="nombre" class="form-control" placeholder="Buscar empleado...">
+        </div>
         <button class="btn btn-primary" onclick="recargarRF('asistencia',this)">Generar Reporte</button>
     </div>
     <div id="contenido-asistencia" class="empty-state">Cargando...</div>
     <div class="action-print no-print">
-        <button onclick="window.print()" class="btn btn-primary">Exportar PDF</button>
+        <button onclick="imprimirContenido('contenido-asistencia')" class="btn btn-primary">Exportar PDF</button>
+        <button onclick="descargarPDF('contenido-asistencia','Reporte de Asistencia','reporte_asistencia')" class="btn btn-outline">Descargar PDF</button>
         <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
     </div>
 </div>
@@ -125,12 +166,19 @@ tbody tr:hover { background:#f8fafc; }
             <label>Fecha Fin</label>
             <input type="date" name="fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
         </div>
+        <div class="form-group">
+            <label>Instructor</label>
+            <input type="text" name="instructor" class="form-control" placeholder="Nombre del instructor...">
+        </div>
         <button class="btn btn-primary" onclick="recargarRF('clases',this)">Generar Reporte</button>
     </div>
     <div id="contenido-clases" class="empty-state">Cargando...</div>
+    <div id="detalle-clases-container">
+        <div id="detalle-clases" class="detalle-socio"></div>
+    </div>
     <div class="action-print no-print">
-        <button onclick="window.print()" class="btn btn-primary">Exportar PDF</button>
-        <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
+        <button onclick="imprimirPDFClasesGeneral()" class="btn btn-primary">Imprimir PDF General</button>
+        <button onclick="descargarPDF('contenido-clases','Reporte de Clases','reporte_clases')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -146,11 +194,16 @@ tbody tr:hover { background:#f8fafc; }
                 <option value="De Baja">De Baja</option>
             </select>
         </div>
+        <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" name="nombre" class="form-control" placeholder="Buscar equipo...">
+        </div>
         <button class="btn btn-primary" onclick="recargarRF('equipamiento',this)">Generar Reporte</button>
     </div>
     <div id="contenido-equipamiento" class="empty-state">Cargando...</div>
     <div class="action-print no-print">
-        <button onclick="window.print()" class="btn btn-primary">Exportar PDF</button>
+        <button onclick="imprimirContenido('contenido-equipamiento')" class="btn btn-primary">Exportar PDF</button>
+        <button onclick="descargarPDF('contenido-equipamiento','Reporte de Equipamiento','reporte_equipamiento')" class="btn btn-outline">Descargar PDF</button>
         <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
     </div>
 </div>
@@ -198,6 +251,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-financiero-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-financiero-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="descargarPDF('admin-financiero-content','Reporte Financiero Admin','reporte_financiero_admin')" class="btn btn-outline">Descargar PDF</button>
             <button onclick="imprimirContenido('admin-financiero-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
@@ -225,6 +279,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-equipos-content"><div class="empty-state">Seleccione un filtro y presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="descargarPDF('admin-equipos-content','Reporte de Equipos Admin','reporte_equipos_admin')" class="btn btn-outline">Descargar PDF</button>
             <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
@@ -250,6 +305,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-desempeno-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="descargarPDF('admin-desempeno-content','Reporte de Desempeño','reporte_desempeno')" class="btn btn-outline">Descargar PDF</button>
             <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
@@ -271,6 +327,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-membresias-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="descargarPDF('admin-membresias-content','Reporte de Membresías','reporte_membresias')" class="btn btn-outline">Descargar PDF</button>
             <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
@@ -292,6 +349,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-renovaciones-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-primary">Exportar PDF</button>
+            <button onclick="descargarPDF('admin-renovaciones-content','Reporte de Renovaciones','reporte_renovaciones')" class="btn btn-outline">Descargar PDF</button>
             <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-outline">Imprimir</button>
         </div>
     </div>
@@ -308,6 +366,18 @@ function switchTab(tabId, btn) {
 function cargarRF(reporte, btn) {
     switchTab(reporte, btn);
     var cont=document.getElementById('contenido-'+reporte);
+    if(reporte==='socios'){
+        document.getElementById('detalle-socio').classList.remove('visible');
+        document.getElementById('detalle-socio').innerHTML='';
+    }
+    if(reporte==='financiero'){
+        document.getElementById('detalle-financiero').classList.remove('visible');
+        document.getElementById('detalle-financiero').innerHTML='';
+    }
+    if(reporte==='clases'){
+        document.getElementById('detalle-clases').classList.remove('visible');
+        document.getElementById('detalle-clases').innerHTML='';
+    }
     if(cont.getAttribute('data-cargado')) return;
     fetchReporte(reporte, cont);
 }
@@ -316,6 +386,18 @@ function recargarRF(reporte, btn) {
     if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
     var cont=document.getElementById('contenido-'+reporte);
     cont.removeAttribute('data-cargado');
+    if(reporte==='socios'){
+        document.getElementById('detalle-socio').classList.remove('visible');
+        document.getElementById('detalle-socio').innerHTML='';
+    }
+    if(reporte==='financiero'){
+        document.getElementById('detalle-financiero').classList.remove('visible');
+        document.getElementById('detalle-financiero').innerHTML='';
+    }
+    if(reporte==='clases'){
+        document.getElementById('detalle-clases').classList.remove('visible');
+        document.getElementById('detalle-clases').innerHTML='';
+    }
     fetchReporte(reporte, cont, function(){
         if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}
     });
@@ -333,10 +415,19 @@ function fetchReporte(reporte, cont, cb) {
     if(estadoSelect) params.set('estado', estadoSelect.value);
     var ecSelect=document.querySelector('#tab-'+reporte+' select[name=estado_caja]');
     if(ecSelect) params.set('estado_caja', ecSelect.value);
+    var nombreInput=document.querySelector('#tab-'+reporte+' input[name=nombre]');
+    if(nombreInput) params.set('nombre', nombreInput.value);
+    var sucSelect=document.querySelector('#tab-'+reporte+' select[name=id_sucursal]');
+    if(sucSelect) params.set('id_sucursal', sucSelect.value);
+    var instructorInput=document.querySelector('#tab-'+reporte+' input[name=instructor]');
+    if(instructorInput) params.set('instructor', instructorInput.value);
     fetch('/reportes/'+reporte+'?'+params.toString(),{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
             cont.setAttribute('data-cargado','1');
             cont.innerHTML=renderReporte(reporte,d);
+            if(reporte==='socios') attachSociosClickHandler();
+            if(reporte==='financiero') attachFinancieroClickHandler();
+            if(reporte==='clases') attachClasesClickHandler();
             if(cb) cb();
         }).catch(function(){cont.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar</div>';if(cb) cb();});
 }
@@ -351,7 +442,7 @@ window.renderReporte=function(reporte, d) {
             (d.socios||[]).forEach(function(s){
                 var nom=(s.usuario?s.usuario.nombre1:'')+' '+(s.usuario?s.usuario.apellido1:'');
                 var act=s.membresia&&s.membresia.estadoMembresia=='Activa';
-                h+='<tr><td><strong>'+s.carnetSocio+'</strong></td><td>'+nom+'</td><td>'+(s.usuario?s.usuario.correo:'N/A')+'</td><td>'+(s.usuario?s.usuario.telefono:'N/A')+'</td>';
+                h+='<tr class="row-clickable" data-carnet="'+s.carnetSocio+'"><td><strong>'+s.carnetSocio+'</strong></td><td>'+nom+'</td><td>'+(s.usuario?s.usuario.correo:'N/A')+'</td><td>'+(s.usuario?s.usuario.telefono:'N/A')+'</td>';
                 h+='<td><span class="badge '+(act?'badge-success':'badge-warning')+'">'+(act?'Activo':'Vencido/Inactivo')+'</span></td>';
                 h+='<td>'+(s.membresia?s.membresia.fechaFinMembresia:'N/A')+'</td>';
                 h+='<td>'+(s.strikes>0?'<span class="badge badge-danger">'+s.strikes+'</span>':'<span style="color:#94a3b8;">0</span>')+'</td></tr>';
@@ -368,37 +459,39 @@ window.renderReporte=function(reporte, d) {
                 for(var k in d.ingresosPorEstado) h+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.5rem;padding:0.75rem 1rem;text-align:center;flex:1;min-width:120px;"><strong style="display:block;font-size:0.75rem;color:#64748b;">'+k+'</strong><span style="font-size:1.1rem;font-weight:700;color:#0f172a;">$'+Number(d.ingresosPorEstado[k]).toFixed(2)+'</span></div>';
                 h+='</div>';
             }
-            h+='<table><thead><tr><th>ID</th><th>Fecha</th><th>Monto Apertura</th><th>Monto Cierre</th><th>Estado</th></tr></thead><tbody>';
+            h+='<table><thead><tr><th>ID Caja</th><th>Sucursal</th><th>Fecha</th><th>Apertura</th><th>Cierre</th><th>Estado</th></tr></thead><tbody>';
             (d.pagos||[]).forEach(function(p){
                 var bc=p.estadoCaja==='Abierta'?'badge-green':p.estadoCaja==='Cerrada'?'badge-amber':'badge-blue';
-                h+='<tr><td>'+p.idCaja+'</td><td>'+p.fechaApertura+'</td><td>$'+Number(p.montoApertura).toFixed(2)+'</td><td>$'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
+                h+='<tr class="row-clickable" data-idcaja="'+p.idCaja+'"><td><strong>'+p.idCaja+'</strong></td><td>'+(p.sucursalNombre||'N/A')+'</td><td>'+p.fechaApertura+'</td><td>$'+Number(p.montoApertura).toFixed(2)+'</td><td>$'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
             });
-            if(!d.pagos||!d.pagos.length) h+='<tr><td colspan="5" class="empty-state">No hay pagos</td></tr>';
+            if(!d.pagos||!d.pagos.length) h+='<tr><td colspan="6" class="empty-state">No hay pagos</td></tr>';
             h+='</tbody></table>'; return h;
         },
         asistencia: function() {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.totalAsistencias||0)+'</div><div class="label">Total Asistencias</div></div>';
             var prom=(d.asistenciasPorDia&&Object.keys(d.asistenciasPorDia).length>0)?(d.totalAsistencias/Object.keys(d.asistenciasPorDia).length).toFixed(2):0;
             h+='<div class="stat-card"><div class="number blue">'+prom+'</div><div class="label">Promedio Diario</div></div></div>';
-            h+='<table><thead><tr><th>ID</th><th>Empleado</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>';
+            h+='<table><thead><tr><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Salida</th><th>Esperado</th><th>Estado</th></tr></thead><tbody>';
             (d.asistencias||[]).forEach(function(a){
                 var nom=a.nombreEmpleado||a.carnetEmpleado;
                 var fe=new Date(a.fechaHoraEntrada).toLocaleDateString('es-ES');
-                var en=new Date(a.fechaHoraEntrada).toLocaleTimeString('es-ES');
-                var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleTimeString('es-ES'):'N/A';
+                var en=a.fechaHoraEntrada?new Date(a.fechaHoraEntrada).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
+                var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
                 var bc=a.estadoAsistencia==='Puntual'?'badge-green':a.estadoAsistencia==='Tardanza'?'badge-amber':'badge-red';
-                h+='<tr><td>'+a.idAsistencia+'</td><td>'+nom+'</td><td>'+fe+'</td><td>'+en+'</td><td>'+sa+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
+                var esp=a.esperadoEntrada!=='—' ? a.esperadoEntrada+' - '+a.esperadoSalida : '—';
+                h+='<tr><td><strong>'+nom+'</strong></td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td>'+sa+'</td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
             });
-            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="6" class="empty-state">No hay asistencias</td></tr>';
+            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="7" class="empty-state">No hay asistencias</td></tr>';
             h+='</tbody></table>'; return h;
         },
         clases: function() {
-            var h='<table><thead><tr><th>Clase</th><th>Instructor</th><th>Fecha</th><th>Capacidad</th><th>Reservados</th><th>Asistieron</th><th>Ocupacion</th></tr></thead><tbody>';
+            var h='<table><thead><tr><th>Clase</th><th>Instructor</th><th>Fecha</th><th>Hora</th><th>Capacidad</th><th>Reservados</th><th>Asistieron</th><th>Ocupacion</th></tr></thead><tbody>';
             (d.estadisticas||[]).forEach(function(c){
                 var pct=c.ocupacion||0;
-                h+='<tr><td>'+c.nombre+'</td><td>'+c.instructor+'</td><td>'+c.fecha+'</td><td>'+c.capacidad+'</td><td>'+c.reservados+'</td><td>'+c.asistieron+'</td><td><div style="height:1.25rem;background:#f1f5f9;border-radius:999px;overflow:hidden;min-width:120px;"><div style="height:100%;width:'+pct+'%;background:'+(pct>80?'#ef4444':pct>50?'#f59e0b':'#22c55e')+';border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;color:#fff;">'+pct+'%</div></div></td></tr>';
+                var barBg=pct>80?'#dc2626':pct>50?'#d97706':'#16a34a';
+                h+='<tr class="row-clickable" data-idclase="'+c.idClaseGrupal+'"><td><strong>'+c.nombre+'</strong></td><td>'+c.instructor+'</td><td>'+c.fecha+'</td><td>'+(c.horaInicio?c.horaInicio.substring(0,5):'')+' - '+(c.horaFin?c.horaFin.substring(0,5):'')+'</td><td>'+c.capacidad+'</td><td>'+c.reservados+'</td><td>'+c.asistieron+'</td><td><div class="ocupacion-bar"><div class="ocupacion-fill" style="width:'+pct+'%;background:'+barBg+';"></div><span class="ocupacion-text">'+pct+'%</span></div></td></tr>';
             });
-            if(!d.estadisticas||!d.estadisticas.length) h+='<tr><td colspan="7" class="empty-state">No hay clases</td></tr>';
+            if(!d.estadisticas||!d.estadisticas.length) h+='<tr><td colspan="8" class="empty-state">No hay clases</td></tr>';
             h+='</tbody></table>'; return h;
         },
         equipamiento: function() {
@@ -420,10 +513,40 @@ window.renderReporte=function(reporte, d) {
     return (renderers[reporte]||function(){return '<div class="empty-state">Reporte no disponible</div>';})();
 };
 
+function stripNoPrint(html){
+    var d=document.createElement('div');
+    d.innerHTML=html;
+    d.querySelectorAll('.no-print').forEach(function(el){el.remove();});
+    return d.innerHTML;
+}
+function descargarPDF(contenidoId, titulo, nombreArchivo) {
+    var original=document.getElementById(contenidoId);
+    if(!original) return;
+    var html=stripNoPrint(original.innerHTML);
+    var f=document.createElement('form');
+    f.method='POST';f.action='/reportes/generar-pdf';
+    f.style.display='none';
+    var inp=document.createElement('input');
+    inp.type='hidden';inp.name='_token';inp.value='{{ csrf_token() }}';
+    f.appendChild(inp);
+    var inp2=document.createElement('input');
+    inp2.type='hidden';inp2.name='html';inp2.value=html;
+    f.appendChild(inp2);
+    var inp3=document.createElement('input');
+    inp3.type='hidden';inp3.name='nombreArchivo';inp3.value=nombreArchivo;
+    f.appendChild(inp3);
+    var inp4=document.createElement('input');
+    inp4.type='hidden';inp4.name='titulo';inp4.value=titulo;
+    f.appendChild(inp4);
+    document.body.appendChild(f);
+    f.submit();
+    document.body.removeChild(f);
+}
+
 function imprimirContenido(id) {
-    var c=document.getElementById(id).innerHTML;
+    var c=stripNoPrint(document.getElementById(id).innerHTML);
     var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Reporte</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}@media print{.no-print{display:none!important}}</style></head><body>');
+    w.document.write('<!DOCTYPE html><html><head><title>Reporte</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}</style></head><body>');
     w.document.write(c);
     w.document.write('</body></html>');
     w.document.close();
@@ -554,6 +677,208 @@ function cargarAdminRenovaciones(btn) {
             h+='</tbody></table>';c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-renovaciones-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
+}
+
+var timeoutBusquedaSocios=null;
+function programarBusquedaSocios(){
+    if(timeoutBusquedaSocios) clearTimeout(timeoutBusquedaSocios);
+    timeoutBusquedaSocios=setTimeout(function(){recargarRF('socios');},300);
+}
+
+function attachSociosClickHandler(){
+    document.querySelectorAll('#contenido-socios .row-clickable').forEach(function(el){
+        el.addEventListener('click',function(e){
+            var carnet=this.getAttribute('data-carnet');
+            if(carnet) cargarDetalleSocio(carnet);
+        });
+    });
+}
+
+function cargarDetalleSocio(carnet){
+    var detail=document.getElementById('detalle-socio');
+    detail.innerHTML='<div class="empty-state">Cargando detalle...</div>';
+    detail.classList.remove('visible');
+    fetch('/reportes/socios/'+carnet,{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();}).then(function(d){
+            var h='<div class="socio-header"><div><div class="nombre">'+(d.socio.usuario?d.socio.usuario.nombre1+' '+d.socio.usuario.apellido1:'')+'</div><div class="carnet">Carnet: '+d.socio.carnetSocio+' | '+(d.socio.usuario?d.socio.usuario.correo:'')+' | Tel: '+(d.socio.usuario?d.socio.usuario.telefono:'')+'</div></div><div><span class="badge '+(d.socio.membresia&&d.socio.membresia.estadoMembresia=='Activa'?'badge-success':'badge-warning')+'">'+(d.socio.membresia&&d.socio.membresia.estadoMembresia=='Activa'?'Activo':'Vencido/Inactivo')+'</span></div></div>';
+
+            h+='<h4>Historial de Membresias</h4>';
+            h+='<table><thead><tr><th>#</th><th>Plan</th><th>Inicio</th><th>Fin</th><th>Estado</th></tr></thead><tbody>';
+            (d.membresias||[]).forEach(function(m){
+                var bc=m.estadoMembresia==='Activa'?'badge-success':m.estadoMembresia==='Vencida'?'badge-warning':'badge-gray';
+                h+='<tr><td>'+m.idMembresia+'</td><td>'+(m.plan?m.plan.nombrePlan:'N/A')+'</td><td>'+m.fechaInicioMembresia+'</td><td>'+m.fechaFinMembresia+'</td><td><span class="badge '+bc+'">'+m.estadoMembresia+'</span></td></tr>';
+            });
+            if(!d.membresias||!d.membresias.length) h+='<tr><td colspan="5" class="empty-state">Sin membresias registradas</td></tr>';
+            h+='</tbody></table>';
+
+            h+='<h4>Clases Pasadas ('+(d.clasesPasadas||[]).length+')</h4>';
+            h+='<table><thead><tr><th>Clase</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead><tbody>';
+            (d.clasesPasadas||[]).forEach(function(r){
+                var horario=r.clase?r.clase.horaInicio+' - '+r.clase.horaFin:'';
+                h+='<tr><td>'+(r.clase&&r.clase.actividad?r.clase.actividad.nombreActividad:'N/A')+'</td><td>'+r.fechaReserva+'</td><td>'+horario+'</td><td><span class="badge badge-success">Asistido</span></td></tr>';
+            });
+            if(!d.clasesPasadas||!d.clasesPasadas.length) h+='<tr><td colspan="4" class="empty-state">Sin clases pasadas</td></tr>';
+            h+='</tbody></table>';
+
+            h+='<h4>Clases Futuras ('+(d.clasesFuturas||[]).length+')</h4>';
+            h+='<table><thead><tr><th>Clase</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead><tbody>';
+            (d.clasesFuturas||[]).forEach(function(r){
+                var horario=r.clase?r.clase.horaInicio+' - '+r.clase.horaFin:'';
+                h+='<tr><td>'+(r.clase&&r.clase.actividad?r.clase.actividad.nombreActividad:'N/A')+'</td><td>'+r.fechaReserva+'</td><td>'+horario+'</td><td><span class="badge badge-blue">'+r.estadoReserva+'</span></td></tr>';
+            });
+            if(!d.clasesFuturas||!d.clasesFuturas.length) h+='<tr><td colspan="4" class="empty-state">Sin clases futuras</td></tr>';
+            h+='</tbody></table>';
+
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFSocio('+carnet+')" class="btn btn-primary">Imprimir PDF Socio</button> <button onclick="descargarPDF(\'detalle-socio\',\'Ficha Socio - Carnet #'+carnet+'\',\'socio_\'+carnet+\')" class="btn btn-outline">Descargar PDF</button></div>';
+
+            detail.innerHTML=h;
+            detail.classList.add('visible');
+        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+}
+
+function imprimirPDFGeneral(){
+    var content=stripNoPrint(document.getElementById('contenido-socios').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Reporte General de Socios</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Reporte General de Socios</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
+}
+
+function imprimirPDFSocio(carnet){
+    if(!carnet) return;
+    var content=stripNoPrint(document.getElementById('detalle-socio').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Detalle Socio - '+carnet+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Socio - Carnet #'+carnet+'</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
+}
+
+function attachFinancieroClickHandler(){
+    document.querySelectorAll('#contenido-financiero .row-clickable').forEach(function(el){
+        el.addEventListener('click',function(e){
+            var idCaja=this.getAttribute('data-idcaja');
+            if(idCaja) cargarDetalleFinanciero(idCaja);
+        });
+    });
+}
+
+function cargarDetalleFinanciero(idCaja){
+    var detail=document.getElementById('detalle-financiero');
+    detail.innerHTML='<div class="empty-state">Cargando detalle...</div>';
+    detail.classList.remove('visible');
+    fetch('/reportes/financiero/'+idCaja,{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();}).then(function(d){
+            var h='<div class="socio-header"><div><div class="nombre">Caja #'+d.caja.idCaja+' - '+d.caja.sucursalNombre+'</div><div class="carnet">'+d.caja.fechaApertura+' | Apertura: $'+Number(d.caja.montoApertura).toFixed(2)+' | Cierre: $'+Number(d.caja.montoCierre||0).toFixed(2)+' | Estado: '+d.caja.estadoCaja+'</div></div></div>';
+
+            h+='<h4>Membresias Compradas ('+(d.membresias||[]).length+')</h4>';
+            h+='<table><thead><tr><th>Recibo</th><th>Socio</th><th>Plan</th><th>Costo</th><th>Inicio</th><th>Fin</th><th>Pago</th></tr></thead><tbody>';
+            (d.membresias||[]).forEach(function(m){
+                h+='<tr><td>#'+m.idRecibo+'</td><td>'+m.nombreSocio+' ('+m.carnetSocio+')</td><td>'+m.nombrePlan+'</td><td>$'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.fechaInicioMembresia+'</td><td>'+m.fechaFinMembresia+'</td><td>$'+Number(m.montoTotal).toFixed(2)+'</td></tr>';
+            });
+            if(!d.membresias||!d.membresias.length) h+='<tr><td colspan="7" class="empty-state">Sin membresias en esta caja</td></tr>';
+            h+='</tbody></table>';
+            h+='<div style="text-align:right;margin-bottom:1rem;font-size:0.9rem;"><strong>Total Membresias: $'+Number(d.totalMembresias||0).toFixed(2)+'</strong></div>';
+
+            h+='<h4>Salidas de Caja ('+(d.salidas||[]).length+')</h4>';
+            h+='<table><thead><tr><th>ID</th><th>Descripcion</th><th>Costo</th><th>Fecha</th></tr></thead><tbody>';
+            (d.salidas||[]).forEach(function(s){
+                h+='<tr><td>'+s.idSalida+'</td><td>'+s.descripcion+'</td><td>$'+Number(s.costo).toFixed(2)+'</td><td>'+s.fechaA+'</td></tr>';
+            });
+            if(!d.salidas||!d.salidas.length) h+='<tr><td colspan="4" class="empty-state">Sin salidas en esta caja</td></tr>';
+            h+='</tbody></table>';
+            h+='<div style="text-align:right;font-size:0.9rem;"><strong>Total Salidas: $'+Number(d.totalSalidas||0).toFixed(2)+'</strong></div>';
+
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFFinancieroDetalle('+idCaja+')" class="btn btn-primary">Imprimir PDF Caja</button> <button onclick="descargarPDF(\'detalle-financiero\',\'Detalle de Caja #'+idCaja+'\',\'caja_\'+idCaja+\')" class="btn btn-outline">Descargar PDF</button></div>';
+
+            detail.innerHTML=h;
+            detail.classList.add('visible');
+        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+}
+
+function imprimirPDFFinancieroGeneral(){
+    var content=stripNoPrint(document.getElementById('contenido-financiero').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Reporte Financiero</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Reporte Financiero</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
+}
+
+function imprimirPDFFinancieroDetalle(idCaja){
+    if(!idCaja) return;
+    var content=stripNoPrint(document.getElementById('detalle-financiero').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Detalle Caja #'+idCaja+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Caja #'+idCaja+'</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
+}
+
+function attachClasesClickHandler(){
+    document.querySelectorAll('#contenido-clases .row-clickable').forEach(function(el){
+        el.addEventListener('click',function(e){
+            var idClase=this.getAttribute('data-idclase');
+            if(idClase) cargarDetalleClase(idClase);
+        });
+    });
+}
+
+function cargarDetalleClase(idClase){
+    var detail=document.getElementById('detalle-clases');
+    detail.innerHTML='<div class="empty-state">Cargando detalle...</div>';
+    detail.classList.remove('visible');
+    fetch('/reportes/clases/'+idClase,{headers:{'Accept':'application/json'}})
+        .then(function(r){return r.json();}).then(function(d){
+            var c=d.clase;
+            var h='<div class="socio-header"><div><div class="nombre">'+c.nombreActividad+'</div><div class="carnet">'+c.fecha+' | '+c.horaInicio.substring(0,5)+' - '+c.horaFin.substring(0,5)+' | Instructor: '+c.instructor+'</div></div><div><span class="badge badge-blue">Capacidad: '+c.capacidad+'</span> <span class="badge badge-success">Reservados: '+c.totalReservas+'</span> <span class="badge badge-amber">Asistieron: '+c.asistieron+'</span></div></div>';
+
+            h+='<h4>Socios que Reservaron ('+(d.socios||[]).length+')</h4>';
+            h+='<table><thead><tr><th>Socio</th><th>Carnet</th><th>Reserva</th><th>Estado</th></tr></thead><tbody>';
+            (d.socios||[]).forEach(function(s){
+                var bc=s.estadoReserva==='Asistido'?'badge-success':s.estadoReserva==='Reservado'?'badge-blue':s.estadoReserva==='Cancelado'?'badge-gray':'badge-red';
+                h+='<tr><td><strong>'+s.nombreSocio+'</strong></td><td>'+s.carnetSocio+'</td><td>'+s.fechaReserva+'</td><td><span class="badge '+bc+'">'+s.estadoReserva+'</span></td></tr>';
+            });
+            if(!d.socios||!d.socios.length) h+='<tr><td colspan="4" class="empty-state">Sin reservas</td></tr>';
+            h+='</tbody></table>';
+
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFClasesDetalle('+idClase+')" class="btn btn-primary">Imprimir PDF Clase</button> <button onclick="descargarPDF(\'detalle-clases\',\'Detalle de Clase #'+idClase+'\',\'clase_\'+idClase+\')" class="btn btn-outline">Descargar PDF</button></div>';
+
+            detail.innerHTML=h;
+            detail.classList.add('visible');
+        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+}
+
+function imprimirPDFClasesGeneral(){
+    var content=stripNoPrint(document.getElementById('contenido-clases').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Reporte de Clases</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Reporte de Clases Grupales</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
+}
+
+function imprimirPDFClasesDetalle(idClase){
+    if(!idClase) return;
+    var content=stripNoPrint(document.getElementById('detalle-clases').innerHTML);
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>Detalle Clase #'+idClase+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
+    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Clase</h2>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(function(){w.print();},500);
 }
 
 document.addEventListener('DOMContentLoaded',function(){

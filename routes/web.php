@@ -103,6 +103,8 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/admin/caja/movimientos', [CajaController::class, 'movimientos'])->name('admin.caja.movimientos');
         Route::post('/admin/caja/recibo', [CajaController::class, 'crearRecibo'])->name('admin.caja.recibo');
         Route::get('/admin/caja/recibo/{id}', [CajaController::class, 'mostrarRecibo'])->name('admin.caja.recibo.mostrar');
+        Route::post('/admin/caja/salidas', [CajaController::class, 'salidasStore'])->name('admin.caja.salidas.store');
+        Route::get('/admin/caja/salidas', [CajaController::class, 'salidasListar'])->name('admin.caja.salidas.listar');
         Route::get('/admin/caja/buscar-socio/{carnet}', [CajaController::class, 'buscarSocio'])->name('admin.caja.buscarSocio');
         Route::get('/admin/caja/planes', [CajaController::class, 'planes'])->name('admin.caja.planes');
         Route::get('/admin/reportes', [ReporteController::class, 'index'])->name('admin.reportes');
@@ -168,6 +170,8 @@ Route::middleware('auth.usuario')->group(function () {
         Route::get('/recepcionista/caja/movimientos', [RecepcionistaController::class, 'movimientos'])->name('recepcionista.caja.movimientos');
         Route::post('/recepcionista/caja/recibo', [RecepcionistaController::class, 'crearRecibo'])->name('recepcionista.caja.recibo');
         Route::get('/recepcionista/caja/recibo/{id}', [RecepcionistaController::class, 'mostrarRecibo'])->name('recepcionista.caja.mostrar_recibo');
+        Route::post('/recepcionista/caja/salidas', [RecepcionistaController::class, 'salidasStore'])->name('recepcionista.caja.salidas.store');
+        Route::get('/recepcionista/caja/salidas', [RecepcionistaController::class, 'salidasListar'])->name('recepcionista.caja.salidas.listar');
         Route::get('/recepcionista/caja/buscar-socio/{carnet}', [RecepcionistaController::class, 'buscarSocio'])->name('recepcionista.caja.buscarSocio');
         Route::get('/recepcionista/caja/planes', [RecepcionistaController::class, 'planes'])->name('recepcionista.caja.planes');
     });
@@ -214,6 +218,10 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
     Route::get('/clases', [App\Http\Controllers\ReporteController::class, 'clases'])->name('clases');
     Route::get('/equipamiento', [App\Http\Controllers\ReporteController::class, 'equipamiento'])->name('equipamiento');
     Route::get('/personal', [App\Http\Controllers\ReporteController::class, 'personalDesempeno'])->name('personal');
+    Route::get('/socios/{carnet}', [App\Http\Controllers\ReporteController::class, 'detalle'])->name('socios.detalle');
+    Route::get('/financiero/{idCaja}', [App\Http\Controllers\ReporteController::class, 'financieroDetalle'])->name('financiero.detalle');
+    Route::get('/clases/{idClase}', [App\Http\Controllers\ReporteController::class, 'claseDetalle'])->name('clases.detalle');
+    Route::post('/generar-pdf', [App\Http\Controllers\ReporteController::class, 'generarPDF'])->name('generar.pdf');
 });
 
 // ==========================================

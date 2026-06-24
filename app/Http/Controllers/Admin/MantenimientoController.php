@@ -83,6 +83,7 @@ class MantenimientoController extends Controller
                     'estadoEquipo'     => 'Operativo',
                 ], $usuarioA, $direccionIP);
             }
+
         }
 
         return redirect()->route('admin.mantenimientos.index', $request->only(['estado', 'fecha_desde', 'fecha_hasta']))

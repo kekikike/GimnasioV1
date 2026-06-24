@@ -97,7 +97,7 @@
                 </div>
                 <div>
                     <label>Monto total (Bs)</label>
-                    <input v-model="montoTotal" type="number" step="0.01" class="form-control" min="0">
+                    <input v-model="montoTotal" type="number" step="0.01" class="form-control" readonly style="background:#f1f5f9;">
                 </div>
             </div>
 
@@ -124,6 +124,45 @@
                 <button @click="registrarRecibo" class="btn btn-success" style="margin-top:1rem;" :disabled="!puedeRegistrar">
                     Registrar Recibo
                 </button>
+            </div>
+        </div>
+
+        <!-- Registrar Salida -->
+        <div v-if="cajaAbierta && cajaAbierta.estadoCaja === 'Abierta'" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Registrar Salida (Egreso)</h3>
+            <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:1rem; align-items:end;">
+                <div>
+                    <label>Descripcion</label>
+                    <input v-model="descripcionSalida" type="text" class="form-control" placeholder="Ej: Compra de insumos...">
+                </div>
+                <div>
+                    <label>Costo (Bs)</label>
+                    <input v-model="costosalida" type="number" step="0.01" class="form-control" min="0.01" placeholder="0.00">
+                </div>
+                <div>
+                    <button @click="registrarSalida" class="btn btn-warning" style="width:100%;" :disabled="!descripcionSalida || !costosalida || costosalida <= 0">Registrar Salida</button>
+                </div>
+            </div>
+            <div v-if="salidas.length > 0" style="margin-top:1rem;">
+                <table class="table" style="width:100%;">
+                    <thead style="background:#f8fafc;">
+                        <tr>
+                            <th style="padding:0.5rem; text-align:left;">Descripcion</th>
+                            <th style="padding:0.5rem; text-align:left;">Costo</th>
+                            <th style="padding:0.5rem; text-align:left;">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="s in salidas" :key="s.idSalida">
+                            <td style="padding:0.5rem;">{{ s.descripcion }}</td>
+                            <td style="padding:0.5rem;">Bs. {{ formatNum(s.costo) }}</td>
+                            <td style="padding:0.5rem;">{{ formatFecha(s.fechaA) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="text-align:right; font-weight:700; padding:0.5rem; border-top:2px solid #e2e8f0;">
+                    Total salidas: Bs. {{ formatNum(totalSalidasHoy) }}
+                </div>
             </div>
         </div>
 
@@ -158,6 +197,35 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Salidas de Caja -->
+        <div v-if="cajaAbierta" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-top:1.5rem;">
+            <h3 style="margin-bottom:1rem; color:#1e293b;">Salidas de Caja</h3>
+            <div style="overflow-x:auto;">
+                <table class="table" style="width:100%; border-collapse:collapse;">
+                    <thead style="background:#f8fafc;">
+                        <tr>
+                            <th style="padding:0.75rem; text-align:left;">Descripcion</th>
+                            <th style="padding:0.75rem; text-align:left;">Costo</th>
+                            <th style="padding:0.75rem; text-align:left;">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="salidas.length === 0">
+                            <td colspan="3" style="padding:1rem; color:#64748b; text-align:center;">No hay salidas registradas.</td>
+                        </tr>
+                        <tr v-for="s in salidas" :key="s.idSalida">
+                            <td style="padding:0.75rem;">{{ s.descripcion }}</td>
+                            <td style="padding:0.75rem;">Bs. {{ formatNum(s.costo) }}</td>
+                            <td style="padding:0.75rem;">{{ formatFecha(s.fechaA) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-if="salidas.length > 0" style="text-align:right; font-weight:700; padding:0.75rem; border-top:2px solid #e2e8f0;">
+                    Total salidas: Bs. {{ formatNum(totalSalidasHoy) }}
+                </div>
             </div>
         </div>
 
@@ -200,7 +268,10 @@ createApp({
         const metodosPagoArr = ref([]);
         const reciboPreview = ref(null);
         const reciboMetodos = ref([]);
-        const totalMantenimientosHoy = ref(0);
+        const totalSalidasHoy = ref(0);
+        const salidas = ref([]);
+        const descripcionSalida = ref('');
+        const costosalida = ref('');
 
         const textoStatus = computed(() => {
             if (!cajaAbierta.value) return 'Caja cerrada / no abierta';
@@ -220,7 +291,7 @@ createApp({
 
         const montoCierreCalculado = computed(() => {
             if (!cajaAbierta.value) return 0;
-            return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalMantenimientosHoy.value;
+            return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalSalidasHoy.value;
         });
 
         const diferenciaMetodos = computed(() => {
@@ -235,34 +306,6 @@ createApp({
                 && metodosPagoArr.value.every(m => m.idMetodoPago && m.monto > 0);
         });
 
-        const formatNum = (n) => parseFloat(n || 0).toFixed(2);
-        const formatFecha = (d) => { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('es-ES'); };
-
-        const csrfToken = () => document.querySelector('meta[name=csrf-token]').content;
-
-        const abrirCaja = async () => {
-            const res = await fetch('{{ route("recepcionista.caja.abrir") }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-                body: JSON.stringify({ montoApertura: montoApertura.value })
-            });
-            const data = await res.json();
-            alert(data.message);
-            if (data.success) { montoApertura.value = ''; cargarEstado(); cargarMovimientos(); }
-        };
-
-        const cerrarCaja = async () => {
-            if (!cajaAbierta.value) return;
-            const res = await fetch('{{ url("/recepcionista/caja/cerrar") }}/' + cajaAbierta.value.idCaja, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-                body: JSON.stringify({ montoCierre: montoCierre.value })
-            });
-            const data = await res.json();
-            alert(data.message);
-            if (data.success) { montoCierre.value = ''; cargarEstado(); cargarMovimientos(); }
-        };
-
         const cargarEstado = async () => {
             try {
                 const res = await fetch('{{ route("recepcionista.caja.estado") }}');
@@ -275,14 +318,67 @@ createApp({
             } catch (e) { console.error(e); }
         };
 
+        const formatNum = (n) => parseFloat(n || 0).toFixed(2);
+        const formatFecha = (d) => { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('es-ES'); };
+
+        const abrirCaja = async () => {
+            const res = await fetch('{{ route("recepcionista.caja.abrir") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ montoApertura: montoApertura.value })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) { montoApertura.value = ''; cargarEstado(); cargarMovimientos(); }
+        };
+
+        const cerrarCaja = async () => {
+            if (!cajaAbierta.value) return;
+            const res = await fetch('{{ url("/recepcionista/caja/cerrar") }}/' + cajaAbierta.value.idCaja, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ montoCierre: montoCierre.value })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) { montoCierre.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
+        };
+
         const cargarMovimientos = async () => {
             try {
                 const res = await fetch('{{ route("recepcionista.caja.movimientos") }}');
                 const data = await res.json();
                 movimientos.value = data.movimientos || [];
-                totalMantenimientosHoy.value = parseFloat(data.totalMantenimientosHoy || 0);
+                totalSalidasHoy.value = parseFloat(data.totalSalidasHoy || 0);
+                salidas.value = data.salidas || [];
                 if (data.caja) cajaAbierta.value = data.caja;
             } catch (e) { movimientos.value = []; }
+        };
+
+        const cargarSalidas = async () => {
+            try {
+                const res = await fetch('{{ route("recepcionista.caja.salidas.listar") }}');
+                const data = await res.json();
+                salidas.value = data.salidas || [];
+                totalSalidasHoy.value = parseFloat(data.totalSalidas || 0);
+            } catch (e) { salidas.value = []; }
+        };
+
+        const registrarSalida = async () => {
+            if (!descripcionSalida.value || !costosalida.value || costosalida.value <= 0) return;
+            const res = await fetch('{{ route("recepcionista.caja.salidas.store") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                body: JSON.stringify({ descripcion: descripcionSalida.value, costo: costosalida.value })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (data.success) {
+                descripcionSalida.value = '';
+                costosalida.value = '';
+                cargarSalidas();
+                cargarMovimientos();
+            }
         };
 
         const buscarSocio = async () => {
@@ -337,7 +433,7 @@ createApp({
             try {
                 const res = await fetch('{{ route("recepcionista.caja.recibo") }}', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
@@ -394,15 +490,17 @@ createApp({
             cargarEstado();
             cargarMovimientos();
             cargarPlanes();
+            cargarSalidas();
         });
 
         return {
             cajaAbierta, sucursalNombre, montoApertura, montoCierre, metodosPago, planes, movimientos,
             socioCarnet, socioInfo, idPlan, montoTotal, metodosPagoArr,
             reciboPreview, reciboMetodos,
-            textoStatus, estiloStatus, totalRecibos, totalMantenimientosHoy, montoCierreCalculado, diferenciaMetodos, puedeRegistrar,
+            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaMetodos, puedeRegistrar,
+            salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,
-            abrirCaja, cerrarCaja, cargarMovimientos, buscarSocio, onPlanChange,
+            abrirCaja, cerrarCaja, cargarMovimientos, cargarSalidas, registrarSalida, buscarSocio, onPlanChange,
             agregarMetodo, quitarMetodo, registrarRecibo, verRecibo, imprimirRecibo
         };
     }

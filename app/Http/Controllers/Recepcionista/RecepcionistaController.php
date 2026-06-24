@@ -50,8 +50,10 @@ class RecepcionistaController extends Controller
     public function estado()
     {
         $today = date('Y-m-d');
+        $usuarioA = $this->getUsuarioA();
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
             ->where('estadoA', 1)
             ->first();
 
@@ -72,13 +74,15 @@ class RecepcionistaController extends Controller
         ]);
 
         $today = date('Y-m-d');
+        $usuarioA = $this->getUsuarioA();
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
             ->where('estadoA', 1)
             ->first();
 
         if ($cajaHoy) {
-            return response()->json(['success' => false, 'message' => 'Ya existe una caja registrada para el dia de hoy (abierta o cerrada). Solo se puede abrir/cerrar una vez por dia.'], 422);
+            return response()->json(['success' => false, 'message' => 'Ya tienes una caja registrada para el dia de hoy. Solo puedes abrir/cerrar una vez por dia.'], 422);
         }
 
         $empleado = $this->getEmpleado();
@@ -132,12 +136,13 @@ class RecepcionistaController extends Controller
             ->where('estadoA', 1)
             ->sum('montoTotal') ?? 0;
 
-        $totalMantenimientos = DB::table('TMantenimientoPreventivos')
-            ->where('fechaRealizada', $today)
-            ->where('estadoMantenimiento', 'Realizado')
-            ->sum('costoMantenimiento') ?? 0;
+        $totalSalidas = DB::table('TSalidas')
+            ->where('idCaja', $id)
+            ->whereDate('fechaA', $today)
+            ->where('estadoA', 1)
+            ->sum('costo') ?? 0;
 
-        $montoCierreCalculado = $caja->montoApertura + $totalRecibos - $totalMantenimientos;
+        $montoCierreCalculado = $caja->montoApertura + $totalRecibos - $totalSalidas;
         $diferenciaArqueo = $request->montoCierre - $montoCierreCalculado;
         $usuarioA = $this->getUsuarioA();
 
@@ -160,15 +165,17 @@ class RecepcionistaController extends Controller
             'message' => 'Caja cerrada correctamente.',
             'montoCierreCalculado' => $montoCierreCalculado,
             'totalRecibos' => $totalRecibos,
-            'totalMantenimientos' => $totalMantenimientos,
+            'totalSalidas' => $totalSalidas,
         ]);
     }
 
     public function movimientos(Request $request)
     {
         $today = date('Y-m-d');
+        $usuarioA = $this->getUsuarioA();
         $cajaHoy = DB::table('TCajas')
             ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
             ->where('estadoA', 1)
             ->first();
 
@@ -194,12 +201,79 @@ class RecepcionistaController extends Controller
             ->orderBy('r.fechaPago', 'desc')
             ->get();
 
-        $totalMantenimientos = DB::table('TMantenimientoPreventivos')
-            ->where('fechaRealizada', $today)
-            ->where('estadoMantenimiento', 'Realizado')
-            ->sum('costoMantenimiento') ?? 0;
+        $totalSalidas = DB::table('TSalidas')
+            ->where('idCaja', $cajaHoy->idCaja)
+            ->where('estadoA', 1)
+            ->sum('costo') ?? 0;
 
-        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy, 'totalMantenimientosHoy' => $totalMantenimientos]);
+        $salidas = DB::table('TSalidas')
+            ->where('idCaja', $cajaHoy->idCaja)
+            ->where('estadoA', 1)
+            ->orderBy('fechaA', 'desc')
+            ->get();
+
+        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy, 'totalSalidasHoy' => $totalSalidas ?? 0, 'salidas' => $salidas]);
+    }
+
+    public function salidasStore(Request $request)
+    {
+        $request->validate([
+            'descripcion' => 'required|string|max:500',
+            'costo' => 'required|numeric|min:0.01',
+        ]);
+
+        $today = date('Y-m-d');
+        $usuarioA = $this->getUsuarioA();
+        $cajaAbierta = DB::table('TCajas')
+            ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
+            ->where('estadoCaja', 'Abierta')
+            ->where('estadoA', 1)
+            ->first();
+
+        if (!$cajaAbierta) {
+            return response()->json(['success' => false, 'message' => 'No tienes una caja abierta para hoy.'], 422);
+        }
+
+        try {
+            DB::table('TSalidas')->insert([
+                'idCaja' => $cajaAbierta->idCaja,
+                'descripcion' => $request->descripcion,
+                'costo' => $request->costo,
+                'estadoA' => 1,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error al registrar salida: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Salida registrada correctamente.']);
+    }
+
+    public function salidasListar()
+    {
+        $today = date('Y-m-d');
+        $usuarioA = $this->getUsuarioA();
+        $cajaHoy = DB::table('TCajas')
+            ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
+            ->where('estadoA', 1)
+            ->first();
+
+        if (!$cajaHoy) {
+            return response()->json(['salidas' => []]);
+        }
+
+        $salidas = DB::table('TSalidas')
+            ->where('idCaja', $cajaHoy->idCaja)
+            ->where('estadoA', 1)
+            ->orderBy('fechaA', 'desc')
+            ->get();
+
+        $totalSalidas = $salidas->sum('costo');
+
+        return response()->json(['salidas' => $salidas, 'totalSalidas' => $totalSalidas]);
     }
 
     public function buscarSocio($carnet)
@@ -278,17 +352,19 @@ class RecepcionistaController extends Controller
             return response()->json(['success' => false, 'message' => 'Plan no encontrado.'], 404);
         }
 
+        $usuarioA = $this->getUsuarioA();
         $empleado = $this->getEmpleado();
         $idSucursal = $empleado->idSucursal ?? 1;
 
         $cajaAbierta = DB::table('TCajas')
             ->where('fechaApertura', $today)
+            ->where('usuarioA', $usuarioA)
             ->where('estadoCaja', 'Abierta')
             ->where('estadoA', 1)
             ->first();
 
         if (!$cajaAbierta) {
-            return response()->json(['success' => false, 'message' => 'No hay una caja abierta para hoy.'], 422);
+            return response()->json(['success' => false, 'message' => 'No tienes una caja abierta para hoy.'], 422);
         }
 
         DB::beginTransaction();
