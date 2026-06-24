@@ -109,17 +109,6 @@
                 <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
             </div>
 
-            <div v-if="!modoEdicion" style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #10b981; font-weight: bold;">Sucursal de Registro</div>
-
-            <div v-if="!modoEdicion">
-                <label style="font-weight: bold; font-size: 0.85rem;">Sucursal</label>
-                <select v-model="formulario.idSucursal" class="form-control" required>
-                    <option value="" disabled>Seleccione sede...</option>
-                    <option v-for="suc in sucursales" :key="suc.idSucursal" :value="suc.idSucursal">@{{ suc.nombre }}</option>
-                </select>
-                <small v-if="errores.idSucursal" style="color:#ef4444; font-size: 0.8em;">@{{ errores.idSucursal }}</small>
-            </div>
-
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
                     <template v-if="guardando">Procesando...</template>

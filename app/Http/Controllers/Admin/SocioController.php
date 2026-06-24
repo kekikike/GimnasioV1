@@ -60,9 +60,7 @@ class SocioController extends Controller
             'direccion'        => 'nullable|string|max:255',
             'contacto_emergencia_nombre' => 'nullable|string|max:100',
             'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,15',
-            'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
-            'idPlan'           => 'required|integer|exists:tplanes,idPlan',
-            'idSucursal'       => 'required|integer|exists:tsucursales,idSucursal',
+            'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -108,21 +106,6 @@ class SocioController extends Controller
                 'strikes'      => 0,
                 'fechaA'       => now(), 
                 'usuarioA'     => $usuarioA
-            ]);
-
-            $plan = DB::table('tplanes')->where('idPlan', $request->idPlan)->first();
-            $duracion = $plan ? $plan->duracionDias : 30;
-
-            DB::table('tmembresias')->insert([
-                'idPlan'               => $request->idPlan,
-                'carnetSocio'          => $request->carnetSocio, 
-                'idSucursal'           => $request->idSucursal,
-                'fechaInicioMembresia' => now()->format('Y-m-d'),
-                'fechaFinMembresia'    => now()->addDays($duracion)->format('Y-m-d'),
-                'estadoMembresia'      => 'Activa',
-                'estadoA'              => 1,
-                'fechaA'               => now(), 
-                'usuarioA'             => $usuarioA
             ]);
 
             DB::commit();
