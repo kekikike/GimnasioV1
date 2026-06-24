@@ -29,6 +29,7 @@ Si acabas de descargar o clonar el proyecto en una nueva computadora, ejecuta lo
 Descarga todos los paquetes del núcleo del framework:
 ```bash
 composer install
+composer require barryvdh/laravel-dompdf
 ```
 
 ### 2. Instalar las dependencias de JavaScript (Vue 3 y Vite)
@@ -85,3 +86,13 @@ Para hacer funcionar el sistema en tu navegador, necesitas abrir **dos terminale
   npm run dev
   ```
   *Este comando se encarga de procesar los componentes de Vue y actualizar la pantalla al instante cada vez que guardes un cambio.*
+
+
+### 5. Usuarios
+
+admin: favio@gmail.com
+socio: eddy@gmail.com
+recepcionista: kike@gmail.com
+entrenador: max@gmail.com
+
+contraseñas: 123456
