@@ -32,14 +32,14 @@
 
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Nro. Carnet (CI) <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetSocio" @input="validarCI" class="form-control" required :disabled="modoEdicion" maxlength="10">
+                <input type="text" v-model="formulario.carnetSocio" @input="validarCI('carnetSocio')" class="form-control" required :disabled="modoEdicion" maxlength="10">
                 <small v-if="errores.carnetSocio" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio }}</small>
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: bold; font-size: 0.85rem;">Confirmar CI <span style="color:#ef4444;">*</span></label>
                 <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" required maxlength="10">
             </div>
-            <div>
+            <div v-else></div> <div style="grid-row: span 2;">
                 <label style="font-weight: bold; font-size: 0.85rem;">Foto Perfil (JPG, PNG)</label>
                 <input type="file" @change="manejarFoto" class="form-control" accept="image/jpeg, image/png" ref="fileInput">
                 <small v-if="errores.foto" style="color:#ef4444; font-size: 0.8em;">@{{ errores.foto }}</small>
@@ -47,6 +47,16 @@
                     <img :src="fotoPreview" style="width:120px; height:90px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
                     <button type="button" @click="abrirCropper" style="position:absolute; top:4px; right:4px; background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:2px 8px; font-size:0.75rem; cursor:pointer;">Recortar</button>
                 </div>
+            </div>
+
+            <div>
+                <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contraseña' : 'Contraseña Portal *' }}</label>
+                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
+                <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
+            </div>
+            <div>
+                <label style="font-weight: bold; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
+                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
             </div>
 
             <div>
@@ -64,30 +74,30 @@
                 <input type="text" v-model="formulario.apellidoPaterno" @input="validarLetras('apellidoPaterno')" class="form-control" required>
                 <small v-if="errores.apellidoPaterno" style="color:#ef4444; font-size: 0.8em;">@{{ errores.apellidoPaterno }}</small>
             </div>
+
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Apellido Materno</label>
                 <input type="text" v-model="formulario.apellidoMaterno" @input="validarLetras('apellidoMaterno')" class="form-control">
                 <small v-if="errores.apellidoMaterno" style="color:#ef4444; font-size: 0.8em;">@{{ errores.apellidoMaterno }}</small>
             </div>
-
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Correo Electronico <span style="color:#ef4444;">*</span></label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Correo Electrónico <span style="color:#ef4444;">*</span></label>
                 <input type="email" v-model="formulario.correo" class="form-control" required>
                 <small v-if="errores.correo" style="color:#ef4444; font-size: 0.8em;">@{{ errores.correo }}</small>
             </div>
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Telefono Movil <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
+                <label style="font-weight: bold; font-size: 0.85rem;">Teléfono Móvil <span style="color:#ef4444;">*</span></label>
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.telefono }}</small>
-                <small style="color:#64748b; font-size:0.75rem;">Debe comenzar con 6 o 7 (7-8 digitos)</small>
+                <small style="color:#64748b; font-size:0.75rem;">Debe comenzar con 6 o 7 (7-8 dígitos)</small>
             </div>
-            <div style="grid-column: span 1;">
-                <label style="font-weight: bold; font-size: 0.85rem;">Direccion Exacta</label>
+            <div style="grid-column: span 3;">
+                <label style="font-weight: bold; font-size: 0.85rem;">Dirección Exacta</label>
                 <input type="text" v-model="formulario.direccion" class="form-control">
                 <small v-if="errores.direccion" style="color:#ef4444; font-size: 0.8em;">@{{ errores.direccion }}</small>
             </div>
 
-            <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: bold;">Informacion de Emergencia y Acceso</div>
+            <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: bold;">Información de Emergencia</div>
 
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Nombre Cont. Emergencia</label>
@@ -98,18 +108,7 @@
                 <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.contacto_emergencia_telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contacto_emergencia_telefono }}</small>
             </div>
-            <div></div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contrasena' : 'Contrasena Portal *' }}</label>
-                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
-                <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Confirmar Contrasena <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
-                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
-            </div>
-
-            <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
+            <div></div> <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
                     <template v-if="guardando">Procesando...</template>
                     <template v-else>@{{ modoEdicion ? 'Guardar Cambios' : 'Registrar Socio' }}</template>
@@ -119,7 +118,6 @@
         </form>
     </div>
 
-    <!-- Cropper Modal -->
     <div v-if="mostrarCropper" id="cropperModal">
         <div class="modal-content">
             <h3 style="margin-bottom:1rem;">Recortar Foto</h3>
@@ -186,7 +184,6 @@
         </table>
     </div>
 
-    <!-- Congelar Membresia Modal -->
     <div v-if="mostrarFreezeModal" id="cropperModal">
         <div class="modal-content" style="max-width:420px;">
             <h3 style="margin-bottom:0.5rem;">Congelar Membresía</h3>
@@ -203,7 +200,6 @@
         </div>
     </div>
 
-    <!-- Notificaciones Modal -->
     <div v-if="mostrarNotifModal" id="cropperModal">
         <div class="modal-content" style="max-width:700px;">
             <h3 style="margin-bottom:0.5rem;">Notificaciones de @{{ notifSocioNombre }}</h3>
@@ -281,12 +277,12 @@
 
             const validarLetras = (campo) => { formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, ''); };
 
-            const validarCI = () => {
-                formulario.value.carnetSocio = formulario.value.carnetSocio.replace(/[^0-9]/g, '').slice(0, 10);
+            const validarCI = (campo) => {
+                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 10);
             };
 
-            const validarTelefono = () => {
-                formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '').slice(0, 8);
+            const validarTelefono = (campo) => {
+                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 8);
             };
 
             const manejarFoto = (event) => {

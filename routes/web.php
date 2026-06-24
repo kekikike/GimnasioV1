@@ -51,8 +51,9 @@ Route::middleware('auth.usuario')->group(function () {
 
         Route::prefix('admin/sucursales')->name('admin.sucursales.')->group(function () {
             Route::get('/', [SucursalController::class, 'index'])->name('index'); 
-            Route::get('/listar', [SucursalController::class, 'listar'])->name('listar'); 
-            Route::post('/', [SucursalController::class, 'store'])->name('store');
+            Route::get('/listar', [SucursalController::class, 'listar'])->name('listar');
+            Route::get('/inactivas', [SucursalController::class, 'listarInactivas']);
+            Route::patch('/{id}/restaurar', [SucursalController::class, 'restaurar']);Route::post('/', [SucursalController::class, 'store'])->name('store');
             Route::put('/{id}', [SucursalController::class, 'update'])->name('update');
             Route::delete('/{id}', [SucursalController::class, 'destroy'])->name('destroy');
         });
@@ -194,6 +195,7 @@ Route::middleware('auth.usuario')->group(function () {
     Route::middleware('role:4')->group(function () {
         Route::get('/socio', [SocioPortalController::class, 'dashboard'])->name('socio.dashboard');
         Route::get('/socio/perfil', [SocioPortalController::class, 'perfil'])->name('socio.perfil');
+        Route::put('/socio/perfil', [SocioPortalController::class, 'updatePerfil']);
         Route::get('/socio/asistencias', [SocioPortalController::class, 'asistencias'])->name('socio.asistencias');
         Route::get('/socio/historial-membresias', [SocioPortalController::class, 'historialMembresias'])->name('socio.historial-membresias');
         Route::get('/socio/notificaciones', [SocioPortalController::class, 'notificaciones'])->name('socio.notificaciones');
