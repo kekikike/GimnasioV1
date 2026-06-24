@@ -14,10 +14,10 @@ class MembresiaSeeder extends Seeder
         $membresias = [
             ['idPlan' => 1, 'carnetSocio' => 6700001, 'inicio' => '2026-01-01', 'fin' => '2026-06-30', 'estado' => 'Activa'],
             ['idPlan' => 2, 'carnetSocio' => 6700002, 'inicio' => '2026-01-15', 'fin' => '2026-07-15', 'estado' => 'Activa'],
-            ['idPlan' => 3, 'carnetSocio' => 6700003, 'inicio' => '2026-02-01', 'fin' => '2026-08-01', 'estado' => 'Activa'],
+            ['idPlan' => 3, 'carnetSocio' => 6700003, 'inicio' => '2026-02-01', 'fin' => '2026-07-31', 'estado' => 'Activa'],
             ['idPlan' => 1, 'carnetSocio' => 6700004, 'inicio' => '2025-12-01', 'fin' => '2026-05-31', 'estado' => 'Vencida'],
             ['idPlan' => 2, 'carnetSocio' => 6700005, 'inicio' => '2026-03-01', 'fin' => '2026-04-01', 'estado' => 'Vencida'],
-            ['idPlan' => 2, 'carnetSocio' => 6700005, 'inicio' => '2026-04-15', 'fin' => '2026-10-15', 'estado' => 'Activa'],
+            ['idPlan' => 2, 'carnetSocio' => 6700005, 'inicio' => '2026-04-15', 'fin' => '2026-07-31', 'estado' => 'Activa'],
         ];
 
         foreach ($membresias as $m) {

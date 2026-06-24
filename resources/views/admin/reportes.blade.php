@@ -208,7 +208,7 @@ tbody tr:hover { background:#f8fafc; }
         <div class="filter-row">
             <div class="form-group">
                 <label>Filtrar por Estado</label>
-                <select id="eq_estado" class="form-control">
+                <select id="eq_estado" class="form-control" onchange="programarBusquedaEquipos()">
                     <option value="">Todos los estados</option>
                     <option value="Operativo">Operativo</option>
                     <option value="En Mantenimiento">En Mantenimiento</option>
@@ -216,7 +216,11 @@ tbody tr:hover { background:#f8fafc; }
                     <option value="De Baja">De Baja</option>
                 </select>
             </div>
-            <button class="btn btn-primary" onclick="cargarAdminEquipos(this)">Generar Reporte</button>
+            <div class="form-group">
+                <label>Buscar por nombre</label>
+                <input type="text" id="eq_busqueda" class="form-control" placeholder="Escriba para buscar..." oninput="programarBusquedaEquipos()">
+            </div>
+            <button class="btn btn-primary" onclick="cargarAdminEquipos(this)">Buscar</button>
         </div>
         <div id="admin-equipos-content"><div class="empty-state">Seleccione un filtro y presione Generar Reporte</div></div>
         <div class="action-print no-print">
@@ -456,10 +460,17 @@ function cargarAdminFinanciero(btn) {
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
 
+var timeoutBusquedaEquipos=null;
+function programarBusquedaEquipos(){
+    if(timeoutBusquedaEquipos) clearTimeout(timeoutBusquedaEquipos);
+    timeoutBusquedaEquipos=setTimeout(function(){cargarAdminEquipos();},250);
+}
 function cargarAdminEquipos(btn) {
+    if(timeoutBusquedaEquipos){clearTimeout(timeoutBusquedaEquipos);timeoutBusquedaEquipos=null;}
     if(btn){btn.innerHTML='Cargando...';btn.disabled=true;}
     var estado=document.getElementById('eq_estado').value;
-    var url='/admin/reportes/equipos?estado='+encodeURIComponent(estado);
+    var nombre=document.getElementById('eq_busqueda').value;
+    var url='/admin/reportes/equipos?estado='+encodeURIComponent(estado)+'&nombre='+encodeURIComponent(nombre);
     fetch(url,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
             var c=document.getElementById('admin-equipos-content');
@@ -467,7 +478,7 @@ function cargarAdminEquipos(btn) {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.equipos||[]).length+'</div><div class="label">Total Equipos</div></div>';
             h+='<div class="stat-card"><div class="number red">'+(d.historialFallas||[]).length+'</div><div class="label">Fallas Reportadas</div></div>';
             h+='<div class="stat-card"><div class="number blue">'+(d.historialMantenimientos||[]).length+'</div><div class="label">Mantenimientos</div></div></div>';
-            h+='<h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Equipos'+(d.estado?' ('+d.estado+')':' (Todos)')+'</h4>';
+            h+='<h4 style="font-size:0.9rem;margin-bottom:0.5rem;">Equipos'+(d.estado?' ['+d.estado+']':' [Todos]')+(d.nombre?' / &quot;'+d.nombre+'&quot;':'')+'</h4>';
             if(d.equipos&&d.equipos.length){h+='<div style="overflow-x:auto;margin-bottom:1.5rem;"><table><thead><tr><th>ID</th><th>Nombre</th><th>Marca</th><th>Modelo</th><th>Sucursal</th><th>Estado</th><th>Adquisicion</th></tr></thead><tbody>';
             d.equipos.forEach(function(eq){
                 var bc=eq.estadoEquipo==='Operativo'?'badge-green':eq.estadoEquipo==='En Mantenimiento'?'badge-amber':eq.estadoEquipo==='Fuera de Servicio'?'badge-red':'badge-gray';
@@ -491,7 +502,7 @@ function cargarAdminEquipos(btn) {
             h+='</tbody></table></div>';}else{h+='<div class="empty-state">Sin mantenimientos registrados</div>';}
             h+='</div></div>';c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-equipos-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
-        .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
+        .finally(function(){if(btn){btn.innerHTML='Buscar';btn.disabled=false;}});
 }
 
 function cargarAdminDesempeno(btn) {
@@ -546,7 +557,10 @@ function cargarAdminRenovaciones(btn) {
 }
 
 document.addEventListener('DOMContentLoaded',function(){
-    setTimeout(function(){var btn=document.querySelector('.tab-btn.active');if(btn)btn.click();},100);
+    setTimeout(function(){
+        var btn=document.querySelector('.tab-btn.active');if(btn)btn.click();
+        cargarAdminEquipos();
+    },100);
 });
 </script>
 @endsection

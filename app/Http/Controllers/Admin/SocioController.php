@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class SocioController extends Controller
 {
     public function index()
-    {
+    {   
         $sucursales = DB::select('CALL sp_TSucursales_Select()');
         return view('admin.socios', compact('sucursales'));
     }
@@ -22,18 +22,17 @@ class SocioController extends Controller
         try {
             $query = DB::table('tsocios as s')
                 ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
-                ->leftJoin('tmembresias as m', function($join) {
-                    // Unimos con la última membresía activa o vencida del socio
+                ->leftJoin('tmembresias as m', function ($join) {
                     $join->on('s.carnetSocio', '=', 'm.carnetSocio')
-                         ->where('m.estadoA', '=', 1)
-                         ->whereRaw('m.idMembresia = (SELECT MAX(idMembresia) FROM tmembresias WHERE carnetSocio = s.carnetSocio)');
+                         ->where('m.estadoA', 1)
+                         ->whereRaw('m.idMembresia = (SELECT MAX(m2.idMembresia) FROM tmembresias m2 WHERE m2.carnetSocio = s.carnetSocio AND m2.estadoA = 1)');
                 })
                 ->select(
-                    's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.carnetSocio AS codigoAcceso', 
-                    'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono', 
-                    's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre', 
+                    's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.carnetSocio AS codigoAcceso',
+                    'u.nombre1', 'u.apellido1', 'u.correo', 'u.telefono',
+                    's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre',
                     's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url',
-                    'm.estadoMembresia' // Recuperamos el estado para el botón de Congelar
+                    'm.estadoMembresia', 'm.fechaCongelamiento'
                 )
                 ->where('u.estadoA', 1);
 
@@ -201,22 +200,90 @@ class SocioController extends Controller
         }
     }
 
-    public function congelar(Request $request, $id)
+    public function congelarMembresia(Request $request, $carnet)
     {
         try {
-            $socio = DB::table('tsocios')->where('carnetSocio', $id)->first();
-            if (!$socio) return response()->json(['success' => false, 'message' => 'Socio no encontrado.'], 404);
+            $request->validate([
+                'fechaCongelamiento' => 'required|date|after:today',
+            ]);
 
-            $nuevoEstado = ($socio->estadoSocio === 'Activo') ? 'Congelado' : 'Activo';
-            DB::table('tsocios')->where('carnetSocio', $id)->update(['estadoSocio' => $nuevoEstado, 'fechaA' => now()]);
+            $membresia = DB::table('tmembresias')
+                ->where('carnetSocio', $carnet)
+                ->where('estadoMembresia', 'Activa')
+                ->where('estadoA', 1)
+                ->orderBy('idMembresia', 'DESC')
+                ->first();
 
-            $estadoMembresia = ($nuevoEstado === 'Activo') ? 'Activa' : 'Congelada';
-            DB::table('tmembresias')->where('carnetSocio', $id)->where('estadoMembresia', '!=', 'Vencida')
-                ->update(['estadoMembresia' => $estadoMembresia, 'fechaA' => now()]);
+            if (!$membresia) {
+                return response()->json(['success' => false, 'message' => 'No hay membresía activa para congelar.'], 422);
+            }
 
-            return response()->json(['success' => true, 'message' => '✅ El estado del socio y membresía ahora es: ' . $nuevoEstado]);
+            $diasCongelados = max(0, (int)((strtotime($request->fechaCongelamiento) - strtotime('today')) / 86400));
+
+            DB::table('tmembresias')
+                ->where('idMembresia', $membresia->idMembresia)
+                ->update([
+                    'fechaFinMembresia'  => DB::raw("DATE_ADD(fechaFinMembresia, INTERVAL {$diasCongelados} DAY)"),
+                    'estadoMembresia'    => 'Congelada',
+                    'fechaCongelamiento' => $request->fechaCongelamiento,
+                    'fechaA'             => now(),
+                    'usuarioA'           => Auth::id() ?? 1,
+                ]);
+
+            DB::table('tsocios')
+                ->where('carnetSocio', $carnet)
+                ->update(['estadoSocio' => 'Congelado', 'fechaA' => now()]);
+
+            return response()->json(['success' => true, 'message' => "Membresía congelada hasta el {$request->fechaCongelamiento}. Se agregaron {$diasCongelados} día(s) al vencimiento."]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error interno.'], 500);
+            return response()->json(['success' => false, 'message' => 'Error al congelar: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function activarMembresia(Request $request, $carnet)
+    {
+        try {
+            $membresia = DB::table('tmembresias')
+                ->where('carnetSocio', $carnet)
+                ->where('estadoMembresia', 'Congelada')
+                ->where('estadoA', 1)
+                ->orderBy('idMembresia', 'DESC')
+                ->first();
+
+            if (!$membresia) {
+                return response()->json(['success' => false, 'message' => 'No hay membresía congelada para activar.'], 422);
+            }
+
+            DB::table('tmembresias')
+                ->where('idMembresia', $membresia->idMembresia)
+                ->update([
+                    'estadoMembresia'    => 'Activa',
+                    'fechaCongelamiento' => null,
+                    'fechaA'             => now(),
+                    'usuarioA'           => Auth::id() ?? 1,
+                ]);
+
+            DB::table('tsocios')
+                ->where('carnetSocio', $carnet)
+                ->update(['estadoSocio' => 'Activo', 'fechaA' => now()]);
+
+            return response()->json(['success' => true, 'message' => 'Membresía activada correctamente.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error al activar: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function notificaciones($carnet)
+    {
+        try {
+            $notificaciones = DB::table('tnotificaciones')
+                ->where('carnetSocio', $carnet)
+                ->where('estadoA', 1)
+                ->orderBy('fechaEnvio', 'DESC')
+                ->get(['idNotificacion', 'tipoNotificacion', 'mensaje', 'fechaEnvio', 'estado']);
+            return response()->json($notificaciones);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error al cargar notificaciones: ' . $e->getMessage()], 500);
         }
     }
 
@@ -248,21 +315,6 @@ class SocioController extends Controller
             return response()->json(['success' => true, 'message' => 'Socio dado de baja exitosamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error interno.'], 500);
-        }
-    }
-    public function notificaciones($id)
-    {
-        try {
-            // Buscamos las notificaciones del socio en la base de datos
-            $notificaciones = DB::table('tnotificaciones')
-                ->where('carnetSocio', $id)
-                ->orderBy('fechaEnvio', 'desc')
-                ->get();
-                
-            return response()->json($notificaciones);
-        } catch (\Exception $e) {
-            // Si la tabla 'tnotificaciones' no existe en la BD de Kike, devolvemos un array vacío para no romper la vista
-            return response()->json([]);
         }
     }
 }

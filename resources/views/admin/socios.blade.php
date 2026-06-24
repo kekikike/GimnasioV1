@@ -20,8 +20,8 @@
 <div id="appSocios">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
         <h3 style="color: #1e293b; margin: 0;">
-            <template v-if="modoEdicion">✏️ Editar Perfil de Socio</template>
-            <template v-else>🏋️ Registrar Nuevo Socio</template>
+            <template v-if="modoEdicion">Editar Perfil de Socio</template>
+            <template v-else>Registrar Nuevo Socio</template>
         </h3>
     </div>
 
@@ -30,19 +30,16 @@
 
             <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; color: #3b82f6; font-weight: bold;">Datos Personales y de Contacto</div>
 
-            <!-- Fila 1 -->
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Nro. Carnet (CI) <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetSocio" @input="validarCI('carnetSocio')" class="form-control" required :disabled="modoEdicion" maxlength="10">
+                <input type="text" v-model="formulario.carnetSocio" @input="validarCI" class="form-control" required :disabled="modoEdicion" maxlength="10">
                 <small v-if="errores.carnetSocio" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio }}</small>
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: bold; font-size: 0.85rem;">Confirmar CI <span style="color:#ef4444;">*</span></label>
                 <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" required maxlength="10">
             </div>
-            <div v-else></div> <!-- Relleno para mantener el diseño Grid -->
-
-            <div style="grid-row: span 2;">
+            <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Foto Perfil (JPG, PNG)</label>
                 <input type="file" @change="manejarFoto" class="form-control" accept="image/jpeg, image/png" ref="fileInput">
                 <small v-if="errores.foto" style="color:#ef4444; font-size: 0.8em;">@{{ errores.foto }}</small>
@@ -52,56 +49,45 @@
                 </div>
             </div>
 
-            <!-- Fila 2 (AQUÍ LA CONTRASEÑA, DEBAJO DEL CI) -->
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contraseña' : 'Contraseña Portal *' }}</label>
-                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
-                <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
-            </div>
-            <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
-                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
-            </div>
-
-            <!-- Fila 3 -->
-            <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Primer Nombre <span style="color:#ef4444;">*</span></label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Nombre 1 <span style="color:#ef4444;">*</span></label>
                 <input type="text" v-model="formulario.nombre1" @input="validarLetras('nombre1')" class="form-control" required>
                 <small v-if="errores.nombre1" style="color:#ef4444; font-size: 0.8em;">@{{ errores.nombre1 }}</small>
             </div>
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Segundo Nombre</label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Nombre 2</label>
                 <input type="text" v-model="formulario.nombre2" @input="validarLetras('nombre2')" class="form-control">
+                <small v-if="errores.nombre2" style="color:#ef4444; font-size: 0.8em;">@{{ errores.nombre2 }}</small>
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Apellido Paterno <span style="color:#ef4444;">*</span></label>
                 <input type="text" v-model="formulario.apellidoPaterno" @input="validarLetras('apellidoPaterno')" class="form-control" required>
                 <small v-if="errores.apellidoPaterno" style="color:#ef4444; font-size: 0.8em;">@{{ errores.apellidoPaterno }}</small>
             </div>
-
-            <!-- Fila 4 -->
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Apellido Materno</label>
                 <input type="text" v-model="formulario.apellidoMaterno" @input="validarLetras('apellidoMaterno')" class="form-control">
+                <small v-if="errores.apellidoMaterno" style="color:#ef4444; font-size: 0.8em;">@{{ errores.apellidoMaterno }}</small>
             </div>
+
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Correo Electrónico <span style="color:#ef4444;">*</span></label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Correo Electronico <span style="color:#ef4444;">*</span></label>
                 <input type="email" v-model="formulario.correo" class="form-control" required>
                 <small v-if="errores.correo" style="color:#ef4444; font-size: 0.8em;">@{{ errores.correo }}</small>
             </div>
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Teléfono Móvil <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
+                <label style="font-weight: bold; font-size: 0.85rem;">Telefono Movil <span style="color:#ef4444;">*</span></label>
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.telefono }}</small>
+                <small style="color:#64748b; font-size:0.75rem;">Debe comenzar con 6 o 7 (7-8 digitos)</small>
             </div>
-
-            <!-- Fila 5 -->
-            <div style="grid-column: span 3;">
-                <label style="font-weight: bold; font-size: 0.85rem;">Dirección Exacta</label>
+            <div style="grid-column: span 1;">
+                <label style="font-weight: bold; font-size: 0.85rem;">Direccion Exacta</label>
                 <input type="text" v-model="formulario.direccion" class="form-control">
+                <small v-if="errores.direccion" style="color:#ef4444; font-size: 0.8em;">@{{ errores.direccion }}</small>
             </div>
 
-            <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: bold;">Información de Emergencia</div>
+            <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: bold;">Informacion de Emergencia y Acceso</div>
 
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Nombre Cont. Emergencia</label>
@@ -110,10 +96,20 @@
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Telf. Cont. Emergencia</label>
                 <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
+                <small v-if="errores.contacto_emergencia_telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contacto_emergencia_telefono }}</small>
             </div>
-            <div></div> <!-- Spacer -->
+            <div></div>
+            <div>
+                <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contrasena' : 'Contrasena Portal *' }}</label>
+                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
+                <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
+            </div>
+            <div>
+                <label style="font-weight: bold; font-size: 0.85rem;">Confirmar Contrasena <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
+                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
+            </div>
 
-            <div v-if="!modoEdicion" style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #10b981; font-weight: bold;">Configuración de Membresía Inicial</div>
+            <div v-if="!modoEdicion" style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #10b981; font-weight: bold;">Sucursal de Registro</div>
 
             <div v-if="!modoEdicion">
                 <label style="font-weight: bold; font-size: 0.85rem;">Sucursal</label>
@@ -123,28 +119,18 @@
                 </select>
                 <small v-if="errores.idSucursal" style="color:#ef4444; font-size: 0.8em;">@{{ errores.idSucursal }}</small>
             </div>
-            <div v-if="!modoEdicion" style="grid-column: span 2;">
-                <label style="font-weight: bold; font-size: 0.85rem;">Plan Inicial <span style="color:#ef4444;">*</span></label>
-                <select v-model="formulario.idPlan" class="form-control" required>
-                    <option value="" disabled>Seleccione un plan...</option>
-                    <option v-for="plan in planes" :key="plan.idPlan" :value="plan.idPlan">
-                        @{{ plan.nombrePlan }} - Bs. @{{ plan.costoPlan }} (@{{ plan.duracionDias }} Días)
-                    </option>
-                </select>
-                <small v-if="errores.idPlan" style="color:#ef4444; font-size: 0.8em;">@{{ errores.idPlan }}</small>
-            </div>
 
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
-                    <template v-if="guardando">⏳ Procesando...</template>
-                    <template v-else>@{{ modoEdicion ? '💾 Guardar Cambios' : '🔐 Registrar Socio' }}</template>
+                    <template v-if="guardando">Procesando...</template>
+                    <template v-else>@{{ modoEdicion ? 'Guardar Cambios' : 'Registrar Socio' }}</template>
                 </button>
-                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">Cancelar</button>
             </div>
         </form>
     </div>
 
-    <!-- Modal para Recorte -->
+    <!-- Cropper Modal -->
     <div v-if="mostrarCropper" id="cropperModal">
         <div class="modal-content">
             <h3 style="margin-bottom:1rem;">Recortar Foto</h3>
@@ -158,13 +144,13 @@
     </div>
 
     <div class="card" style="padding: 20px;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Listado de Socios Activos y Congelados</h3>
+        <h3 style="margin-bottom: 15px; color: #1e293b;">Listado de Socios Activos y Congelados</h3>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f1f5f9;">
                 <tr>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Acceso y CI</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Socio y Estado</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Membresía</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Membresia</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Contacto</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: center;">Acciones</th>
                 </tr>
@@ -177,7 +163,9 @@
                     </td>
                     <td style="padding: 12px; display: flex; align-items: center; gap: 10px;">
                         <img v-if="socio.foto_url" :src="'/storage/' + socio.foto_url" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
-                        <div v-else style="width: 40px; height: 40px; border-radius: 50%; background-color: #cbd5e1; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#64748b;">👤</div>
+                        <div v-else style="width: 40px; height: 40px; border-radius: 50%; background-color: #cbd5e1; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#64748b;">
+                            <span>@</span>
+                        </div>
                         <div>
                             <strong>@{{ socio.nombre1 }} @{{ socio.nombre2 ? socio.nombre2 : '' }} @{{ socio.apellido1 }} @{{ socio.apellido2 ? socio.apellido2 : '' }}</strong> <br>
                             <span :style="{ backgroundColor: socio.estadoSocio === 'Activo' ? '#dcfce3' : '#fef08a', color: socio.estadoSocio === 'Activo' ? '#166534' : '#854d0e', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold' }">
@@ -189,28 +177,50 @@
                         <span :style="{ backgroundColor: socio.estadoMembresia === 'Activa' ? '#dcfce3' : '#fee2e2', color: socio.estadoMembresia === 'Activa' ? '#166534' : '#991b1b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }">
                             @{{ socio.estadoMembresia || '--' }}
                         </span>
+                        <small v-if="socio.fechaCongelamiento" style="display:block; color:#64748b; margin-top:4px;">
+                            Congelada: @{{ socio.fechaCongelamiento }}
+                        </small>
                     </td>
                     <td style="padding: 12px; font-size: 0.9em;">
-                        ✉️ @{{ socio.correo }}<br>
-                        📞 @{{ socio.telefono }}
+                        @{{ socio.correo }}<br>
+                        @{{ socio.telefono }}
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarSocio(socio)" class="btn btn-sm btn-info" style="margin-right: 5px;">✏️ Editar</button>
+                        <button @click="editarSocio(socio)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
                         <button @click="congelarMembresia(socio)" :disabled="socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada'" class="btn btn-sm" :style="{ background: socio.estadoMembresia === 'Congelada' ? '#22c55e' : '#f59e0b', color: '#fff', marginRight: '5px', opacity: socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada' ? '0.5' : '1' }">
-                            @{{ socio.estadoMembresia === 'Congelada' ? '▶️ Activar Memb.' : '❄️ Congelar Memb.' }}
+                            @{{ socio.estadoMembresia === 'Congelada' ? 'Activar Memb.' : 'Congelar Memb.' }}
                         </button>
-                        <button @click="verNotificaciones(socio)" class="btn btn-sm" style="background:#6366f1; color:#fff;">🔔 Notificaciones</button>
+                        <button @click="verNotificaciones(socio)" class="btn btn-sm" style="background:#6366f1; color:#fff;">Notificaciones</button>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
+    <!-- Congelar Membresia Modal -->
+    <div v-if="mostrarFreezeModal" id="cropperModal">
+        <div class="modal-content" style="max-width:420px;">
+            <h3 style="margin-bottom:0.5rem;">Congelar Membresía</h3>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">
+                Socio: <strong>@{{ freezeNombre }}</strong>
+            </p>
+            <label style="font-weight:bold; font-size:0.85rem;">Fecha de Retorno *</label>
+            <input type="date" v-model="freezeFecha" class="form-control" style="margin-top:4px;" :min="manana">
+            <small style="color:#64748b; font-size:0.75rem;">Selecciona la fecha en que el socio volverá al gimnasio.</small>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+                <button type="button" @click="cerrarFreezeModal" class="btn" style="background:#64748b;color:#fff;">Cancelar</button>
+                <button type="button" @click="confirmarFreeze" class="btn btn-primary" :disabled="!freezeFecha">Congelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notificaciones Modal -->
     <div v-if="mostrarNotifModal" id="cropperModal">
         <div class="modal-content" style="max-width:700px;">
-            <h3 style="margin-bottom:0.5rem;">🔔 Notificaciones de @{{ notifSocioNombre }}</h3>
-            <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">CI: @{{ notifCarnet }}</p>
+            <h3 style="margin-bottom:0.5rem;">Notificaciones de @{{ notifSocioNombre }}</h3>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">
+                CI: @{{ notifCarnet }} — @{{ notificaciones.length }} registro(s)
+            </p>
             <div v-if="notificaciones.length === 0" style="text-align:center; padding:2rem; color:#94a3b8;">
                 No hay notificaciones para este socio.
             </div>
@@ -227,7 +237,9 @@
                     <tr v-for="n in notificaciones" :key="n.idNotificacion" style="border-bottom:1px solid #e2e8f0;">
                         <td style="padding:8px; white-space:nowrap;">@{{ n.fechaEnvio }}</td>
                         <td style="padding:8px;">
-                            <span :style="{ fontWeight:'bold', color: n.tipoNotificacion === 'Alerta' ? '#dc2626' : n.tipoNotificacion === 'Recordatorio' ? '#d97706' : '#059669' }">@{{ n.tipoNotificacion }}</span>
+                            <span :style="{ fontWeight:'bold', color: n.tipoNotificacion === 'Alerta' ? '#dc2626' : n.tipoNotificacion === 'Recordatorio' ? '#d97706' : '#059669' }">
+                                @{{ n.tipoNotificacion }}
+                            </span>
                         </td>
                         <td style="padding:8px; max-width:280px;">@{{ n.mensaje }}</td>
                         <td style="padding:8px;">
@@ -239,7 +251,7 @@
                 </tbody>
             </table>
             <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
-                <button type="button" @click="cerrarNotifModal" class="btn btn-secondary" style="color:#000;">Cerrar</button>
+                <button type="button" @click="cerrarNotifModal" class="btn" style="background:#64748b;color:#fff;">Cerrar</button>
             </div>
         </div>
     </div>
@@ -251,7 +263,6 @@
     createApp({
         setup() {
             const socios = ref([]);
-            const planes = ref([]);
             const sucursales = ref(window.listaSucursales || []);
             const modoEdicion = ref(false);
             const guardando = ref(false);
@@ -262,13 +273,14 @@
             const fileInput = ref(null);
             const fotoPreview = ref('');
             let fotoBlob = null;
+            const msjError = ref('');
 
             const formBase = {
                 carnetSocio: '', carnetSocio_confirmation: '', idUsuario: '',
                 nombre1: '', nombre2: '', apellidoPaterno: '', apellidoMaterno: '',
                 correo: '', telefono: '', direccion: '',
                 contacto_emergencia_nombre: '', contacto_emergencia_telefono: '',
-                contrasena: '', contrasena_confirmation: '', idSucursal: '', idPlan: ''
+                contrasena: '', contrasena_confirmation: '', idSucursal: ''
             };
             const formulario = ref({ ...formBase });
             const errores = ref({});
@@ -278,17 +290,14 @@
                 socios.value = await res.json();
             };
 
-            const cargarPlanes = async () => {
-                try {
-                    const res = await fetch('{{ route("admin.planes.listar") }}');
-                    planes.value = await res.json();
-                } catch(e) { console.error("Planes no encontrados"); }
+            const validarLetras = (campo) => { formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, ''); };
+
+            const validarCI = () => {
+                formulario.value.carnetSocio = formulario.value.carnetSocio.replace(/[^0-9]/g, '').slice(0, 10);
             };
 
-            const validarLetras = (campo) => { formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, ''); };
-            const validarCI = (campo = 'carnetSocio') => { formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 10); };
-            const validarTelefono = (campo = 'telefono') => { 
-                if(formulario.value[campo]) formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 8); 
+            const validarTelefono = () => {
+                formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '').slice(0, 8);
             };
 
             const manejarFoto = (event) => {
@@ -301,7 +310,11 @@
                     nextTick(() => {
                         if (cropperImage.value) {
                             if (cropperInstance) cropperInstance.destroy();
-                            cropperInstance = new Cropper(cropperImage.value, { aspectRatio: 4 / 3, viewMode: 1, autoCropArea: 1 });
+                            cropperInstance = new Cropper(cropperImage.value, {
+                                aspectRatio: 4 / 3,
+                                viewMode: 1,
+                                autoCropArea: 1,
+                            });
                         }
                     });
                 };
@@ -313,7 +326,11 @@
                 nextTick(() => {
                     if (cropperImage.value) {
                         if (cropperInstance) cropperInstance.destroy();
-                        cropperInstance = new Cropper(cropperImage.value, { aspectRatio: 4 / 3, viewMode: 1, autoCropArea: 1 });
+                        cropperInstance = new Cropper(cropperImage.value, {
+                            aspectRatio: 4 / 3,
+                            viewMode: 1,
+                            autoCropArea: 1,
+                        });
                     }
                 });
             };
@@ -342,13 +359,19 @@
 
                 const formData = new FormData();
                 for (let key in formulario.value) {
-                    if (formulario.value[key] !== null && formulario.value[key] !== '') formData.append(key, formulario.value[key]);
+                    if (formulario.value[key] !== null && formulario.value[key] !== '') {
+                        formData.append(key, formulario.value[key]);
+                    }
                 }
-                if (fotoBlob) formData.append('foto', fotoBlob, 'foto.jpg');
+                if (fotoBlob) {
+                    formData.append('foto', fotoBlob, 'foto.jpg');
+                }
+
                 if (modoEdicion.value) formData.append('_method', 'PUT');
 
                 try {
                     const url = modoEdicion.value ? `/admin/socios/${formulario.value.carnetSocio}` : `/admin/socios`;
+
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
@@ -385,7 +408,9 @@
                     direccion: socio.direccion || '',
                     contacto_emergencia_nombre: socio.contacto_emergencia_nombre || '',
                     contacto_emergencia_telefono: socio.contacto_emergencia_telefono || '',
-                    contrasena: '', contrasena_confirmation: '', idSucursal: '', idPlan: ''
+                    contrasena: '',
+                    contrasena_confirmation: '',
+                    idSucursal: ''
                 };
                 if (socio.foto_url) fotoPreview.value = '/storage/' + socio.foto_url;
             };
@@ -399,17 +424,48 @@
                 formulario.value = { ...formBase };
             };
 
+            const mostrarFreezeModal = ref(false);
+            const freezeCarnet = ref('');
+            const freezeNombre = ref('');
+            const freezeFecha = ref('');
+            const manana = ref(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+
             const congelarMembresia = async (socio) => {
-                const esCongelada = socio.estadoMembresia === 'Congelada';
-                const accion = esCongelada ? 'activar' : 'congelar';
-                if (!confirm(`¿Está seguro de ${accion} la membresía de ${socio.nombre1} ${socio.apellido1}?`)) return;
-                
-                const res = await fetch(`/admin/socios/${socio.carnetSocio}/congelar`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                if (socio.estadoMembresia === 'Congelada') {
+                    if (!confirm(`¿Activar la membresía de ${socio.nombre1} ${socio.apellido1}?`)) return;
+                    const res = await fetch(`/admin/socios/${socio.carnetSocio}/activar-membresia`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                    });
+                    const data = await res.json();
+                    alert(data.message);
+                    if (data.success) cargarSocios();
+                } else {
+                    freezeCarnet.value = socio.carnetSocio;
+                    freezeNombre.value = `${socio.nombre1} ${socio.apellido1}`;
+                    freezeFecha.value = '';
+                    mostrarFreezeModal.value = true;
+                }
+            };
+
+            const cerrarFreezeModal = () => {
+                mostrarFreezeModal.value = false;
+                freezeFecha.value = '';
+            };
+
+            const confirmarFreeze = async () => {
+                if (!freezeFecha.value) return;
+                const res = await fetch(`/admin/socios/${freezeCarnet.value}/congelar-membresia`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fechaCongelamiento: freezeFecha.value })
                 });
                 const data = await res.json();
                 alert(data.message);
+                cerrarFreezeModal();
                 if (data.success) cargarSocios();
             };
 
@@ -422,16 +478,21 @@
                 notifCarnet.value = socio.carnetSocio;
                 notifSocioNombre.value = `${socio.nombre1} ${socio.apellido1}`;
                 const url = `/admin/socios/${socio.carnetSocio}/notificaciones`;
-                const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') } });
+                const res = await fetch(url, {
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                });
                 notificaciones.value = await res.json();
                 mostrarNotifModal.value = true;
             };
 
-            const cerrarNotifModal = () => { mostrarNotifModal.value = false; notificaciones.value = []; };
+            const cerrarNotifModal = () => {
+                mostrarNotifModal.value = false;
+                notificaciones.value = [];
+            };
 
-            onMounted(() => { cargarSocios(); cargarPlanes(); });
+            onMounted(() => { cargarSocios(); });
 
-            return { socios, planes, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
         }
     }).mount('#appSocios');
 </script>

@@ -34,6 +34,7 @@ class ReporteController extends Controller
     public function reporteEquipos(Request $request)
     {
         $estado = $request->filled('estado') ? $request->estado : null;
+        $nombre = $request->filled('nombre') ? $request->nombre : null;
 
         if ($estado) {
             $equipos = DB::select('CALL sp_TEquipamientos_GetByEstado(?)', [$estado]);
@@ -47,11 +48,39 @@ class ReporteController extends Controller
                 ->get();
         }
 
-        $historialFallas        = DB::select('CALL sp_TReporteFallas_GetHistorial(?)', [50]);
-        $historialMantenimientos = DB::select('CALL sp_TMantenimientoPreventivos_GetHistorial(?)', [50]);
+        if ($nombre) {
+            $equipos = collect($equipos)->filter(fn($eq) =>
+                stripos($eq->nombreEquipo, $nombre) !== false
+            )->values();
+        }
+
+        $idsEquipos = collect($equipos)->pluck('idEquipo');
+
+        if ($idsEquipos->isNotEmpty()) {
+            $historialFallas = DB::table('TReporteFallas as rf')
+                ->leftJoin('TEquipamientos as e', 'rf.idEquipo', '=', 'e.idEquipo')
+                ->whereIn('rf.idEquipo', $idsEquipos)
+                ->where('rf.estadoA', 1)
+                ->select('rf.*', 'e.nombreEquipo')
+                ->orderBy('rf.fechaReporte', 'DESC')
+                ->limit(50)
+                ->get();
+
+            $historialMantenimientos = DB::table('TMantenimientoPreventivos as mp')
+                ->leftJoin('TEquipamientos as e', 'mp.idEquipo', '=', 'e.idEquipo')
+                ->whereIn('mp.idEquipo', $idsEquipos)
+                ->where('mp.estadoA', 1)
+                ->select('mp.*', 'e.nombreEquipo')
+                ->orderBy('mp.fechaProgramada', 'DESC')
+                ->limit(50)
+                ->get();
+        } else {
+            $historialFallas = collect();
+            $historialMantenimientos = collect();
+        }
 
         return response()->json(compact(
-            'equipos', 'estado',
+            'equipos', 'estado', 'nombre',
             'historialFallas', 'historialMantenimientos'
         ));
     }

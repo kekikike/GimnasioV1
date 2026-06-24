@@ -70,7 +70,7 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/listar', [SocioController::class, 'listar'])->name('listar');
             Route::post('/', [SocioController::class, 'store'])->name('store');
             Route::put('/{id}', [SocioController::class, 'update'])->name('update');
-            Route::patch('/{id}/congelar', [SocioController::class, 'congelar'])->name('congelar');
+
             Route::post('/{carnet}/congelar-membresia', [SocioController::class, 'congelarMembresia'])->name('congelarMembresia');
             Route::post('/{carnet}/activar-membresia', [SocioController::class, 'activarMembresia'])->name('activarMembresia');
             Route::get('/{carnet}/notificaciones', [SocioController::class, 'notificaciones'])->name('notificaciones');

@@ -78,10 +78,9 @@ BEGIN
     LIMIT 1;
 
     IF v_membresiaEncontrada = 1 AND v_membresiaEstado = 'Congelada' AND v_fechaCong IS NOT NULL THEN
-        -- Auto-reactivar: sumar días congelados a fechaFin
+        -- Auto-reactivar: los días ya se sumaron a fechaFin al congelar, solo restaurar estado
         UPDATE TMembresias
-        SET fechaFinMembresia = DATE_ADD(fechaFinMembresia, INTERVAL DATEDIFF(v_fechaHoy, v_fechaCong) DAY),
-            estadoMembresia = 'Activa',
+        SET estadoMembresia = 'Activa',
             fechaCongelamiento = NULL
         WHERE carnetSocio = p_carnetSocio AND estadoA = 1
         ORDER BY idMembresia DESC
