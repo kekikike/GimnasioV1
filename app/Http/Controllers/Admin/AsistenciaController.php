@@ -9,24 +9,50 @@ use Carbon\Carbon;
 
 class AsistenciaController extends Controller
 {
-    private function getHorario($carnetEmpleado)
+    private function getHorario($carnetEmpleado, $timestamp = null)
     {
+        $fechaReferencia = $timestamp ? Carbon::parse($timestamp) : Carbon::now();
         $dias = [
             'Monday'    => 'Lunes',
             'Tuesday'   => 'Martes',
-            'Wednesday' => 'Miercoles',
+            'Wednesday' => 'Miércoles',
             'Thursday'  => 'Jueves',
             'Friday'    => 'Viernes',
-            'Saturday'  => 'Sabado',
+            'Saturday'  => 'Sábado',
             'Sunday'    => 'Domingo',
         ];
-        $diaSemanaActual = $dias[Carbon::now()->format('l')];
+        $diaSemana = $dias[$fechaReferencia->format('l')];
 
-        return DB::table('thorariolaborales')
+        $horarios = DB::table('thorariolaborales')
             ->where('carnetEmpleado', $carnetEmpleado)
-            ->where('diaSemana', $diaSemanaActual)
+            ->where('diaSemana', $diaSemana)
             ->where('estadoA', 1)
-            ->first();
+            ->get();
+
+        if ($horarios->isEmpty()) {
+            return null;
+        }
+
+        $mejorTurno = null;
+        $menorDiferencia = PHP_INT_MAX;
+
+        foreach ($horarios as $horario) {
+            // Comparamos la hora de entrada del turno con la hora de referencia
+            $horaTurno = Carbon::parse($horario->horaEntradaEsperada)->setDateFrom($fechaReferencia);
+            $diferenciaAbs = abs($fechaReferencia->getTimestamp() - $horaTurno->getTimestamp());
+
+            if ($diferenciaAbs < $menorDiferencia) {
+                $menorDiferencia = $diferenciaAbs;
+                $mejorTurno = $horario;
+            }
+        }
+
+        // Para entradas, no asociar si el turno más cercano está a más de 4 horas de distancia.
+        if ($timestamp === null && $menorDiferencia > (4 * 3600)) {
+            return null;
+        }
+
+        return $mejorTurno;
     }
 
     public function registrarEntrada(Request $request)
@@ -100,7 +126,9 @@ class AsistenciaController extends Controller
             }
 
             $ahora = Carbon::now();
-            $horario = $this->getHorario($request->carnetEmpleado);
+            // Buscamos el horario correspondiente a la hora de entrada que se registró
+            $horario = $this->getHorario($request->carnetEmpleado, $asistenciaAbierta->fechaHoraEntrada);
+
             $estadoSalida = $asistenciaAbierta->estadoAsistencia;
             $msg = 'Salida registrada correctamente.';
 

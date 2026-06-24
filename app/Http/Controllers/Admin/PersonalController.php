@@ -44,8 +44,8 @@ class PersonalController extends Controller
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo',
             'telefono'            => 'required|numeric|digits_between:7,15',
-            'contrasena'          => 'required|string|min:8|confirmed', // Exige contrasena_confirmation
-            'carnetEmpleado'      => 'required|numeric|max:2147483647|confirmed|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
+            'contrasena'          => 'required|string|min:8',
+            'carnetEmpleado'      => 'required|numeric|max:2147483647|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'sueldo'              => 'required|numeric|min:0',
             'fechaContratoInicio' => 'required|date|before_or_equal:today', // No puede ser en el futuro
@@ -54,12 +54,11 @@ class PersonalController extends Controller
             'nombre1.regex' => 'El nombre solo puede contener letras y espacios.',
             'apellido1.regex' => 'El apellido solo puede contener letras y espacios.',
             'correo.unique' => 'Este correo electrónico ya está en uso.',
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
             'contrasena.confirmed' => 'Las contraseñas no coinciden.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
             'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'carnetEmpleado.unique' => 'Este carnet ya está registrado en el sistema.',
             'carnetEmpleado.max' => 'El número de carnet es demasiado grande para el sistema.',
-            'carnetEmpleado.confirmed' => 'Los números de carnet no coinciden.',
             'fechaContratoInicio.before_or_equal' => 'La fecha de inicio no puede ser en el futuro.',
         ]);
 
@@ -139,7 +138,7 @@ class PersonalController extends Controller
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo,' . $request->idUsuario . ',idUsuario',
             'telefono'            => 'required|numeric|digits_between:7,15',
-            'contrasena'          => 'nullable|string|min:8|confirmed', 
+            'contrasena'          => 'nullable|string|min:8',
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'sueldo'              => 'required|numeric|min:0',
             'fechaContratoInicio' => 'required|date|before_or_equal:today',
@@ -149,7 +148,6 @@ class PersonalController extends Controller
             'apellido1.regex' => 'El apellido solo puede contener letras.',
             'correo.unique' => 'El correo electrónico ya está en uso.',
             'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
-            'contrasena.confirmed' => 'Las contraseñas no coinciden.',
             'fechaContratoInicio.before_or_equal' => 'La fecha no puede ser en el futuro.',
         ]);
 

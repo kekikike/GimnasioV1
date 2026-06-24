@@ -198,6 +198,7 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/', [SocioPortalController::class, 'reservas'])->name('index');
             Route::get('/mis-reservas', [ReservaController::class, 'misReservas'])->name('mis');
             Route::get('/disponibles', [ReservaController::class, 'disponibles'])->name('disponibles');
+            Route::get('/admin/socios/{id}/notificaciones', [App\Http\Controllers\Admin\SocioController::class, 'notificaciones']);
             Route::post('/reservar', [ReservaController::class, 'reservar'])->name('reservar');
             Route::post('/cancelar', [ReservaController::class, 'cancelar'])->name('cancelar');
         });

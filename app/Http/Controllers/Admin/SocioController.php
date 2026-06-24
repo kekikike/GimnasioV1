@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class SocioController extends Controller
 {
@@ -21,14 +20,20 @@ class SocioController extends Controller
     public function listar(Request $request)
     {
         try {
-            // Como ya no hay codigoAcceso, enviamos el carnetSocio camuflado como codigoAcceso para que la vista de Vue no se rompa
             $query = DB::table('tsocios as s')
                 ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
+                ->leftJoin('tmembresias as m', function($join) {
+                    // Unimos con la última membresía activa o vencida del socio
+                    $join->on('s.carnetSocio', '=', 'm.carnetSocio')
+                         ->where('m.estadoA', '=', 1)
+                         ->whereRaw('m.idMembresia = (SELECT MAX(idMembresia) FROM tmembresias WHERE carnetSocio = s.carnetSocio)');
+                })
                 ->select(
                     's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.carnetSocio AS codigoAcceso', 
-                    'u.nombre1', 'u.apellido1', 'u.correo', 'u.telefono', 
+                    'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono', 
                     's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre', 
-                    's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url'
+                    's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url',
+                    'm.estadoMembresia' // Recuperamos el estado para el botón de Congelar
                 )
                 ->where('u.estadoA', 1);
 
@@ -45,27 +50,20 @@ class SocioController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'carnetSocio'  => 'required|numeric|max:2147483647|confirmed|unique:tsocios,carnetSocio',
-            'nombre1'      => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'apellido1'    => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'correo'       => 'required|email|unique:tusuarios,correo',
-            'telefono'     => 'required|numeric|digits_between:7,15',
-            'contrasena'   => 'required|string|min:8|confirmed',
-            'direccion'    => 'nullable|string|max:255',
+            'carnetSocio'      => 'required|numeric|max:2147483647|unique:tsocios,carnetSocio',
+            'nombre1'          => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'nombre2'          => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'apellidoPaterno'  => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'apellidoMaterno'  => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'correo'           => 'required|email|unique:tusuarios,correo',
+            'telefono'         => 'required|numeric|digits_between:7,15',
+            'contrasena'       => 'required|string|min:8',
+            'direccion'        => 'nullable|string|max:255',
             'contacto_emergencia_nombre' => 'nullable|string|max:100',
             'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,15',
-            'foto'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
-            'idPlan'       => 'required|integer|exists:tplanes,idPlan',
-            'idSucursal'   => 'required|integer|exists:tsucursales,idSucursal',
-        ], [
-            'carnetSocio.max' => 'El número de carnet es demasiado grande para el sistema.',
-            'carnetSocio.confirmed' => 'Los números de carnet no coinciden.',
-            'carnetSocio.unique' => 'Este carnet ya está registrado.',
-            'nombre1.regex' => 'El nombre solo puede contener letras y espacios.',
-            'apellido1.regex' => 'El apellido solo puede contener letras y espacios.',
-            'correo.unique' => 'Este correo ya está en uso.',
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
-            'contrasena.confirmed' => 'Las contraseñas no coinciden.',
+            'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
+            'idPlan'           => 'required|integer|exists:tplanes,idPlan',
+            'idSucursal'       => 'required|integer|exists:tsucursales,idSucursal',
         ]);
 
         if ($validator->fails()) {
@@ -73,25 +71,18 @@ class SocioController extends Controller
         }
 
         $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip();
 
         DB::beginTransaction();
         try {
             $rol = DB::table('troles')->where('nombreRol', 'Socio')->first();
-            if (!$rol) {
-                $idRol = DB::table('troles')->insertGetId(['nombreRol' => 'Socio', 'fechaA' => now(), 'usuarioA' => $usuarioA]);
-            } else {
-                $idRol = $rol->idRol;
-            }
+            $idRol = $rol ? $rol->idRol : DB::table('troles')->insertGetId(['nombreRol' => 'Socio', 'fechaA' => now(), 'usuarioA' => $usuarioA]);
 
-            // Se reemplaza el Stored Procedure por un Insert directo de Laravel para mayor fiabilidad.
-            // El SP `sp_TUsuarios_Insert` no devolvía un ID de forma consistente.
             $idUsuario = DB::table('tusuarios')->insertGetId([
                 'idRol'      => $idRol,
                 'nombre1'    => $request->nombre1,
-                'nombre2'    => null,
-                'apellido1'  => $request->apellido1,
-                'apellido2'  => null,
+                'nombre2'    => $request->nombre2,
+                'apellido1'  => $request->apellidoPaterno,
+                'apellido2'  => $request->apellidoMaterno,
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'contrasena' => bcrypt($request->contrasena),
@@ -100,8 +91,6 @@ class SocioController extends Controller
                 'fechaA'     => now(),
             ]);
 
-            if (!$idUsuario) throw new \Exception("Error al crear el registro de usuario.");
-
             $fotoPath = null;
             if ($request->hasFile('foto')) {
                 $ext = $request->file('foto')->getClientOriginalExtension();
@@ -109,7 +98,6 @@ class SocioController extends Controller
                 $fotoPath = $request->file('foto')->storeAs('fotos_socios', $nombreFoto, 'public');
             }
 
-            // CORRECCIÓN: Eliminamos el 'codigoAcceso' porque Kike usa el CI para esto ahora
             DB::table('tsocios')->insert([
                 'carnetSocio'  => $request->carnetSocio, 
                 'idUsuario'    => $idUsuario,
@@ -118,6 +106,7 @@ class SocioController extends Controller
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl'=> $fotoPath,
                 'estadoSocio'  => 'Activo', 
+                'strikes'      => 0,
                 'fechaA'       => now(), 
                 'usuarioA'     => $usuarioA
             ]);
@@ -138,16 +127,10 @@ class SocioController extends Controller
             ]);
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito. El código de acceso es su CI: ' . $request->carnetSocio]);
-
+            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($fotoPath)) Storage::disk('public')->delete($fotoPath);
-            \Log::error('Error en SocioController@store: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
-            $errorMessage = 'Error al registrar al socio. ';
-            // En modo debug, mostrar el error real para facilitar la depuración
-            if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
-            return response()->json(['success' => false, 'message' => $errorMessage], 500);
+            return response()->json(['success' => false, 'message' => 'Error al registrar socio.'], 500);
         }
     }
 
@@ -158,47 +141,34 @@ class SocioController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'idUsuario'    => 'required|integer|exists:tusuarios,idUsuario',
-            'nombre1'      => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'apellido1'    => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
-            'correo'       => 'required|email|unique:tusuarios,correo,' . $request->idUsuario . ',idUsuario',
-            'telefono'     => 'required|numeric|digits_between:7,15',
-            'contrasena'   => 'nullable|string|min:8|confirmed',
-            'direccion'    => 'nullable|string|max:255',
-            'contacto_emergencia_nombre' => 'nullable|string|max:100',
-            'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,15',
-            'foto'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'idUsuario'        => 'required|integer|exists:tusuarios,idUsuario',
+            'nombre1'          => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'nombre2'          => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'apellidoPaterno'  => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'apellidoMaterno'  => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
+            'correo'           => 'required|email|unique:tusuarios,correo,' . $request->idUsuario . ',idUsuario',
+            'telefono'         => 'required|numeric|digits_between:7,15',
+            'contrasena'       => 'nullable|string|min:8',
+            'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $validator->errors()], 422);
-        }
+        if ($validator->fails()) return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
 
         $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip();
 
         DB::beginTransaction();
         try {
-            // Se obtiene el rol 'Socio' dinámicamente para evitar usar un ID hardcodeado como '4'.
-            $rolSocio = DB::table('troles')->where('nombreRol', 'Socio')->first();
-            if (!$rolSocio) {
-                throw new \Exception("El rol 'Socio' no se encuentra en la base de datos.");
-            }
-
-            $usuarioActual = DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->first();
-
-            // Se reemplaza el SP por un Update directo para consistencia y claridad.
             $updateData = [
-                'idRol'      => $rolSocio->idRol,
                 'nombre1'    => $request->nombre1,
-                'apellido1'  => $request->apellido1,
+                'nombre2'    => $request->nombre2,
+                'apellido1'  => $request->apellidoPaterno,
+                'apellido2'  => $request->apellidoMaterno,
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'usuarioA'   => $usuarioA,
                 'fechaA'     => now(),
             ];
 
-            // Actualizar la contraseña solo si se proporciona una nueva
             if ($request->filled('contrasena')) {
                 $updateData['contrasena'] = bcrypt($request->contrasena);
             }
@@ -211,8 +181,7 @@ class SocioController extends Controller
             if ($request->hasFile('foto')) {
                 if ($fotoPath) Storage::disk('public')->delete($fotoPath);
                 $ext = $request->file('foto')->getClientOriginalExtension();
-                $nombreFoto = 'S-' . $id . '.' . $ext;
-                $fotoPath = $request->file('foto')->storeAs('fotos_socios', $nombreFoto, 'public');
+                $fotoPath = $request->file('foto')->storeAs('fotos_socios', 'S-' . $id . '.' . $ext, 'public');
             }
 
             DB::table('tsocios')->where('carnetSocio', $id)->update([
@@ -228,11 +197,7 @@ class SocioController extends Controller
             return response()->json(['success' => true, 'message' => '✅ Información del socio actualizada.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error en SocioController@update: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
-            $errorMessage = 'Error al actualizar al socio. ';
-            // En modo debug, mostrar el error real para facilitar la depuración
-            if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
-            return response()->json(['success' => false, 'message' => $errorMessage], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar.'], 500);
         }
     }
 
@@ -249,8 +214,7 @@ class SocioController extends Controller
             DB::table('tmembresias')->where('carnetSocio', $id)->where('estadoMembresia', '!=', 'Vencida')
                 ->update(['estadoMembresia' => $estadoMembresia, 'fechaA' => now()]);
 
-            $texto = $nuevoEstado == 'Congelado' ? 'Congelado' : 'Activo';
-            return response()->json(['success' => true, 'message' => '✅ El estado del socio ahora es: ' . $texto]);
+            return response()->json(['success' => true, 'message' => '✅ El estado del socio y membresía ahora es: ' . $nuevoEstado]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error interno.'], 500);
         }
@@ -259,7 +223,7 @@ class SocioController extends Controller
     public function destroy(Request $request, $id)
     {
         $usuarioA = Auth::id() ?? 1;
-        $ip = $request->ip(); // Asegurarse de capturar la IP al inicio
+        $ip = $request->ip();
         
         try {
             $socio = DB::table('tsocios')->where('carnetSocio', $id)->first();
@@ -268,23 +232,37 @@ class SocioController extends Controller
             }
             DB::table('tmembresias')->where('carnetSocio', $id)->update(['estadoA' => 0, 'fechaA' => now()]);
             
-            // 🔥 CÓDIGO DE AUDITORÍA INYECTADO AQUÍ 🔥
             DB::table('tauditorias')->insert([
                 'tablaNombre'   => 'tsocios',
                 'registroId'    => $id,
-                'accion'        => 'DELETE', // Baja lógica
+                'accion'        => 'DELETE',
                 'campo'         => 'estadoA',
                 'valorAnterior' => '1',
                 'valorNuevo'    => '0',
                 'usuarioA'      => $usuarioA,
                 'fechaA'        => now(),
                 'direccionIP'   => $ip,
-                'detalles'      => 'Baja manual de Socio y su Membresía desde el Panel'
+                'detalles'      => 'Baja manual de Socio'
             ]);
 
             return response()->json(['success' => true, 'message' => 'Socio dado de baja exitosamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error interno.'], 500);
+        }
+    }
+    public function notificaciones($id)
+    {
+        try {
+            // Buscamos las notificaciones del socio en la base de datos
+            $notificaciones = DB::table('tnotificaciones')
+                ->where('carnetSocio', $id)
+                ->orderBy('fechaEnvio', 'desc')
+                ->get();
+                
+            return response()->json($notificaciones);
+        } catch (\Exception $e) {
+            // Si la tabla 'tnotificaciones' no existe en la BD de Kike, devolvemos un array vacío para no romper la vista
+            return response()->json([]);
         }
     }
 }

@@ -172,13 +172,33 @@
             const idActual = ref(null);
             const guardando = ref(false);
 
-            const formularioBase = {
-                carnetEmpleado: '', carnetEmpleado_confirmation: '', idUsuario: '',
-                nombre1: '', nombre2: '', apellido1: '', apellido2: '',
-                idRol: '', correo: '', telefono: '', contrasena: '',
-                contrasena_confirmation: '', idSucursal: '', sueldo: '', fechaContratoInicio: ''
+            // 1. Función inteligente para calcular la fecha de hoy sin problemas de zona horaria
+            const obtenerFechaHoy = () => {
+                const hoy = new Date();
+                const yyyy = hoy.getFullYear();
+                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dd = String(hoy.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
             };
+
+            // 2. Agregamos el llamado automático a la propiedad fechaContratoInicio
+            const formularioBase = {
+                carnetEmpleado: '', 
+                carnetEmpleado_confirmation: '',
+                idRol: '', 
+                idSucursal: '', 
+                sueldo: '',
+                nombre1: '', 
+                apellidoPaterno: '', 
+                correo: '', 
+                telefono: '',
+                contrasena: '', 
+                contrasena_confirmation: '',
+                fechaContratoInicio: obtenerFechaHoy() // <--- ¡AQUÍ ESTÁ LA MAGIA!
+            };
+            
             const formulario = ref({ ...formularioBase });
+            
             const errores = ref({});
 
             const headers = {

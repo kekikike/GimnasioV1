@@ -4,7 +4,6 @@
 @section('content')
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
-    // Laravel inyecta los empleados desde el controlador
     window.listaEmpleados = @json($empleados ?? []);
 </script>
 
@@ -21,13 +20,13 @@
 
     <div v-if="empleadoSeleccionado" class="card" style="padding: 20px; margin-bottom: 20px;">
         <h3 style="margin-bottom: 15px; color: #1e293b;">
-            <template v-if="modoEdicion">✏️ Editar Turno</template>
+            <template v-if="modoEdicion">✏️ Editar Turno Existente</template>
             <template v-else>⏱️ Asignar Nuevo Turno</template>
         </h3>
         
         <form @submit.prevent="guardarHorario" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Día de la Semana</label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Día de la Semana <span style="color:#ef4444;">*</span></label>
                 <select v-model="formulario.diaSemana" class="form-control" required>
                     <option value="" disabled>Seleccione...</option>
                     <option value="Lunes">Lunes</option>
@@ -38,52 +37,63 @@
                     <option value="Sábado">Sábado</option>
                     <option value="Domingo">Domingo</option>
                 </select>
-                <small v-if="errores.diaSemana" style="color:#ef4444;">@{{ errores.diaSemana }}</small>
             </div>
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Hora de Entrada</label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Hora de Entrada <span style="color:#ef4444;">*</span></label>
                 <input type="time" v-model="formulario.horaEntrada" class="form-control" required>
-                <small v-if="errores.horaEntrada" style="color:#ef4444;">@{{ errores.horaEntrada }}</small>
             </div>
             <div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Hora de Salida</label>
+                <label style="font-weight: bold; font-size: 0.85rem;">Hora de Salida <span style="color:#ef4444;">*</span></label>
                 <input type="time" v-model="formulario.horaSalida" class="form-control" required>
-                <small v-if="errores.horaSalida" style="color:#ef4444;">@{{ errores.horaSalida }}</small>
             </div>
 
             <div style="grid-column: span 3; margin-top: 10px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
                     <template v-if="guardando">⏳ Guardando...</template>
-                    <template v-else>@{{ modoEdicion ? '💾 Actualizar Horario' : '➕ Agregar Horario' }}</template>
+                    <template v-else>@{{ modoEdicion ? '💾 Actualizar Turno' : '➕ Agregar Turno' }}</template>
                 </button>
-                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary" style="margin-left: 10px;">❌ Cancelar</button>
             </div>
         </form>
     </div>
 
     <div v-if="empleadoSeleccionado" class="card" style="padding: 20px;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Horarios Asignados</h3>
+        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Cronograma de Turnos Asignados</h3>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f1f5f9;">
                 <tr>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Día</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Entrada</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Salida</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: center;">Acciones</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; width: 20%;">Día de la Semana</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; width: 80%;">Horarios Asignados</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="h in horarios" :key="h.idHorario" style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 12px; font-weight: bold; color: #0f172a;">@{{ h.diaSemana }}</td>
-                    <td style="padding: 12px; color: #059669;">🟢 @{{ h.horaEntrada }}</td>
-                    <td style="padding: 12px; color: #dc2626;">🔴 @{{ h.horaSalida }}</td>
-                    <td style="padding: 12px; text-align: center;">
-                        <button @click="editarHorario(h)" class="btn btn-sm btn-info" style="margin-right: 5px;">✏️</button>
-                        <button @click="eliminarHorario(h.idHorario)" class="btn btn-sm btn-danger">🗑️</button>
+                <tr v-for="grupo in horariosAgrupados" :key="grupo.diaSemana" style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 12px; font-weight: bold; color: #0f172a; font-size: 1.1rem; vertical-align: top;">
+                        📅 @{{ grupo.diaSemana }}
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div v-for="(turno, index) in grupo.turnos" :key="turno.idHorario" style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; min-width: 220px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 6px;">
+                                    <span style="font-size: 0.75rem; background-color: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
+                                        📌 @{{ index + 1 }}er Turno
+                                    </span>
+                                    <div>
+                                        <button @click="editarHorario(turno)" class="btn btn-sm btn-info" style="padding: 2px 6px; font-size: 0.75rem; margin-right: 4px;" title="Editar este turno">✏️</button>
+                                        <button @click="eliminarHorario(turno.idHorario)" class="btn btn-sm btn-danger" style="padding: 2px 6px; font-size: 0.75rem;" title="Eliminar este turno">🗑️</button>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
+                                    <span style="color: #059669; font-weight: 600;">🟢 @{{ turno.horaEntrada.substring(0,5) }}</span>
+                                    <span style="color: #94a3b8; font-size: 0.8em;">➔</span>
+                                    <span style="color: #dc2626; font-weight: 600;">🔴 @{{ turno.horaSalida.substring(0,5) }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
-                <tr v-if="horarios.length === 0">
-                    <td colspan="4" style="text-align: center; padding: 20px; color: #64748b;">No hay horarios registrados para este empleado.</td>
+                <tr v-if="horariosAgrupados.length === 0">
+                    <td colspan="2" style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">No hay turnos registrados para este empleado.</td>
                 </tr>
             </tbody>
         </table>
@@ -97,7 +107,7 @@
         setup() {
             const empleados = ref(window.listaEmpleados || []);
             const empleadoSeleccionado = ref('');
-            const horarios = ref([]);
+            const horariosAgrupados = ref([]); // La variable ahora guarda los días agrupados
             const modoEdicion = ref(false);
             const idActual = ref(null);
             const guardando = ref(false);
@@ -106,13 +116,40 @@
             const formBase = { diaSemana: '', horaEntrada: '', horaSalida: '' };
             const formulario = ref({ ...formBase });
 
-            const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
+            const headers = { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' 
+            };
+
+            const ordenDias = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 7 };
 
             const cargarHorarios = async () => {
                 cancelarEdicion();
                 if (!empleadoSeleccionado.value) return;
-                const res = await fetch(`/admin/horarios/listar/${empleadoSeleccionado.value}`);
-                horarios.value = await res.json();
+                try {
+                    const res = await fetch(`/admin/horarios/listar/${empleadoSeleccionado.value}`);
+                    let data = await res.json();
+                    
+                    // Magia de Vue: Agrupamos los turnos crudos por día de la semana
+                    let agrupado = {};
+                    data.forEach(h => {
+                        if (!agrupado[h.diaSemana]) agrupado[h.diaSemana] = [];
+                        agrupado[h.diaSemana].push(h);
+                    });
+
+                    // Lo convertimos en un formato que la tabla entienda y ordenamos por hora
+                    let resultado = Object.keys(agrupado).map(dia => ({
+                        diaSemana: dia,
+                        turnos: agrupado[dia].sort((a, b) => a.horaEntrada.localeCompare(b.horaEntrada))
+                    }));
+
+                    // Ordenamos los días de Lunes a Domingo
+                    resultado.sort((a, b) => ordenDias[a.diaSemana] - ordenDias[b.diaSemana]);
+
+                    horariosAgrupados.value = resultado;
+                } catch (e) { console.error("Error cargando horarios", e); }
             };
 
             const guardarHorario = async () => {
@@ -130,21 +167,30 @@
                         alert(data.message);
                         cargarHorarios();
                     } else if (res.status === 422) {
-                        for (const campo in data.errors) errores.value[campo] = data.errors[campo][0];
+                        let mensajesError = [];
+                        for (const campo in data.errors) {
+                            mensajesError.push("• " + data.errors[campo][0]);
+                        }
+                        alert("⚠️ AVISO:\n\n" + mensajesError.join("\n"));
                     } else {
-                        alert(data.message || 'Error inesperado');
+                        alert(data.message || 'Error inesperado del servidor');
                     }
-                } catch (e) {
-                    console.error(e);
-                } finally {
-                    guardando.value = false;
+                } catch (e) { 
+                    console.error("Error crítico:", e); 
+                    alert("⚠️ Ocurrió un error de conexión.");
+                } finally { 
+                    guardando.value = false; 
                 }
             };
 
-            const editarHorario = (h) => {
+            const editarHorario = (turno) => {
                 modoEdicion.value = true;
-                idActual.value = h.idHorario;
-                formulario.value = { diaSemana: h.diaSemana, horaEntrada: h.horaEntrada, horaSalida: h.horaSalida };
+                idActual.value = turno.idHorario;
+                formulario.value = { 
+                    diaSemana: turno.diaSemana, 
+                    horaEntrada: turno.horaEntrada.substring(0,5), 
+                    horaSalida: turno.horaSalida.substring(0,5) 
+                };
                 errores.value = {};
             };
 
@@ -156,13 +202,23 @@
             };
 
             const eliminarHorario = async (id) => {
-                if (confirm("¿Eliminar este turno?")) {
-                    await fetch(`/admin/horarios/${id}`, { method: 'DELETE', headers: headers });
-                    cargarHorarios();
+                if (confirm("¿Estás seguro de eliminar este turno?")) {
+                    try {
+                        const res = await fetch(`/admin/horarios/${id}`, { method: 'DELETE', headers: headers });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            alert(data.message);
+                            cargarHorarios();
+                        } else {
+                            alert(data.message || "No se pudo eliminar.");
+                        }
+                    } catch (e) {
+                        console.error("Error al eliminar", e);
+                    }
                 }
             };
 
-            return { empleados, empleadoSeleccionado, horarios, formulario, errores, modoEdicion, guardando, cargarHorarios, guardarHorario, editarHorario, eliminarHorario, cancelarEdicion };
+            return { empleados, empleadoSeleccionado, horariosAgrupados, formulario, errores, modoEdicion, guardando, cargarHorarios, guardarHorario, editarHorario, eliminarHorario, cancelarEdicion };
         }
     }).mount('#appHorarios');
 </script>
