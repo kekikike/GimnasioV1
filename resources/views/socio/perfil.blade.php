@@ -3,7 +3,6 @@
 @section('content')
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-<!-- 🎨 AQUÍ AGREGAMOS EL CSS PARA QUE SE VEA HERMOSO -->
 <style>
     .form-control {
         display: block;
