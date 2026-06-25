@@ -66,7 +66,7 @@
             </div>
         </div>
 
-        <!-- Registrar Recibo -->
+        <!-- Registrar / Renovar Recibo -->
         <div v-if="cajaAbierta && cajaAbierta.estadoCaja === 'Abierta'" style="border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
             <h3 style="margin-bottom:1rem; color:#1e293b;">Registrar Recibo</h3>
 
@@ -79,10 +79,16 @@
                     </div>
                 </div>
                 <div v-if="socioInfo">
-                    <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:0.5rem; padding:0.5rem 1rem; display:flex; align-items:center; gap:1rem;">
+                    <div :style="{ background: esRenovacion ? '#fef3c7' : '#f0fdf4', border: '1px solid ' + (esRenovacion ? '#f59e0b' : '#86efac'), borderRadius: '0.5rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }">
                         <strong>{{ socioInfo.nombre1 }} {{ socioInfo.nombre2 ? socioInfo.nombre2+' ' : '' }}{{ socioInfo.apellido1 }} {{ socioInfo.apellido2 ? socioInfo.apellido2 : '' }}</strong>
                         <span class="badge" :class="socioInfo.estadoSocio === 'Activo' ? 'badge-success' : 'badge-warning'">{{ socioInfo.estadoSocio }}</span>
                         <small style="color:#64748b;">CI: {{ socioInfo.carnetSocio }}</small>
+                        <span v-if="esRenovacion" style="background:#f59e0b; color:#fff; padding:0.15rem 0.5rem; border-radius:999px; font-size:0.75rem; font-weight:700;">
+                            Renovar
+                        </span>
+                    </div>
+                    <div v-if="membresiaActiva" style="margin-top:0.4rem; font-size:0.85rem; color:#64748b;">
+                        Membresia activa vence: <strong>{{ membresiaActiva.fechaFinMembresia }}</strong> ({{ membresiaActiva.planNombre }})
                     </div>
                 </div>
             </div>
@@ -90,9 +96,9 @@
             <div v-if="socioInfo" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; align-items:end;">
                 <div>
                     <label>Plan</label>
-                    <select v-model="idPlan" @change="onPlanChange" class="form-control">
-                        <option value="">Seleccione plan...</option>
-                        <option v-for="p in planes" :key="p.idPlan" :value="p.idPlan">{{ p.nombrePlan }} - Bs. {{ formatNum(p.costoPlan) }} ({{ p.duracionDias }} dias)</option>
+                    <select v-model="idPlan" @change="onPlanChange" class="form-control" :disabled="esRenovacion">
+                        <option v-if="!esRenovacion" value="">Seleccione plan...</option>
+                        <option v-for="p in planesFiltrados" :key="p.idPlan" :value="p.idPlan">{{ p.nombrePlan }} - Bs. {{ formatNum(p.costoPlan) }} ({{ p.duracionDias }} dias)</option>
                     </select>
                 </div>
                 <div>
@@ -109,7 +115,7 @@
                         <option value="">Seleccione metodo...</option>
                         <option v-for="mp in metodosPago" :key="mp.idMetodoPago" :value="mp.idMetodoPago">{{ mp.nombreMetodoPago }}</option>
                     </select>
-                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" placeholder="Monto">
+                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto">
                     <button @click="quitarMetodo(i)" class="btn btn-sm btn-danger" style="white-space:nowrap;">X</button>
                 </div>
                 <div style="display:flex; gap:0.75rem; margin-top:0.5rem; align-items:center;">
@@ -122,7 +128,8 @@
                     </span>
                 </div>
                 <button @click="registrarRecibo" class="btn btn-success" style="margin-top:1rem;" :disabled="!puedeRegistrar">
-                    Registrar Recibo
+                    <template v-if="esRenovacion">Renovar Membresia</template>
+                    <template v-else>Registrar Recibo</template>
                 </button>
             </div>
         </div>
@@ -263,6 +270,8 @@ createApp({
         const movimientos = ref([]);
         const socioCarnet = ref('');
         const socioInfo = ref(null);
+        const membresiaActiva = ref(null);
+        const esRenovacion = ref(false);
         const idPlan = ref('');
         const montoTotal = ref('');
         const metodosPagoArr = ref([]);
@@ -292,6 +301,13 @@ createApp({
         const montoCierreCalculado = computed(() => {
             if (!cajaAbierta.value) return 0;
             return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalSalidasHoy.value;
+        });
+
+        const planesFiltrados = computed(() => {
+            if (esRenovacion.value && membresiaActiva.value) {
+                return planes.value.filter(p => p.idPlan == membresiaActiva.value.idPlan);
+            }
+            return planes.value;
         });
 
         const diferenciaMetodos = computed(() => {
@@ -384,6 +400,8 @@ createApp({
         const buscarSocio = async () => {
             if (!socioCarnet.value) return;
             socioInfo.value = null;
+            membresiaActiva.value = null;
+            esRenovacion.value = false;
             idPlan.value = '';
             montoTotal.value = '';
             metodosPagoArr.value = [];
@@ -394,8 +412,12 @@ createApp({
                 if (data.success) {
                     socioInfo.value = data.socio;
                     if (data.tieneMembresiaActiva) {
-                        alert('El socio ya tiene una membresia activa. No puede comprar otra hasta que venza.');
-                        socioInfo.value = null;
+                        membresiaActiva.value = data.membresiaActiva;
+                        esRenovacion.value = true;
+                        idPlan.value = data.membresiaActiva.idPlan;
+                        const plan = planes.value.find(p => p.idPlan == data.membresiaActiva.idPlan);
+                        if (plan) montoTotal.value = plan.costoPlan.toString();
+                        metodosPagoArr.value = [{ idMetodoPago: '', monto: '' }];
                     }
                 }
             } catch (e) { alert('Error al buscar socio.'); }
@@ -414,6 +436,13 @@ createApp({
             metodosPagoArr.value = [{ idMetodoPago: '', monto: '' }];
         };
 
+        const validarMontoMetodo = (i) => {
+            const max = parseFloat(montoTotal.value || 0);
+            if (parseFloat(metodosPagoArr.value[i].monto) > max) {
+                metodosPagoArr.value[i].monto = max.toString();
+            }
+        };
+
         const agregarMetodo = () => {
             metodosPagoArr.value.push({ idMetodoPago: '', monto: '' });
         };
@@ -430,6 +459,7 @@ createApp({
                 montoTotal: montoTotal.value,
                 metodos: metodosPagoArr.value.map(m => ({ idMetodoPago: m.idMetodoPago, monto: m.monto }))
             };
+            if (esRenovacion.value) payload.renovar = true;
             try {
                 const res = await fetch('{{ route("recepcionista.caja.recibo") }}', {
                     method: 'POST',
@@ -444,6 +474,8 @@ createApp({
                 }
                 alert(data.message);
                 socioInfo.value = null;
+                membresiaActiva.value = null;
+                esRenovacion.value = false;
                 socioCarnet.value = '';
                 idPlan.value = '';
                 montoTotal.value = '';
@@ -495,13 +527,13 @@ createApp({
 
         return {
             cajaAbierta, sucursalNombre, montoApertura, montoCierre, metodosPago, planes, movimientos,
-            socioCarnet, socioInfo, idPlan, montoTotal, metodosPagoArr,
+            socioCarnet, socioInfo, membresiaActiva, esRenovacion, idPlan, montoTotal, metodosPagoArr,
             reciboPreview, reciboMetodos,
-            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaMetodos, puedeRegistrar,
+            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, planesFiltrados, diferenciaMetodos, puedeRegistrar,
             salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,
             abrirCaja, cerrarCaja, cargarMovimientos, cargarSalidas, registrarSalida, buscarSocio, onPlanChange,
-            agregarMetodo, quitarMetodo, registrarRecibo, verRecibo, imprimirRecibo
+            validarMontoMetodo, agregarMetodo, quitarMetodo, registrarRecibo, verRecibo, imprimirRecibo
         };
     }
 }).mount('#appCaja');

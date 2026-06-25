@@ -25,8 +25,10 @@ class UsuarioSeeder extends Seeder
 
         DB::table('TUsuarios')->insertGetId([
             'idRol' => 1,
-            'nombre1' => 'Favio Estefano',
-            'apellido1' => 'Sandy Gonzales',
+            'nombre1' => 'Favio',
+            'nombre2' => 'Estefano',
+            'apellido1' => 'Sandy',
+            'apellido2' => 'Gonzales',
             'correo' => 'favio@gmail.com',
             'telefono' => 23456789,
             'contrasena' => Hash::make('123456'),
@@ -36,8 +38,10 @@ class UsuarioSeeder extends Seeder
 
         DB::table('TUsuarios')->insertGetId([
             'idRol' => 2,
-            'nombre1' => 'Juan Enrique',
-            'apellido1' => 'Quenallata Escobar',
+            'nombre1' => 'Juan',
+            'nombre2' => 'Enrique',
+            'apellido1' => 'Quenallata',
+            'apellido2' => 'Escobar',
             'correo' => 'kike@gmail.com',
             'telefono' => 34567890,
             'contrasena' => Hash::make('123456'),
@@ -48,8 +52,10 @@ class UsuarioSeeder extends Seeder
         DB::table('TUsuarios')->insert([
             [
                 'idRol' => 3,
-                'nombre1' => 'Samuel Ignacio',
-                'apellido1' => 'Jimenez Aliaga',
+                'nombre1' => 'Samuel',
+                'nombre2' => 'Ignacio',
+                'apellido1' => 'Jimenez',
+                'apellido2' => 'Aliaga',
                 'correo' => 'max@gmail.com',
                 'telefono' => 45678901,
                 'contrasena' => Hash::make('123456'),
@@ -58,8 +64,10 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Eddy Limber',
-                'apellido1' => 'Vargas Apaza',
+                'nombre1' => 'Eddy',
+                'nombre2' => 'Limber',
+                'apellido1' => 'Vargas',
+                'apellido2' => 'Apaza',
                 'correo' => 'eddy@gmail.com',
                 'telefono' => 56789012,
                 'contrasena' => Hash::make('123456'),
@@ -68,8 +76,10 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Maria Fernanda',
-                'apellido1' => 'Garcia Lopez',
+                'nombre1' => 'Maria',
+                'nombre2' => 'Fernanda',
+                'apellido1' => 'Garcia',
+                'apellido2' => 'Lopez',
                 'correo' => 'maria@gmail.com',
                 'telefono' => 67890123,
                 'contrasena' => Hash::make('123456'),
@@ -78,8 +88,10 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Charles James',
-                'apellido1' => 'Kirk Ruiz',
+                'nombre1' => 'Charles',
+                'nombre2' => 'James',
+                'apellido1' => 'Kirk',
+                'apellido2' => 'Ruiz',
                 'correo' => 'carlos@gmail.com',
                 'telefono' => 78901234,
                 'contrasena' => Hash::make('123456'),
@@ -88,8 +100,10 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Ana Sofia',
-                'apellido1' => 'Torrico Herrera',
+                'nombre1' => 'Ana',
+                'nombre2' => 'Sofia',
+                'apellido1' => 'Torrico',
+                'apellido2' => 'Herrera',
                 'correo' => 'ana@gmail.com',
                 'telefono' => 89012345,
                 'contrasena' => Hash::make('123456'),
@@ -98,8 +112,10 @@ class UsuarioSeeder extends Seeder
             ],
             [
                 'idRol' => 4,
-                'nombre1' => 'Pedro Luis',
-                'apellido1' => 'Camacho Rojas',
+                'nombre1' => 'Pedro',
+                'nombre2' => 'Luis',
+                'apellido1' => 'Camacho',
+                'apellido2' => 'Rojas',
                 'correo' => 'pedro@gmail.com',
                 'telefono' => 90123456,
                 'contrasena' => Hash::make('123456'),
@@ -109,7 +125,9 @@ class UsuarioSeeder extends Seeder
             [
                 'idRol' => 2,
                 'nombre1' => 'Carlos',
-                'apellido1' => 'Ruiz Martinez',
+                'nombre2' => null,
+                'apellido1' => 'Ruiz',
+                'apellido2' => 'Martinez',
                 'correo' => 'carlos.ruiz@gmail.com',
                 'telefono' => 11111111,
                 'contrasena' => Hash::make('123456'),
@@ -119,7 +137,9 @@ class UsuarioSeeder extends Seeder
             [
                 'idRol' => 3,
                 'nombre1' => 'Lucia',
-                'apellido1' => 'Morales Fernandez',
+                'nombre2' => null,
+                'apellido1' => 'Morales',
+                'apellido2' => 'Fernandez',
                 'correo' => 'lucia@gmail.com',
                 'telefono' => 22222222,
                 'contrasena' => Hash::make('123456'),
@@ -129,7 +149,9 @@ class UsuarioSeeder extends Seeder
             [
                 'idRol' => 3,
                 'nombre1' => 'Roberto',
-                'apellido1' => 'Vega Castillo',
+                'nombre2' => null,
+                'apellido1' => 'Vega',
+                'apellido2' => 'Castillo',
                 'correo' => 'roberto@gmail.com',
                 'telefono' => 33333333,
                 'contrasena' => Hash::make('123456'),
@@ -139,5 +161,3 @@ class UsuarioSeeder extends Seeder
         ]);
     }
 }
-
-

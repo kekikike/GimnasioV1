@@ -139,7 +139,7 @@ class SocioPortalController extends Controller
         $notificaciones = [];
         if ($socio) {
             $notificaciones = DB::table('tnotificaciones')
-                ->where('carnetSocio', $socio->carnetSocio)
+                ->where('idUsuario', $socio->idUsuario)
                 ->where('estadoA', 1)
                 ->orderBy('fechaEnvio', 'desc')
                 ->orderBy('idNotificacion', 'desc')

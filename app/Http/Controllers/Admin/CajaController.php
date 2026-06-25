@@ -25,6 +25,22 @@ class CajaController extends Controller
         return DB::table('TEmpleados')->where('idUsuario', $usuarioId)->first();
     }
 
+    private function registrarAuditoria(string $tabla, ?int $registroId, string $accion, ?string $campo, ?string $valorAnterior, ?string $valorNuevo, string $detalles): void
+    {
+        DB::table('TAuditorias')->insert([
+            'tablaNombre' => $tabla,
+            'registroId' => $registroId,
+            'accion' => $accion,
+            'campo' => $campo,
+            'valorAnterior' => $valorAnterior,
+            'valorNuevo' => $valorNuevo,
+            'usuarioA' => $this->getUsuarioA(),
+            'fechaA' => now(),
+            'direccionIP' => request()->ip(),
+            'detalles' => $detalles,
+        ]);
+    }
+
     public function index()
     {
         $metodosPago = DB::select('CALL sp_TMetodoPagos_Select()');
@@ -98,6 +114,8 @@ class CajaController extends Controller
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
+
+            $this->registrarAuditoria('TCajas', $idCaja, 'INSERT', 'estadoCaja', null, 'Abierta', "Apertura de caja: monto Bs. {$request->montoApertura}");
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al abrir la caja: ' . $e->getMessage()], 500);
         }
@@ -146,6 +164,8 @@ class CajaController extends Controller
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
+
+            $this->registrarAuditoria('TCajas', $id, 'UPDATE', 'estadoCaja', 'Abierta', 'Cerrada', "Cierre de caja. Monto real: {$request->montoCierre}, Calculado: {$montoCierreCalculado}, Diferencia: {$diferenciaArqueo}");
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al cerrar la caja: ' . $e->getMessage()], 500);
         }
@@ -228,7 +248,7 @@ class CajaController extends Controller
         $usuarioA = $this->getUsuarioA();
 
         try {
-            DB::table('TSalidas')->insert([
+            $idSalida = DB::table('TSalidas')->insertGetId([
                 'idCaja' => $cajaAbierta->idCaja,
                 'descripcion' => $request->descripcion,
                 'costo' => $request->costo,
@@ -236,6 +256,8 @@ class CajaController extends Controller
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
+
+            $this->registrarAuditoria('TSalidas', $idSalida, 'INSERT', 'costo', null, $request->costo, "Salida registrada: {$request->descripcion}");
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al registrar salida: ' . $e->getMessage()], 500);
         }
@@ -287,13 +309,27 @@ class CajaController extends Controller
                 ->where('estadoA', 1)
                 ->where('estadoMembresia', 'Activa')
                 ->whereDate('fechaFinMembresia', '>=', date('Y-m-d'))
-                ->exists();
+                ->first();
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'socio' => $socio,
-                'tieneMembresiaActiva' => $membresiaActiva,
-            ]);
+                'tieneMembresiaActiva' => false,
+            ];
+
+            if ($membresiaActiva) {
+                $plan = DB::table('TPlanes')->where('idPlan', $membresiaActiva->idPlan)->first();
+                $response['tieneMembresiaActiva'] = true;
+                $response['membresiaActiva'] = [
+                    'idMembresia' => $membresiaActiva->idMembresia,
+                    'idPlan' => $membresiaActiva->idPlan,
+                    'fechaFinMembresia' => $membresiaActiva->fechaFinMembresia,
+                    'planNombre' => $plan ? $plan->nombrePlan : '',
+                    'duracionDias' => $plan ? $plan->duracionDias : 0,
+                ];
+            }
+
+            return response()->json($response);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al buscar socio.'], 500);
         }
@@ -317,21 +353,28 @@ class CajaController extends Controller
             'metodos' => 'required|array|min:1',
             'metodos.*.idMetodoPago' => 'required|integer|exists:TMetodoPagos,idMetodoPago',
             'metodos.*.monto' => 'required|numeric|min:0',
+            'renovar' => 'nullable|boolean',
         ]);
 
         $carnet = $request->carnetSocio;
         $today = date('Y-m-d');
-        $usuarioA = $this->getUsuarioA();
+        $esRenovacion = $request->boolean('renovar');
 
-        $tieneActiva = DB::table('TMembresias')
+        $membresiaActiva = DB::table('TMembresias')
             ->where('carnetSocio', $carnet)
             ->where('estadoA', 1)
             ->where('estadoMembresia', 'Activa')
             ->whereDate('fechaFinMembresia', '>=', $today)
-            ->exists();
+            ->first();
 
-        if ($tieneActiva) {
-            return response()->json(['success' => false, 'message' => 'El socio ya tiene una membresia activa. Debe esperar a que venza para comprar una nueva.'], 422);
+        if ($esRenovacion) {
+            if (!$membresiaActiva) {
+                return response()->json(['success' => false, 'message' => 'El socio no tiene una membresia activa para renovar.'], 422);
+            }
+        } else {
+            if ($membresiaActiva) {
+                return response()->json(['success' => false, 'message' => 'El socio ya tiene una membresia activa. Use la opcion de renovacion.'], 422);
+            }
         }
 
         $sumaMetodos = collect($request->metodos)->sum('monto');
@@ -361,25 +404,43 @@ class CajaController extends Controller
 
         DB::beginTransaction();
         try {
-            $idMembresia = DB::table('TMembresias')->insertGetId([
-                'idPlan' => $request->idPlan,
-                'carnetSocio' => $carnet,
-                'idSucursal' => $idSucursal,
-                'fechaInicioMembresia' => $today,
-                'fechaFinMembresia' => date('Y-m-d', strtotime("$today +{$plan->duracionDias} days")),
-                'estadoMembresia' => 'Activa',
-                'estadoA' => 1,
-                'fechaA' => now(),
-                'usuarioA' => $usuarioA,
-            ]);
+            if ($esRenovacion) {
+                $nuevaFechaFin = date('Y-m-d', strtotime($membresiaActiva->fechaFinMembresia . " +{$plan->duracionDias} days"));
+                $antiguaFechaFin = $membresiaActiva->fechaFinMembresia;
 
-            $socio = DB::table('TSocios')->where('carnetSocio', $carnet)->first();
-            if ($socio && $socio->estadoSocio !== 'Activo') {
-                DB::table('TSocios')->where('carnetSocio', $carnet)->update([
-                    'estadoSocio' => 'Activo',
+                DB::table('TMembresias')->where('idMembresia', $membresiaActiva->idMembresia)->update([
+                    'idPlan' => $request->idPlan,
+                    'fechaFinMembresia' => $nuevaFechaFin,
                     'fechaA' => now(),
                     'usuarioA' => $usuarioA,
                 ]);
+
+                $this->registrarAuditoria('TMembresias', $membresiaActiva->idMembresia, 'UPDATE', 'fechaFinMembresia', $antiguaFechaFin, $nuevaFechaFin, "Renovacion de membresia. Plan: {$plan->nombrePlan}, duracion agregada: {$plan->duracionDias} dias");
+
+                $idMembresia = $membresiaActiva->idMembresia;
+            } else {
+                $idMembresia = DB::table('TMembresias')->insertGetId([
+                    'idPlan' => $request->idPlan,
+                    'carnetSocio' => $carnet,
+                    'idSucursal' => $idSucursal,
+                    'fechaInicioMembresia' => $today,
+                    'fechaFinMembresia' => date('Y-m-d', strtotime("$today +{$plan->duracionDias} days")),
+                    'estadoMembresia' => 'Activa',
+                    'estadoA' => 1,
+                    'fechaA' => now(),
+                    'usuarioA' => $usuarioA,
+                ]);
+
+                $this->registrarAuditoria('TMembresias', $idMembresia, 'INSERT', 'estadoMembresia', null, 'Activa', "Nueva membresia creada. Plan: {$plan->nombrePlan}, Socio: {$carnet}");
+
+                $socio = DB::table('TSocios')->where('carnetSocio', $carnet)->first();
+                if ($socio && $socio->estadoSocio !== 'Activo') {
+                    DB::table('TSocios')->where('carnetSocio', $carnet)->update([
+                        'estadoSocio' => 'Activo',
+                        'fechaA' => now(),
+                        'usuarioA' => $usuarioA,
+                    ]);
+                }
             }
 
             $idRecibo = DB::table('TRecibos')->insertGetId([
@@ -392,6 +453,8 @@ class CajaController extends Controller
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
+
+            $this->registrarAuditoria('TRecibos', $idRecibo, 'INSERT', 'montoTotal', null, $request->montoTotal, "Recibo generado. Socio: {$carnet}, Membresia: #{$idMembresia}" . ($esRenovacion ? ' (Renovacion)' : ''));
 
             foreach ($request->metodos as $metodo) {
                 DB::table('TDetalleMetodoPagos')->insert([
@@ -407,7 +470,7 @@ class CajaController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true,
-                'message' => 'Recibo #' . $idRecibo . ' registrado correctamente.',
+                'message' => ($esRenovacion ? 'Membresia renovada' : 'Recibo #' . $idRecibo) . ' registrado correctamente.',
                 'idRecibo' => $idRecibo,
             ]);
         } catch (\Exception $e) {

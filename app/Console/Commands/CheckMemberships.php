@@ -90,13 +90,13 @@ class CheckMemberships extends Command
                 ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
                 ->where('m.fechaFinMembresia', '=', $notificationDate)
                 ->where('m.estadoMembresia', 'Activa')
-                ->select('u.correo', 'u.nombre1', 'u.nombre2', 'u.apellido1', 's.carnetSocio', 'm.fechaFinMembresia', 'm.idSucursal')
+                ->select('u.correo', 'u.nombre1', 'u.nombre2', 'u.apellido1', 's.idUsuario', 'm.fechaFinMembresia', 'm.idSucursal')
                 ->get();
 
             $contador = 0;
             foreach ($socios as $socio) {
                 $existe = DB::table('tnotificaciones')
-                    ->where('carnetSocio', $socio->carnetSocio)
+                    ->where('idUsuario', $socio->idUsuario)
                     ->where('tipoNotificacion', 'Recordatorio')
                     ->whereDate('fechaEnvio', now()->format('Y-m-d'))
                     ->exists();
@@ -110,7 +110,7 @@ class CheckMemberships extends Command
                 $fechaVen = \Carbon\Carbon::parse($socio->fechaFinMembresia)->format('d/m/Y');
 
                 DB::table('tnotificaciones')->insert([
-                    'carnetSocio' => $socio->carnetSocio,
+                    'idUsuario' => $socio->idUsuario,
                     'tipoNotificacion' => 'Recordatorio',
                     'mensaje' => "Hola {$nombreCompleto}, su membresia vencera el {$fechaVen}. Renueve ahora para no perder el acceso.",
                     'fechaEnvio' => now()->format('Y-m-d'),

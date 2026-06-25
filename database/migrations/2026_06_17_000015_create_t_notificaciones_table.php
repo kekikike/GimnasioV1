@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('TNotificaciones', function (Blueprint $table) {
             $table->increments('idNotificacion');
-            $table->unsignedInteger('carnetSocio');
+            $table->unsignedInteger('idUsuario');
             $table->string('tipoNotificacion', 50);
             $table->text('mensaje');
             $table->date('fechaEnvio');
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->dateTime('fechaA')->useCurrent();
             $table->unsignedInteger('usuarioA')->nullable();
 
-            $table->foreign('carnetSocio')->references('carnetSocio')->on('TSocios');
+            $table->foreign('idUsuario')->references('idUsuario')->on('TUsuarios');
         });
     }
 

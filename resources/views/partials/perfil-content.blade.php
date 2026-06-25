@@ -1,6 +1,3 @@
-@extends('layouts.socio')
-@section('title', 'Mi Perfil')
-@section('content')
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
 <style>
@@ -22,7 +19,8 @@
 </style>
 
 <script>
-    window.socioData = @json($socio ?? null);
+    window.perfilData = @json($data ?? null);
+    window.perfilUsuario = @json($usuario ?? null);
 </script>
 
 <div id="appPerfil">
@@ -45,8 +43,12 @@
             <div v-show="tabActiva==='datos'">
                 <div class="grid-2">
                     <div class="field-group">
-                        <label>Nro. Carnet (CI)</label>
+                        <label>Carnet / CI</label>
                         <input type="text" :value="formulario.carnet" class="form-control" disabled>
+                    </div>
+                    <div class="field-group">
+                        <label>Sucursal</label>
+                        <input type="text" :value="formulario.sucursal" class="form-control" disabled>
                     </div>
                     <div class="field-group">
                         <label>Primer Nombre <span style="color:#ef4444;">*</span></label>
@@ -69,20 +71,8 @@
                         <input type="email" v-model="formulario.correo" class="form-control" :disabled="!editando" required>
                     </div>
                     <div class="field-group">
-                        <label>Telefono Movil <span style="color:#ef4444;">*</span></label>
-                        <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :disabled="!editando" required maxlength="8" placeholder="Ej: 71234567">
-                    </div>
-                    <div class="field-group">
-                        <label>Direccion Exacta</label>
-                        <input type="text" v-model="formulario.direccion" class="form-control" :disabled="!editando">
-                    </div>
-                    <div class="field-group">
-                        <label>Nombre Contacto Emergencia</label>
-                        <input type="text" v-model="formulario.contacto_emergencia_nombre" @input="validarLetras('contacto_emergencia_nombre')" class="form-control" :disabled="!editando">
-                    </div>
-                    <div class="field-group">
-                        <label>Telefono Contacto Emergencia</label>
-                        <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarContactoEmergenciaTelefono" class="form-control" :disabled="!editando" maxlength="8">
+                        <label>Telefono <span style="color:#ef4444;">*</span></label>
+                        <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :disabled="!editando" required maxlength="15">
                     </div>
                 </div>
             </div>
@@ -123,19 +113,18 @@ createApp({
         const editando = ref(false);
         const guardando = ref(false);
         const tabActiva = ref('datos');
-        const socio = window.socioData || {};
+        const pdata = window.perfilData || {};
+        const usr = window.perfilUsuario || {};
 
         const formulario = ref({
-            carnet: socio.carnetSocio || '—',
-            nombre1: socio.nombre1 || '',
-            nombre2: socio.nombre2 || '',
-            apellido1: socio.apellido1 || '',
-            apellido2: socio.apellido2 || '',
-            correo: socio.correo || '',
-            telefono: socio.telefono || '',
-            direccion: socio.direccion || '',
-            contacto_emergencia_nombre: socio.nombreContactoEmergencia || '',
-            contacto_emergencia_telefono: socio.telefonoContactoEmergencia || '',
+            carnet: pdata.carnetEmpleado || '—',
+            sucursal: pdata.nombreSucursal || '—',
+            nombre1: pdata.nombre1 || usr.nombre1 || '',
+            nombre2: pdata.nombre2 || usr.nombre2 || '',
+            apellido1: pdata.apellido1 || usr.apellido1 || '',
+            apellido2: pdata.apellido2 || usr.apellido2 || '',
+            correo: pdata.correo || usr.correo || '',
+            telefono: pdata.telefono || usr.telefono || '',
             contrasena: '',
             contrasena_confirmation: ''
         });
@@ -153,17 +142,13 @@ createApp({
         };
 
         const validarTelefono = () => {
-            formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '').slice(0, 8);
-        };
-
-        const validarContactoEmergenciaTelefono = () => {
-            formulario.value.contacto_emergencia_telefono = formulario.value.contacto_emergencia_telefono.replace(/[^0-9]/g, '').slice(0, 8);
+            formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '');
         };
 
         const guardarPerfil = async () => {
             guardando.value = true;
             try {
-                const res = await fetch('/socio/perfil', {
+                const res = await fetch('/perfil', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -171,7 +156,16 @@ createApp({
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify(formulario.value)
+                    body: JSON.stringify({
+                        nombre1: formulario.value.nombre1,
+                        nombre2: formulario.value.nombre2,
+                        apellido1: formulario.value.apellido1,
+                        apellido2: formulario.value.apellido2,
+                        correo: formulario.value.correo,
+                        telefono: formulario.value.telefono,
+                        contrasena: formulario.value.contrasena,
+                        contrasena_confirmation: formulario.value.contrasena_confirmation
+                    })
                 });
 
                 const data = await res.json();
@@ -185,7 +179,7 @@ createApp({
                 } else if (res.status === 422) {
                     let msgs = [];
                     for (const campo in data.errors) {
-                        msgs.push(data.errors[campo][0]);
+                        msgs.push('• ' + data.errors[campo][0]);
                     }
                     alert('Error:\n\n' + msgs.join('\n'));
                 } else {
@@ -199,12 +193,7 @@ createApp({
             }
         };
 
-        return {
-            formulario, editando, guardando, tabActiva,
-            toggleEditar, validarLetras, validarTelefono,
-            validarContactoEmergenciaTelefono, guardarPerfil
-        };
+        return { formulario, editando, guardando, tabActiva, toggleEditar, validarLetras, validarTelefono, guardarPerfil };
     }
 }).mount('#appPerfil');
 </script>
-@endsection

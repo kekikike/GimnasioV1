@@ -53,8 +53,10 @@
             </a>
         </nav>
         <div class="user-info">
-            <div class="name">{{ session('usuario')->nombre1 ?? 'Usuario' }}</div>
-            <div class="role">Recepcionista</div>
+            <a href="{{ route('perfil') }}" style="text-decoration:none; color:inherit; display:block;">
+                <div class="name">{{ session('usuario')->nombre1 ?? 'Usuario' }}</div>
+                <div class="role">Recepcionista</div>
+            </a>
             <div style="margin-top:0.75rem;">
                 <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>

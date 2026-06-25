@@ -462,7 +462,7 @@
             const verNotificaciones = async (socio) => {
                 notifCarnet.value = socio.carnetSocio;
                 notifSocioNombre.value = `${socio.nombre1} ${socio.apellido1}`;
-                const url = `/admin/socios/${socio.carnetSocio}/notificaciones`;
+                const url = `/admin/socios/${socio.idUsuario}/notificaciones`;
                 const res = await fetch(url, {
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
                 });

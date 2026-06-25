@@ -22,6 +22,7 @@ use App\Http\Controllers\Recepcionista\ControlIngresoController;
 use App\Http\Controllers\Entrenador\EntrenadorController;
 use App\Http\Controllers\Socio\SocioPortalController;
 use App\Http\Controllers\Socio\ReservaController;
+use App\Http\Controllers\PerfilController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -44,7 +45,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 // Grupo de rutas protegidas por el Middleware de seguridad
 Route::middleware('auth.usuario')->group(function () {
-    
+
+    // Perfil de usuario (accesible por cualquier rol autenticado)
+    Route::get('/perfil', [PerfilController::class, 'perfil'])->name('perfil');
+    Route::put('/perfil', [PerfilController::class, 'updatePerfil']);
+
     // Panel de Administrador (idRol = 1)
     Route::middleware('role:1')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -74,7 +79,7 @@ Route::middleware('auth.usuario')->group(function () {
 
             Route::post('/{carnet}/congelar-membresia', [SocioController::class, 'congelarMembresia'])->name('congelarMembresia');
             Route::post('/{carnet}/activar-membresia', [SocioController::class, 'activarMembresia'])->name('activarMembresia');
-            Route::get('/{carnet}/notificaciones', [SocioController::class, 'notificaciones'])->name('notificaciones');
+            Route::get('/{id}/notificaciones', [SocioController::class, 'notificaciones'])->name('notificaciones');
             Route::delete('/{id}', [SocioController::class, 'destroy'])->name('destroy');
         });
 
@@ -204,7 +209,6 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/', [SocioPortalController::class, 'reservas'])->name('index');
             Route::get('/mis-reservas', [ReservaController::class, 'misReservas'])->name('mis');
             Route::get('/disponibles', [ReservaController::class, 'disponibles'])->name('disponibles');
-            Route::get('/admin/socios/{id}/notificaciones', [App\Http\Controllers\Admin\SocioController::class, 'notificaciones']);
             Route::post('/reservar', [ReservaController::class, 'reservar'])->name('reservar');
             Route::post('/cancelar', [ReservaController::class, 'cancelar'])->name('cancelar');
         });

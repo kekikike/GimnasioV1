@@ -61,6 +61,24 @@ class SocioController extends Controller
             'contacto_emergencia_nombre' => 'nullable|string|max:100',
             'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,15',
             'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'carnetSocio.required' => 'El carnet de socio es obligatorio.',
+            'carnetSocio.numeric' => 'El carnet de socio debe ser numerico.',
+            'carnetSocio.unique' => 'Este carnet de socio ya esta registrado.',
+            'nombre1.required' => 'El primer nombre es obligatorio.',
+            'nombre1.regex' => 'El primer nombre solo puede contener letras.',
+            'apellidoPaterno.required' => 'El apellido paterno es obligatorio.',
+            'apellidoPaterno.regex' => 'El apellido paterno solo puede contener letras.',
+            'correo.required' => 'El correo electronico es obligatorio.',
+            'correo.email' => 'El correo electronico no es valido.',
+            'correo.unique' => 'Este correo electronico ya esta registrado.',
+            'telefono.required' => 'El telefono es obligatorio.',
+            'telefono.numeric' => 'El telefono debe ser numerico.',
+            'contrasena.required' => 'La contrasena es obligatoria.',
+            'contrasena.min' => 'La contrasena debe tener al menos 8 caracteres.',
+            'foto.image' => 'La foto debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser JPG o PNG.',
+            'foto.max' => 'La foto no debe superar 2MB.',
         ]);
 
         if ($validator->fails()) {
@@ -132,6 +150,20 @@ class SocioController extends Controller
             'telefono'         => 'required|numeric|digits_between:7,15',
             'contrasena'       => 'nullable|string|min:8',
             'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'nombre1.required' => 'El primer nombre es obligatorio.',
+            'nombre1.regex' => 'El primer nombre solo puede contener letras.',
+            'apellidoPaterno.required' => 'El apellido paterno es obligatorio.',
+            'apellidoPaterno.regex' => 'El apellido paterno solo puede contener letras.',
+            'correo.required' => 'El correo electronico es obligatorio.',
+            'correo.email' => 'El correo electronico no es valido.',
+            'correo.unique' => 'Este correo electronico ya esta registrado.',
+            'telefono.required' => 'El telefono es obligatorio.',
+            'telefono.numeric' => 'El telefono debe ser numerico.',
+            'contrasena.min' => 'La contrasena debe tener al menos 8 caracteres.',
+            'foto.image' => 'La foto debe ser una imagen.',
+            'foto.mimes' => 'La foto debe ser JPG o PNG.',
+            'foto.max' => 'La foto no debe superar 2MB.',
         ]);
 
         if ($validator->fails()) return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
@@ -256,11 +288,11 @@ class SocioController extends Controller
         }
     }
 
-    public function notificaciones($carnet)
+    public function notificaciones($id)
     {
         try {
             $notificaciones = DB::table('tnotificaciones')
-                ->where('carnetSocio', $carnet)
+                ->where('idUsuario', $id)
                 ->where('estadoA', 1)
                 ->orderBy('fechaEnvio', 'DESC')
                 ->get(['idNotificacion', 'tipoNotificacion', 'mensaje', 'fechaEnvio', 'estado']);

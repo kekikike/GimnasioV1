@@ -63,9 +63,6 @@
             <a href="{{ route('socio.dashboard') }}" class="{{ request()->routeIs('socio.dashboard') ? 'active' : '' }}">
                 Inicio
             </a>
-            <a href="{{ route('socio.perfil') }}" class="{{ request()->routeIs('socio.perfil') ? 'active' : '' }}">
-                Mi Perfil
-            </a>
             <a href="{{ route('socio.asistencias') }}" class="{{ request()->routeIs('socio.asistencias') ? 'active' : '' }}">
                 Asistencias
             </a>
@@ -80,16 +77,18 @@
             </a>
         </nav>
         <div class="user-info">
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-                <div class="user-photo">
-                    <img src="{{ asset('storage/' . ($fotografiaUrl ?? 'fotos_socios/default.jpeg')) }}" alt="Foto"
-                         onerror="this.style.display='none'">
+            <a href="{{ route('socio.perfil') }}" style="text-decoration:none; color:inherit; display:block;">
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                    <div class="user-photo">
+                        <img src="{{ asset('storage/' . ($fotografiaUrl ?? 'fotos_socios/default.jpeg')) }}" alt="Foto"
+                             onerror="this.style.display='none'">
+                    </div>
+                    <div>
+                        <div class="name">{{ session('usuario')->nombre1 ?? 'Socio' }}</div>
+                        <div class="role">Socio</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="name">{{ session('usuario')->nombre1 ?? 'Socio' }}</div>
-                    <div class="role">Socio</div>
-                </div>
-            </div>
+            </a>
             <div style="margin-top:0.5rem;">
                 <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">@csrf</form>
