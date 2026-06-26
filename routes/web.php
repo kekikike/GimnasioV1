@@ -66,9 +66,12 @@ Route::middleware('auth.usuario')->group(function () {
         Route::prefix('admin/personal')->name('admin.personal.')->group(function () {
             Route::get('/', [PersonalController::class, 'index'])->name('index');
             Route::get('/listar', [PersonalController::class, 'listar'])->name('listar');
+            Route::get('/listar-inactivos', [PersonalController::class, 'listarInactivos'])->name('listar-inactivos');
             Route::post('/', [PersonalController::class, 'store'])->name('store');
             Route::put('/{id}', [PersonalController::class, 'update'])->name('update');
             Route::delete('/{id}', [PersonalController::class, 'destroy'])->name('destroy');
+            Route::put('/{id}/acabar-contrato', [PersonalController::class, 'acabarContrato'])->name('acabar-contrato');
+            Route::put('/{id}/reactivar', [PersonalController::class, 'reactivar'])->name('reactivar');
         });
 
         Route::prefix('admin/socios')->name('admin.socios.')->group(function () {

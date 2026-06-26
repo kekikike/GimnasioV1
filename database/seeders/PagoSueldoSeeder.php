@@ -15,8 +15,7 @@ class PagoSueldoSeeder extends Seeder
 
         $pagos = [];
         foreach ($empleados as $carnet) {
-            $empleado = DB::table('TEmpleados')->where('carnetEmpleado', $carnet)->first();
-            $sueldoBase = $empleado->sueldo;
+            $sueldoBase = 2000;
 
             $fecha = Carbon::parse('2026-01-15');
             while ($fecha <= Carbon::parse('2026-06-15')) {

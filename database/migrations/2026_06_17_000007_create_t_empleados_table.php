@@ -12,8 +12,6 @@ return new class extends Migration
             $table->integer('carnetEmpleado')->primary();
             $table->unsignedInteger('idUsuario')->unique();
             $table->unsignedInteger('idSucursal');
-            $table->decimal('sueldo', 10, 2);
-            $table->integer('especialidad');
             $table->date('fechaContratoInicio');
             $table->date('fechaContratoFin')->nullable();
             $table->boolean('estadoA')->default(true);

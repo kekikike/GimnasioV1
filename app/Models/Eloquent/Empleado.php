@@ -14,7 +14,7 @@ class Empleado extends Model
     public $timestamps = false;
     
     protected $fillable = [
-        'carnetEmpleado', 'idUsuario', 'idSucursal', 'sueldo', 'especialidad',
+        'carnetEmpleado', 'idUsuario', 'idSucursal',
         'fechaContratoInicio', 'fechaContratoFin', 'estadoA', 'fechaA', 'usuarioA'
     ];
     

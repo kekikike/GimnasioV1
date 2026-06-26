@@ -108,11 +108,6 @@
                 <small v-else-if="adminSucursalId" style="color:#64748b;font-size:0.75em;">Sucursal pre-seleccionada según tu perfil.</small>
             </div>
             <div>
-                <label style="font-weight: 600; font-size: 0.85rem;">Sueldo Base Mensual (Bs) <span style="color:#ef4444;">*</span></label>
-                <input type="number" v-model="formulario.sueldo" class="form-control" required min="0" step="0.1">
-                <small v-if="errores.sueldo" class="text-danger">@{{ errores.sueldo }}</small>
-            </div>
-            <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Fecha Contrato Inicio <span style="color:#ef4444;">*</span></label>
                 <input type="date" v-model="formulario.fechaContratoInicio" class="form-control" :class="{ 'is-invalid': errores.fechaContratoInicio }" required>
                 <small v-if="errores.fechaContratoInicio" class="text-danger">@{{ errores.fechaContratoInicio }}</small>
@@ -151,13 +146,50 @@
                         <span style="color:#64748b; font-size:0.85em;">@{{ emp.telefono }}</span>
                     </td>
                     <td style="padding: 12px;">
-                        @{{ emp.nombreSucursal }}<br>
-                        <span style="color:#64748b; font-size:0.85em;">Sueldo: Bs. @{{ emp.sueldo }}</span>
+                        @{{ emp.nombreSucursal }}
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
+                        <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 3px;">Editar</button>
+                        <button @click="confirmarContrato(emp)" class="btn btn-sm btn-warning" style="margin-right: 3px;">Acabar Contrato</button>
                         <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger">Baja</button>
                     </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card" style="padding: 20px; margin-top: 20px;">
+        <h3 style="margin-bottom: 15px; color: #1e293b;">Personal Inactivo / Contratos Finalizados</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead style="background-color: #f1f5f9;">
+                <tr>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Identidad y Rol</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Contacto</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Asignacion</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: center;">Accion</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="emp in inactivos" :key="emp.carnetEmpleado" style="border-bottom: 1px solid #e2e8f0; opacity: 0.7;">
+                    <td style="padding: 12px;">
+                        <strong>@{{ nombreCompleto(emp) }}</strong><br>
+                        <span style="color:#64748b; font-size:0.85em;">CI: @{{ emp.carnetEmpleado }}</span><br>
+                        <span class="badge badge-secondary" style="background-color: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">@{{ emp.nombreRol }}</span><br>
+                        <span v-if="emp.fechaContratoFin" style="color:#dc2626; font-size:0.8em;">Fin contrato: @{{ emp.fechaContratoFin }}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        @{{ emp.correo }}<br>
+                        <span style="color:#64748b; font-size:0.85em;">@{{ emp.telefono }}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        @{{ emp.nombreSucursal }}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <button @click="reactivarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-success">Reactivar</button>
+                    </td>
+                </tr>
+                <tr v-if="inactivos.length === 0">
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #64748b;">No hay personal inactivo registrado.</td>
                 </tr>
             </tbody>
         </table>
@@ -170,6 +202,7 @@
     createApp({
         setup() {
             const empleados = ref([]);
+            const inactivos = ref([]);
             const roles = ref([]);
             const rolesFiltrados = ref([]);
             const sucursales = ref([]);
@@ -193,8 +226,7 @@
                 carnetEmpleado: '', 
                 carnetEmpleado_confirmation: '',
                 idRol: '', 
-                idSucursal: '', 
-                sueldo: '',
+                idSucursal: '',
                 nombre1: '', 
                 apellidoPaterno: '', 
                 correo: '', 
@@ -216,6 +248,8 @@
             const cargarEmpleados = async () => {
                 const res = await fetch('{{ route("admin.personal.listar") }}');
                 empleados.value = await res.json();
+                const resInactivos = await fetch('{{ route("admin.personal.listar-inactivos") }}');
+                inactivos.value = await resInactivos.json();
             };
 
             const nombreCompleto = (emp) => {
@@ -296,7 +330,6 @@
                     contrasena: '',
                     contrasena_confirmation: '',
                     idSucursal: emp.idSucursal,
-                    sueldo: emp.sueldo,
                     fechaContratoInicio: emp.fechaContratoInicio
                 };
             };
@@ -312,10 +345,26 @@
             };
 
             const eliminarEmpleado = async (id) => {
-                if (confirm("Esta accion dará de baja al empleado y quedará registrada en la auditoria. Continuar?")) {
+                if (confirm("Esta accion dara de baja al empleado y quedara registrada en la auditoria. Continuar?")) {
                     const res = await fetch(`/admin/personal/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
-                    if (data.success) cargarEmpleados();
+                    if (data.success) { alert(data.message); cargarEmpleados(); }
+                }
+            };
+
+            const confirmarContrato = async (emp) => {
+                if (confirm(`Finalizar contrato de ${nombreCompleto(emp)} (CI: ${emp.carnetEmpleado})? Se dara de baja al empleado.`)) {
+                    const res = await fetch(`/admin/personal/${emp.carnetEmpleado}/acabar-contrato`, { method: 'PUT', headers: headers });
+                    const data = await res.json();
+                    if (data.success) { alert(data.message); cargarEmpleados(); }
+                }
+            };
+
+            const reactivarEmpleado = async (id) => {
+                if (confirm("Reactivar este empleado? Se restablecera su estado activo y se limpiara la fecha de fin de contrato.")) {
+                    const res = await fetch(`/admin/personal/${id}/reactivar`, { method: 'PUT', headers: headers });
+                    const data = await res.json();
+                    if (data.success) { alert(data.message); cargarEmpleados(); }
                 }
             };
 
@@ -330,10 +379,11 @@
             });
 
             return {
-                empleados, roles, rolesFiltrados, sucursales, adminSucursalId,
+                empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId,
                 formulario, errores, modoEdicion, guardando, mostrarPassword,
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
-                guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion
+                guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,
+                confirmarContrato, reactivarEmpleado
             };
         }
     }).mount('#appPersonal');

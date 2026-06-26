@@ -16,7 +16,7 @@ return new class extends Migration
             'TActividades' => ['pk' => 'idActividad', 'cols' => ['nombreActividad', 'descripcionActividad', 'estado'], 'auditCols' => ['nombreActividad', 'descripcionActividad', 'estado'], 'autoinc' => true],
             'TMarcas' => ['pk' => 'idMarca', 'cols' => ['nombreMarca'], 'auditCols' => ['nombreMarca'], 'autoinc' => true],
             'TUsuarios' => ['pk' => 'idUsuario', 'cols' => ['idRol', 'nombre1', 'nombre2', 'apellido1', 'apellido2', 'correo', 'telefono', 'contrasena', 'estado'], 'auditCols' => ['idRol', 'nombre1', 'nombre2', 'apellido1', 'apellido2', 'correo', 'telefono', 'contrasena', 'estado'], 'autoinc' => true],
-            'TEmpleados' => ['pk' => 'carnetEmpleado', 'cols' => ['idUsuario', 'idSucursal', 'sueldo', 'especialidad', 'fechaContratoInicio', 'fechaContratoFin'], 'auditCols' => ['idUsuario', 'idSucursal', 'sueldo', 'especialidad', 'fechaContratoInicio', 'fechaContratoFin'], 'autoinc' => false],
+            'TEmpleados' => ['pk' => 'carnetEmpleado', 'cols' => ['idUsuario', 'idSucursal', 'fechaContratoInicio', 'fechaContratoFin'], 'auditCols' => ['idUsuario', 'idSucursal', 'fechaContratoInicio', 'fechaContratoFin'], 'autoinc' => false],
             'TSocios' => ['pk' => 'carnetSocio', 'cols' => ['idUsuario', 'direccion', 'fotografiaUrl', 'nombreContactoEmergencia', 'telefonoContactoEmergencia', 'observacionesMedicas', 'estadoSocio', 'strikes'], 'auditCols' => ['idUsuario', 'direccion', 'fotografiaUrl', 'nombreContactoEmergencia', 'telefonoContactoEmergencia', 'observacionesMedicas', 'estadoSocio', 'strikes'], 'autoinc' => false],
             'THorarioLaborales' => ['pk' => 'idHorario', 'cols' => ['carnetEmpleado', 'diaSemana', 'horaEntradaEsperada', 'horaSalidaEsperada'], 'auditCols' => ['carnetEmpleado', 'diaSemana', 'horaEntradaEsperada', 'horaSalidaEsperada'], 'autoinc' => true],
 
@@ -512,7 +512,7 @@ return new class extends Migration
     {
         return "CREATE PROCEDURE sp_TEmpleados_GetAllWithDetails()\n"
             . "BEGIN\n"
-            . "    SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.sueldo,\n"
+            . "    SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal,\n"
             . "           e.fechaContratoInicio,\n"
             . "           u.idRol, u.nombre1, u.apellido1, u.correo, u.telefono,\n"
             . "           r.nombreRol, s.nombre AS nombreSucursal\n"

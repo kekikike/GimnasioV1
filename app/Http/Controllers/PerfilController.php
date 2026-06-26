@@ -19,8 +19,6 @@ class PerfilController extends Controller
             ->select(
                 'e.carnetEmpleado',
                 'e.idSucursal',
-                'e.sueldo',
-                'e.especialidad',
                 'e.fechaContratoInicio',
                 'u.idUsuario',
                 'u.nombre1',

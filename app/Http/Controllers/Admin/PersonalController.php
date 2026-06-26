@@ -21,14 +21,29 @@ class PersonalController extends Controller
     public function listar()
     {
         $empleados = DB::select("
-            SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.sueldo, e.fechaContratoInicio,
-                   u.idRol, u.nombre1, u.apellido1, u.correo, u.telefono,
+            SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.fechaContratoInicio, e.fechaContratoFin,
+                   u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono,
                    r.nombreRol, s.nombre as nombreSucursal
             FROM templeados e
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
             INNER JOIN troles r ON u.idRol = r.idRol
             INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
             WHERE e.estadoA = 1
+        ");
+        return response()->json($empleados);
+    }
+
+    public function listarInactivos()
+    {
+        $empleados = DB::select("
+            SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.fechaContratoInicio, e.fechaContratoFin,
+                   u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono,
+                   r.nombreRol, s.nombre as nombreSucursal
+            FROM templeados e
+            INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
+            INNER JOIN troles r ON u.idRol = r.idRol
+            INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
+            WHERE e.estadoA = 0
         ");
         return response()->json($empleados);
     }
@@ -47,7 +62,6 @@ class PersonalController extends Controller
             'contrasena'          => 'required|string|min:8',
             'carnetEmpleado'      => 'required|numeric|max:2147483647|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
-            'sueldo'              => 'required|numeric|min:0',
             'fechaContratoInicio' => 'required|date|before_or_equal:today', // No puede ser en el futuro
         ], [
             'idRol.not_in' => 'No se puede registrar un Socio desde este formulario.',
@@ -91,12 +105,12 @@ class PersonalController extends Controller
 
             if (!$idUsuario) throw new \Exception("No se pudo crear el registro de usuario.");
 
+            $carnet = $request->carnetEmpleado;
+
             DB::table('templeados')->insert([
-                'carnetEmpleado'      => $request->carnetEmpleado,
+                'carnetEmpleado'      => $carnet,
                 'idUsuario'           => $idUsuario,
                 'idSucursal'          => $request->idSucursal,
-                'sueldo'              => $request->sueldo,
-                'especialidad'        => 1, 
                 'fechaContratoInicio' => $request->fechaContratoInicio,
                 'fechaContratoFin'    => null,
                 'estadoA'             => 1,
@@ -104,8 +118,21 @@ class PersonalController extends Controller
                 'usuarioA'            => $usuarioA
             ]);
 
+            DB::table('tauditorias')->insert([
+                'tablaNombre' => 'templeados',
+                'registroId' => $carnet,
+                'accion' => 'I',
+                'campo' => 'estadoA',
+                'valorAnterior' => null,
+                'valorNuevo' => '1',
+                'usuarioA' => $usuarioA,
+                'fechaA' => now(),
+                'direccionIP' => $ip,
+                'detalles' => "Registro de empleado: {$request->nombre1} {$request->apellido1}, carnet {$carnet}",
+            ]);
+
             DB::commit(); 
-            return response()->json(['success' => true, 'message' => '✅ Personal registrado exitosamente.']);
+            return response()->json(['success' => true, 'message' => 'Personal registrado exitosamente.']);
             
         } catch (\Exception $e) {
             DB::rollBack(); 
@@ -140,7 +167,6 @@ class PersonalController extends Controller
             'telefono'            => 'required|numeric|digits_between:7,15',
             'contrasena'          => 'nullable|string|min:8',
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
-            'sueldo'              => 'required|numeric|min:0',
             'fechaContratoInicio' => 'required|date|before_or_equal:today',
         ], [
             'idRol.not_in' => 'No se puede asignar el rol de Socio a un empleado.',
@@ -181,18 +207,43 @@ class PersonalController extends Controller
             DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->update($updateData);
 
 
-            // CORRECCIÓN DE COLUMNAS: Cambiamos usuarioM y fechaM por usuarioA y fechaA para acoplarnos a las tablas de Kike
+            $oldEmpleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
+
             DB::table('templeados')->where('carnetEmpleado', $id)->update([
                 'idSucursal'          => $request->idSucursal,
-                'sueldo'              => $request->sueldo,
-                'especialidad'        => $request->especialidad ?? 1,
                 'fechaContratoInicio' => $request->fechaContratoInicio,
-                'usuarioA'            => $usuarioA, // <-- Corregido
-                'fechaA'              => now(),     // <-- Corregido
+                'usuarioA'            => $usuarioA,
+                'fechaA'              => now(),
             ]);
 
+            $cambios = [];
+            if ($oldEmpleado->idSucursal != $request->idSucursal) {
+                $cambios[] = 'idSucursal';
+            }
+            if ($oldEmpleado->fechaContratoInicio != $request->fechaContratoInicio) {
+                $cambios[] = 'fechaContratoInicio';
+            }
+            if ($usuarioActual->idRol != $request->idRol) {
+                $cambios[] = 'idRol';
+            }
+
+            if (!empty($cambios)) {
+                DB::table('tauditorias')->insert([
+                    'tablaNombre' => 'templeados',
+                    'registroId' => $id,
+                    'accion' => 'U',
+                    'campo' => implode('|', $cambios),
+                    'valorAnterior' => null,
+                    'valorNuevo' => null,
+                    'usuarioA' => $usuarioA,
+                    'fechaA' => now(),
+                    'direccionIP' => $ip,
+                    'detalles' => "Actualizacion de empleado carnet {$id}",
+                ]);
+            }
+
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Información del empleado actualizada.']);
+            return response()->json(['success' => true, 'message' => 'Informacion del empleado actualizada.']);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error en PersonalController@update: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
@@ -209,11 +260,110 @@ class PersonalController extends Controller
         $ip = $request->ip();
 
         try {
-            DB::statement('CALL sp_TEmpleados_Delete(?, ?, ?)', [$id, $usuarioA, $ip]);
+            $empleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
+            if (!$empleado) {
+                return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
+            }
+
+            DB::table('templeados')->where('carnetEmpleado', $id)->update([
+                'estadoA' => 0,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tauditorias')->insert([
+                'tablaNombre' => 'templeados',
+                'registroId' => $id,
+                'accion' => 'D',
+                'campo' => 'estadoA',
+                'valorAnterior' => '1',
+                'valorNuevo' => '0',
+                'usuarioA' => $usuarioA,
+                'fechaA' => now(),
+                'direccionIP' => $ip,
+                'detalles' => "Baja de empleado carnet {$id}",
+            ]);
+
             return response()->json(['success' => true, 'message' => 'Empleado dado de baja.']);
         } catch (\Exception $e) {
             \Log::error('Error en PersonalController@destroy: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error al dar de baja.'], 500);
+        }
+    }
+
+    public function acabarContrato(Request $request, $id)
+    {
+        $usuarioA = Auth::id() ?? 1;
+        $ip = $request->ip();
+
+        try {
+            $empleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
+            if (!$empleado) {
+                return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
+            }
+
+            DB::table('templeados')->where('carnetEmpleado', $id)->update([
+                'fechaContratoFin' => now()->toDateString(),
+                'estadoA' => 0,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tauditorias')->insert([
+                'tablaNombre' => 'templeados',
+                'registroId' => $id,
+                'accion' => 'U',
+                'campo' => 'fechaContratoFin|estadoA',
+                'valorAnterior' => ($empleado->fechaContratoFin ?? 'null') . '|1',
+                'valorNuevo' => now()->toDateString() . '|0',
+                'usuarioA' => $usuarioA,
+                'fechaA' => now(),
+                'direccionIP' => $ip,
+                'detalles' => "Finalizacion de contrato empleado carnet {$id}",
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Contrato finalizado exitosamente.']);
+        } catch (\Exception $e) {
+            \Log::error('Error en PersonalController@acabarContrato: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al finalizar contrato.'], 500);
+        }
+    }
+
+    public function reactivar(Request $request, $id)
+    {
+        $usuarioA = Auth::id() ?? 1;
+        $ip = $request->ip();
+
+        try {
+            $empleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
+            if (!$empleado) {
+                return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
+            }
+
+            DB::table('templeados')->where('carnetEmpleado', $id)->update([
+                'fechaContratoFin' => null,
+                'estadoA' => 1,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tauditorias')->insert([
+                'tablaNombre' => 'templeados',
+                'registroId' => $id,
+                'accion' => 'U',
+                'campo' => 'fechaContratoFin|estadoA',
+                'valorAnterior' => ($empleado->fechaContratoFin ?? 'null') . '|0',
+                'valorNuevo' => 'null|1',
+                'usuarioA' => $usuarioA,
+                'fechaA' => now(),
+                'direccionIP' => $ip,
+                'detalles' => "Reactivacion de empleado carnet {$id}",
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Empleado reactivado exitosamente.']);
+        } catch (\Exception $e) {
+            \Log::error('Error en PersonalController@reactivar: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al reactivar empleado.'], 500);
         }
     }
 }
