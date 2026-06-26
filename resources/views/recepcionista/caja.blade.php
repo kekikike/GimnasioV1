@@ -48,21 +48,39 @@
                 <div class="caja-info-card"><div class="lbl">Monto Apertura</div><div class="val">Bs. {{ formatNum(cajaAbierta.montoApertura) }}</div></div>
             </div>
 
-            <div v-if="cajaAbierta.estadoCaja === 'Abierta'" style="display:flex; gap:1rem; align-items:end;">
-                <div style="flex:1;">
-                    <label>Monto cierre real (Bs)</label>
-                    <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0">
+            <div v-if="cajaAbierta.estadoCaja === 'Abierta'" style="display:flex; flex-direction:column; gap:1rem;">
+                <div style="display:flex; gap:1rem; align-items:end;">
+                    <div style="flex:1;">
+                        <label>Monto cierre real (Bs)</label>
+                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0"
+                               :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
+                        <small v-if="montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
+                            <template v-if="diferenciaCierre <= 0.01">Coinciden</template>
+                            <template v-else>Diferencia: Bs. {{ formatNum(diferenciaCierre) }}</template>
+                        </small>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Calculado automaticamente</label>
+                        <input class="form-control" :value="formatNum(montoCierreCalculado)" readonly
+                               :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
+                    </div>
+                    <div>
+                        <button @click="cerrarCaja" class="btn btn-danger" style="width:100%;" :disabled="!montoCierre || (diferenciaCierre > 0.01 && !cierreObservacion)">Cerrar Caja</button>
+                    </div>
                 </div>
-                <div style="flex:1;">
-                    <label>Calculado automaticamente</label>
-                    <input class="form-control" :value="formatNum(montoCierreCalculado)" readonly style="background:#f1f5f9;">
-                </div>
-                <div>
-                    <button @click="cerrarCaja" class="btn btn-danger" style="width:100%;" :disabled="!montoCierre">Cerrar Caja</button>
+                <div v-if="montoCierre && diferenciaCierre > 0.01">
+                    <label>Observacion (razon de la diferencia)</label>
+                    <textarea v-model="cierreObservacion" class="form-control" rows="2" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
                 </div>
             </div>
             <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">
                 Caja cerrada. Monto cierre: Bs. {{ formatNum(cajaAbierta.montoCierre) }} | Calculado: Bs. {{ formatNum(cajaAbierta.montoCierreCalculado) }} | Diferencia: Bs. {{ formatNum(cajaAbierta.diferenciaArqueo) }}
+                <span :style="{ color: cajaAbierta.cierreEstado === 'Bien' ? '#22c55e' : '#ef4444', fontWeight:600 }">
+                    | {{ cajaAbierta.cierreEstado === 'Bien' ? 'Bien' : 'Observado' }}
+                </span>
+                <span v-if="cajaAbierta.cierreObservacion" style="display:block; font-size:0.85rem; margin-top:0.25rem; color:#64748b;">
+                    Observacion: {{ cajaAbierta.cierreObservacion }}
+                </span>
             </div>
         </div>
 
@@ -103,7 +121,8 @@
                 </div>
                 <div>
                     <label>Monto total (Bs)</label>
-                    <input v-model="montoTotal" type="number" step="0.01" class="form-control" readonly style="background:#f1f5f9;">
+                    <input v-model="montoTotal" type="number" step="0.01" class="form-control" readonly
+                           :style="{ borderColor: diferenciaMetodos <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
                 </div>
             </div>
 
@@ -115,7 +134,8 @@
                         <option value="">Seleccione metodo...</option>
                         <option v-for="mp in metodosPago" :key="mp.idMetodoPago" :value="mp.idMetodoPago">{{ mp.nombreMetodoPago }}</option>
                     </select>
-                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto">
+                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto"
+                           :style="{ borderColor: diferenciaMetodos <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                     <button @click="quitarMetodo(i)" class="btn btn-sm btn-danger" style="white-space:nowrap;">X</button>
                 </div>
                 <div style="display:flex; gap:0.75rem; margin-top:0.5rem; align-items:center;">
@@ -265,6 +285,7 @@ createApp({
         const sucursalNombre = ref('{{ $sucursalNombre }}');
         const montoApertura = ref('');
         const montoCierre = ref('');
+        const cierreObservacion = ref('');
         const metodosPago = ref([]);
         const planes = ref([]);
         const movimientos = ref([]);
@@ -301,6 +322,10 @@ createApp({
         const montoCierreCalculado = computed(() => {
             if (!cajaAbierta.value) return 0;
             return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalSalidasHoy.value;
+        });
+
+        const diferenciaCierre = computed(() => {
+            return Math.abs(parseFloat(montoCierre.value || 0) - montoCierreCalculado.value);
         });
 
         const planesFiltrados = computed(() => {
@@ -345,19 +370,21 @@ createApp({
             });
             const data = await res.json();
             alert(data.message);
-            if (data.success) { montoApertura.value = ''; cargarEstado(); cargarMovimientos(); }
+            if (data.success) { montoApertura.value = ''; cierreObservacion.value = ''; cargarEstado(); cargarMovimientos(); }
         };
 
         const cerrarCaja = async () => {
             if (!cajaAbierta.value) return;
+            const payload = { montoCierre: montoCierre.value };
+            if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
             const res = await fetch('{{ url("/recepcionista/caja/cerrar") }}/' + cajaAbierta.value.idCaja, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                body: JSON.stringify({ montoCierre: montoCierre.value })
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             alert(data.message);
-            if (data.success) { montoCierre.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
+            if (data.success) { montoCierre.value = ''; cierreObservacion.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
         };
 
         const cargarMovimientos = async () => {
@@ -526,10 +553,10 @@ createApp({
         });
 
         return {
-            cajaAbierta, sucursalNombre, montoApertura, montoCierre, metodosPago, planes, movimientos,
+            cajaAbierta, sucursalNombre, montoApertura, montoCierre, cierreObservacion, metodosPago, planes, movimientos,
             socioCarnet, socioInfo, membresiaActiva, esRenovacion, idPlan, montoTotal, metodosPagoArr,
             reciboPreview, reciboMetodos,
-            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, planesFiltrados, diferenciaMetodos, puedeRegistrar,
+            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaCierre, planesFiltrados, diferenciaMetodos, puedeRegistrar,
             salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,
             abrirCaja, cerrarCaja, cargarMovimientos, cargarSalidas, registrarSalida, buscarSocio, onPlanChange,

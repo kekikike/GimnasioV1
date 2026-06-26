@@ -27,6 +27,8 @@ class CajaSeeder extends Seeder
             $montoCierre = round($montoApertura + rand(100, 3000), 2);
             $montoCalculado = round($montoCierre + rand(-50, 50), 2);
             $diferencia = round($montoCalculado - $montoCierre, 2);
+            $cierreEstado = abs($diferencia) <= 0.01 ? 'Bien' : 'Observado';
+            $cierreObservacion = $cierreEstado === 'Observado' ? 'Diferencia encontrada en arqueo de caja.' : null;
 
             $registros[] = [
                 'idSucursal' => 1,
@@ -37,6 +39,8 @@ class CajaSeeder extends Seeder
                 'montoCierre' => $montoCierre,
                 'montoCierreCalculado' => $montoCalculado,
                 'diferenciaArqueo' => $diferencia,
+                'cierreEstado' => $cierreEstado,
+                'cierreObservacion' => $cierreObservacion,
                 'estadoCaja' => $estado,
                 'usuarioA' => $adminId,
             ];
