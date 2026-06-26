@@ -88,29 +88,30 @@ class CheckMemberships extends Command
 
     private function notifyEndingSoonMemberships()
     {
-        $daysToNotify = 7;
-        $notificationDate = Carbon::today()->addDays($daysToNotify)->toDateString();
-        $this->line("Buscando socios que vencen en exactamente 7 dias ({$notificationDate})...");
+        $hoy = Carbon::today();
+        $dentroDe7 = Carbon::today()->addDays(7);
+        $this->line("Buscando socios con membresia a vencer entre {$hoy->toDateString()} y {$dentroDe7->toDateString()}...");
 
         try {
             $socios = DB::table('tmembresias as m')
                 ->join('tsocios as s', 'm.carnetSocio', '=', 's.carnetSocio')
                 ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
-                ->where('m.fechaFinMembresia', '=', $notificationDate)
+                ->whereBetween('m.fechaFinMembresia', [$hoy, $dentroDe7])
                 ->where('m.estadoMembresia', 'Activa')
                 ->select('u.correo', 'u.nombre1', 'u.nombre2', 'u.apellido1', 's.idUsuario', 'm.fechaFinMembresia', 'm.idSucursal')
                 ->get();
 
             $contador = 0;
             foreach ($socios as $socio) {
-                $existe = DB::table('tnotificaciones')
+                $yaNotificado = DB::table('tnotificaciones')
                     ->where('idUsuario', $socio->idUsuario)
                     ->where('tipoNotificacion', 'Recordatorio')
-                    ->whereDate('fechaEnvio', now()->format('Y-m-d'))
+                    ->where('mensaje', 'like', '%vencer%')
+                    ->whereDate('fechaEnvio', '>=', now()->subDays(30))
                     ->exists();
 
-                if ($existe) {
-                    $this->line("   Ya se notifico a {$socio->nombre1} {$socio->apellido1} hoy. Saltando.");
+                if ($yaNotificado) {
+                    $this->line("   Ya se notifico a {$socio->nombre1} {$socio->apellido1} en los ultimos 30 dias. Saltando.");
                     continue;
                 }
 
@@ -121,7 +122,7 @@ class CheckMemberships extends Command
                     'idUsuario' => $socio->idUsuario,
                     'tipoNotificacion' => 'Recordatorio',
                     'mensaje' => "Hola {$nombreCompleto}, su membresia vencera el {$fechaVen}. Renueve ahora para no perder el acceso.",
-                    'fechaEnvio' => now()->format('Y-m-d'),
+                    'fechaEnvio' => $hoy->format('Y-m-d'),
                     'estado' => 'Enviado',
                     'usuarioA' => 1,
                 ]);
