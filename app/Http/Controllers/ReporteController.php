@@ -462,10 +462,14 @@ class ReporteController extends Controller
         $html = $request->input('html');
         $nombreArchivo = $request->input('nombreArchivo', 'reporte_' . now()->format('Y-m-d'));
         $titulo = $request->input('titulo', 'Reporte');
+        $usuario = $request->input('usuario', 'Usuario');
+        $fechaGen = now()->format('d/m/Y H:i:s');
+
+        $footer = '<div style="position:fixed;bottom:10px;right:20px;font-size:0.75rem;color:#94a3b8;text-align:right;">Generado por: ' . e($usuario) . '<br>' . $fechaGen . '</div>';
 
         $fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . e($titulo) . '</title>
         <style>
-            body{font-family:Inter,DejaVu Sans,sans-serif;padding:20px;}
+            body{font-family:Inter,DejaVu Sans,sans-serif;padding:20px;padding-bottom:40px;}
             table{width:100%;border-collapse:collapse;}
             th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}
             td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}
@@ -485,7 +489,7 @@ class ReporteController extends Controller
             h2{margin-bottom:1rem;}
             .no-print{display:none!important;}
             .row-clickable{cursor:default;}
-        </style></head><body><h2>' . e($titulo) . '</h2>' . $html . '</body></html>';
+        </style></head><body><h2>' . e($titulo) . '</h2>' . $html . $footer . '</body></html>';
 
         $pdf = Pdf::loadHTML($fullHtml);
         $pdf->setPaper('A4', 'portrait');

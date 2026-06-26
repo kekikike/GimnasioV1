@@ -7,8 +7,8 @@
 <div id="appSucursales">
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
         <h3 style="margin-bottom: 15px; color: #1e293b;">
-            <template v-if="modoEdicion">✏️ Editar Sucursal</template>
-            <template v-else>🏢 Registrar Nueva Sucursal</template>
+            <template v-if="modoEdicion">Editar Sucursal</template>
+            <template v-else>Registrar Nueva Sucursal</template>
         </h3>
 
         <form @submit.prevent="guardarSucursal" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
@@ -19,8 +19,8 @@
             </div>
             
             <div>
-                <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Teléfono Fijo / Móvil <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" required placeholder="Solo números">
+                <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Telefono <span style="color:#ef4444;">*</span></label>
+                <input type="number" v-model="formulario.telefono" @input="validarTelefono" class="form-control" required min="6000000" max="99999999" onkeydown="return event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Tab' || event.key === 'Escape' || event.key === 'Enter' || (event.key.match(/^\d$/) && this.value.length < 8)">
                 <small v-if="errores.telefono" style="color: #ef4444; font-size: 0.8em; display: block; margin-top: 4px;">@{{ errores.telefono }}</small>
             </div>
 
@@ -32,16 +32,16 @@
 
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 10px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
-                    <template v-if="guardando">⏳ Procesando...</template>
-                    <template v-else>@{{ modoEdicion ? '💾 Actualizar Datos' : '➕ Registrar Sucursal' }}</template>
+                    <template v-if="guardando">Procesando...</template>
+                    <template v-else>@{{ modoEdicion ? 'Actualizar Datos' : 'Registrar Sucursal' }}</template>
                 </button>
-                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="button" v-if="modoEdicion" @click="cancelarEdicion" class="btn btn-secondary">Cancelar</button>
             </div>
         </form>
     </div>
 
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">📋 Listado de Sucursales Activas</h3>
+        <h3 style="margin-bottom: 15px; color: #1e293b;">Listado de Sucursales Activas</h3>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #f8fafc;">
                 <tr>
@@ -57,9 +57,9 @@
                     <td style="padding: 12px; color: #475569;">@{{ sucursal.direccion }}</td>
                     <td style="padding: 12px; color: #475569; font-family: monospace; font-size: 1.1em;">@{{ sucursal.telefono }}</td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarSucursal(sucursal)" class="btn btn-sm btn-info" style="margin-right: 5px;" title="Editar">✏️ Editar</button>
-                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + sucursal.direccion" target="_blank" class="btn btn-sm btn-success" style="margin-right: 5px; text-decoration: none;" title="Ver en Google Maps">🗺️ Mapa</a>
-                        <button @click="eliminarSucursal(sucursal.idSucursal)" class="btn btn-sm btn-danger" title="Dar de baja">🗑️ Eliminar</button>
+                        <button @click="editarSucursal(sucursal)" class="btn btn-sm btn-info" style="margin-right: 5px;" title="Editar">Editar</button>
+                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + sucursal.direccion" target="_blank" class="btn btn-sm btn-success" style="margin-right: 5px; text-decoration: none;" title="Ver en Google Maps">Mapa</a>
+                        <button @click="eliminarSucursal(sucursal.idSucursal)" class="btn btn-sm btn-danger" title="Dar de baja">Eliminar</button>
                     </td>
                 </tr>
                 <tr v-if="sucursales.length === 0">
@@ -70,7 +70,7 @@
     </div>
 
     <div v-if="inactivas.length > 0" class="card" style="padding: 20px; background-color: #fff1f2; border: 1px solid #fecdd3;">
-        <h3 style="margin-bottom: 15px; color: #be123c;">🗑️ Papelera: Sucursales Dadas de Baja</h3>
+        <h3 style="margin-bottom: 15px; color: #be123c;">Papelera: Sucursales Dadas de Baja</h3>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead style="background-color: #ffe4e6;">
                 <tr>
@@ -86,7 +86,7 @@
                     <td style="padding: 12px; color: #9f1239;">@{{ suc.direccion }}</td>
                     <td style="padding: 12px; color: #9f1239;">@{{ suc.telefono }}</td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="restaurarSucursal(suc.idSucursal)" class="btn btn-sm" style="background-color: #10b981; color: white;">✅ Reactivar</button>
+                        <button @click="restaurarSucursal(suc.idSucursal)" class="btn btn-sm" style="background-color: #10b981; color: white;">Reactivar</button>
                     </td>
                 </tr>
             </tbody>
@@ -117,7 +117,11 @@
 
             // Solo permite ingresar números en el campo de teléfono (en tiempo real)
             const validarTelefono = () => {
-                formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '');
+                let val = formulario.value.telefono;
+                if (typeof val === 'string') val = val.replace(/\D/g, '');
+                if (val.length > 0 && val[0] !== '6' && val[0] !== '7') val = '';
+                if (val.length > 8) val = val.slice(0, 8);
+                formulario.value.telefono = val;
             };
 
             const cargarSucursales = async () => {

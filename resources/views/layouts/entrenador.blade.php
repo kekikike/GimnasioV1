@@ -77,9 +77,10 @@
             </a>
         </nav>
         <div class="user-info">
-            <a href="{{ route('perfil') }}" style="text-decoration:none; color:inherit; display:block;">
-                <div class="name">{{ session('usuario')->nombre1 ?? 'Usuario' }}</div>
-                <div class="role">Entrenador</div>
+            <a href="{{ route('perfil') }}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                <div><div class="name">{{ session('usuario')->nombre1 ?? 'Usuario' }}</div>
+                <div class="role">Entrenador</div></div>
             </a>
             <div style="margin-top:0.75rem;">
                 <a href="{{ route('logout') }}" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;" onclick="event.preventDefault();document.getElementById('logout-form').submit();">Salir</a>

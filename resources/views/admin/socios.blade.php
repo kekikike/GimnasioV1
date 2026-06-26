@@ -11,10 +11,9 @@
 </script>
 
 <style>
-.cropper-container { max-height: 400px; }
 #cropperModal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
-#cropperModal .modal-content { background:#fff; border-radius:0.75rem; padding:1.5rem; width:90%; max-width:600px; }
-#cropperModal img { max-width:100%; max-height:350px; }
+#cropperModal .modal-content { background:#fff; border-radius:0.75rem; padding:1.5rem; width:auto; max-width:640px; display:inline-block; }
+#cropperModal img { max-width:100%; max-height:400px; display:block; }
 </style>
 
 <div id="appSocios">
@@ -44,14 +43,20 @@
                 <input type="file" @change="manejarFoto" class="form-control" accept="image/jpeg, image/png" ref="fileInput">
                 <small v-if="errores.foto" style="color:#ef4444; font-size: 0.8em;">@{{ errores.foto }}</small>
                 <div v-if="fotoPreview && !mostrarCropper" style="margin-top:6px; position:relative; display:inline-block;">
-                    <img :src="fotoPreview" style="width:120px; height:90px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
+                    <img :src="fotoPreview" style="width:120px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
                     <button type="button" @click="abrirCropper" style="position:absolute; top:4px; right:4px; background:#3b82f6; color:#fff; border:none; border-radius:4px; padding:2px 8px; font-size:0.75rem; cursor:pointer;">Recortar</button>
                 </div>
             </div>
 
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contraseña' : 'Contraseña Portal *' }}</label>
-                <input type="password" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <input :type="mostrarPassword ? 'text' : 'password'" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion" :placeholder="modoEdicion ? '********' : ''" style="flex:1;">
+                    <button type="button" @click="mostrarPassword = !mostrarPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarPassword ? 'Ocultar' : 'Mostrar'">
+                        <svg v-if="mostrarPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
                 <small v-if="errores.contrasena" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena }}</small>
             </div>
             <div>
@@ -87,7 +92,7 @@
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Teléfono Móvil <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
+                <input type="number" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.telefono }}</small>
                 <small style="color:#64748b; font-size:0.75rem;">Debe comenzar con 6 o 7 (7-8 dígitos)</small>
             </div>
@@ -105,7 +110,7 @@
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Telf. Cont. Emergencia</label>
-                <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
+                <input type="number" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.contacto_emergencia_telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contacto_emergencia_telefono }}</small>
             </div>
             <div></div> <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
@@ -121,7 +126,7 @@
     <div v-if="mostrarCropper" id="cropperModal">
         <div class="modal-content">
             <h3 style="margin-bottom:1rem;">Recortar Foto</h3>
-            <p style="font-size:0.85rem; color:#64748b; margin-bottom:0.75rem;">Ajusta el recuadro para obtener una foto 4:3.</p>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:0.75rem;">Ajusta el recuadro para obtener una foto cuadrada 1:1.</p>
             <img ref="cropperImage" :src="cropperSrc" style="max-width:100%;">
             <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
                 <button type="button" @click="cerrarCropper" class="btn" style="background:#64748b;color:#fff;">Cancelar</button>
@@ -259,6 +264,7 @@
             const fotoPreview = ref('');
             let fotoBlob = null;
             const msjError = ref('');
+            const mostrarPassword = ref(false);
 
             const formBase = {
                 carnetSocio: '', carnetSocio_confirmation: '', idUsuario: '',
@@ -296,7 +302,7 @@
                         if (cropperImage.value) {
                             if (cropperInstance) cropperInstance.destroy();
                             cropperInstance = new Cropper(cropperImage.value, {
-                                aspectRatio: 4 / 3,
+                                aspectRatio: 1 / 1,
                                 viewMode: 1,
                                 autoCropArea: 1,
                             });
@@ -312,7 +318,7 @@
                     if (cropperImage.value) {
                         if (cropperInstance) cropperInstance.destroy();
                         cropperInstance = new Cropper(cropperImage.value, {
-                            aspectRatio: 4 / 3,
+                            aspectRatio: 1 / 1,
                             viewMode: 1,
                             autoCropArea: 1,
                         });
@@ -329,7 +335,7 @@
 
             const confirmarCropper = () => {
                 if (cropperInstance) {
-                    const canvas = cropperInstance.getCroppedCanvas({ width: 400, height: 300 });
+                    const canvas = cropperInstance.getCroppedCanvas({ width: 400, height: 400 });
                     canvas.toBlob((blob) => {
                         fotoBlob = blob;
                         fotoPreview.value = URL.createObjectURL(blob);
@@ -477,7 +483,7 @@
 
             onMounted(() => { cargarSocios(); });
 
-            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
         }
     }).mount('#appSocios');
 </script>

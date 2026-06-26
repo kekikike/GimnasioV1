@@ -20,7 +20,7 @@ class EsquemaSueldoController extends Controller
             ->where('e.estadoA', 1)
             ->where('u.idRol', '!=', 1)
             ->whereNull('es.carnetEmpleado')
-            ->select('e.carnetEmpleado', 'u.nombre1', 'u.apellido1', 'u.idRol', 'e.idSucursal');
+            ->select('e.carnetEmpleado', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.idRol', 'e.idSucursal');
         if ($usuario->idRol != 1) {
             $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
             if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
@@ -36,7 +36,7 @@ class EsquemaSueldoController extends Controller
             ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->where('es.estadoA', 1)
             ->where('u.idRol', '!=', 1)
-            ->select('es.*', 'u.nombre1', 'u.apellido1', 'e.idSucursal');
+            ->select('es.*', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'e.idSucursal');
         if ($usuario->idRol != 1) {
             $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
             if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
@@ -105,7 +105,7 @@ class EsquemaSueldoController extends Controller
             $this->authorizeSucursal($usuario, $request->carnetEmpleado);
         }
 
-        DB::table('tesquemasueldos')->insert([
+        $nuevoId = DB::table('tesquemasueldos')->insertGetId([
             'carnetEmpleado' => $request->carnetEmpleado,
             'modalidadPago' => $request->modalidadPago,
             'montoBase' => $request->montoBase,
@@ -113,6 +113,19 @@ class EsquemaSueldoController extends Controller
             'usuarioA' => session('usuario')->idUsuario ?? 1,
             'fechaA' => now(),
             'estadoA' => 1,
+        ]);
+
+        DB::table('tauditorias')->insert([
+            'tablaNombre'   => 'tesquemasueldos',
+            'registroId'    => $nuevoId,
+            'accion'        => 'I',
+            'campo'         => 'carnetEmpleado|modalidadPago|montoBase|tarifaHoraOClase',
+            'valorAnterior' => null,
+            'valorNuevo'    => "{$request->carnetEmpleado}|{$request->modalidadPago}|{$request->montoBase}|{$request->tarifaHoraOClase}",
+            'usuarioA'      => session('usuario')->idUsuario ?? 1,
+            'fechaA'        => now(),
+            'direccionIP'   => $request->ip(),
+            'detalles'      => 'Creacion de esquema de sueldo',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Esquema de sueldo registrado.']);
@@ -153,12 +166,26 @@ class EsquemaSueldoController extends Controller
             return response()->json(['success' => false, 'errors' => ['tarifaHoraOClase' => [$error]]], 422);
         }
 
+        $old = DB::table('tesquemasueldos')->where('idEsquemaSueldo', $id)->first();
         DB::table('tesquemasueldos')->where('idEsquemaSueldo', $id)->update([
             'modalidadPago' => $request->modalidadPago,
             'montoBase' => $request->montoBase,
             'tarifaHoraOClase' => $request->tarifaHoraOClase,
             'usuarioA' => session('usuario')->idUsuario ?? 1,
             'fechaA' => now(),
+        ]);
+
+        DB::table('tauditorias')->insert([
+            'tablaNombre'   => 'tesquemasueldos',
+            'registroId'    => $id,
+            'accion'        => 'U',
+            'campo'         => 'modalidadPago|montoBase|tarifaHoraOClase',
+            'valorAnterior' => "{$old->modalidadPago}|{$old->montoBase}|{$old->tarifaHoraOClase}",
+            'valorNuevo'    => "{$request->modalidadPago}|{$request->montoBase}|{$request->tarifaHoraOClase}",
+            'usuarioA'      => session('usuario')->idUsuario ?? 1,
+            'fechaA'        => now(),
+            'direccionIP'   => $request->ip(),
+            'detalles'      => 'Actualizacion de esquema de sueldo',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Esquema de sueldo actualizado.']);
@@ -180,6 +207,19 @@ class EsquemaSueldoController extends Controller
             'estadoA' => 0,
             'usuarioA' => session('usuario')->idUsuario ?? 1,
             'fechaA' => now(),
+        ]);
+
+        DB::table('tauditorias')->insert([
+            'tablaNombre'   => 'tesquemasueldos',
+            'registroId'    => $id,
+            'accion'        => 'D',
+            'campo'         => 'estadoA',
+            'valorAnterior' => '1',
+            'valorNuevo'    => '0',
+            'usuarioA'      => session('usuario')->idUsuario ?? 1,
+            'fechaA'        => now(),
+            'direccionIP'   => request()->ip(),
+            'detalles'      => 'Baja de esquema de sueldo',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Esquema de sueldo eliminado.']);

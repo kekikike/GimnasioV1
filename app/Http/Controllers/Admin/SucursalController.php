@@ -30,9 +30,10 @@ class SucursalController extends Controller
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|max:100|unique:tsucursales,nombre',
             'direccion' => 'required|string|max:255',
-            'telefono' => 'required|numeric|digits_between:7,15',
+            'telefono' => ['required', 'numeric', 'digits_between:7,8', 'regex:/^[67]\d{6,7}$/'],
         ], [
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
+            'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
+            'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',
         ]);
 
         if ($validator->fails()) {
@@ -47,7 +48,7 @@ class SucursalController extends Controller
 
         Sucursal::create($data, $usuarioA, $direccionIP);
 
-        return response()->json(['success' => true, 'message' => '✅ Sucursal registrada exitosamente.']);
+        return response()->json(['success' => true, 'message' => 'Sucursal registrada exitosamente.']);
     }
 
     // 4. Actualizar sucursal
@@ -56,9 +57,10 @@ class SucursalController extends Controller
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|max:100|unique:tsucursales,nombre,' . $id . ',idSucursal',
             'direccion' => 'required|string|max:255',
-            'telefono' => 'required|numeric|digits_between:7,15',
+            'telefono' => ['required', 'numeric', 'digits_between:7,8', 'regex:/^[67]\d{6,7}$/'],
         ], [
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
+            'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
+            'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',
         ]);
 
         if ($validator->fails()) {
@@ -73,7 +75,7 @@ class SucursalController extends Controller
 
         Sucursal::update($id, $data, $usuarioA, $direccionIP);
 
-        return response()->json(['success' => true, 'message' => '✅ Sucursal actualizada.']);
+        return response()->json(['success' => true, 'message' => 'Sucursal actualizada.']);
     }
 
     // 5. Eliminar (Dar de baja)
@@ -84,7 +86,7 @@ class SucursalController extends Controller
 
         Sucursal::delete($id, $usuarioA, $direccionIP);
 
-        return response()->json(['success' => true, 'message' => '🗑️ Sucursal dada de baja exitosamente.']);
+        return response()->json(['success' => true, 'message' => 'Sucursal dada de baja exitosamente.']);
     }
 
     // -----------------------------------------------------
@@ -128,6 +130,6 @@ class SucursalController extends Controller
             'detalles'      => 'Reactivación de Sucursal dada de baja'
         ]);
 
-        return response()->json(['success' => true, 'message' => '✅ Sucursal reactivada con éxito.']);
+        return response()->json(['success' => true, 'message' => 'Sucursal reactivada con exito.']);
     }
 }

@@ -235,6 +235,7 @@ Route::prefix('reportes')->name('reportes.')->group(function () {
 // ==========================================
 Route::get('/admin/horarios', [App\Http\Controllers\Admin\HorarioController::class, 'index'])->name('admin.horarios.index');
 Route::get('/admin/horarios/listar/{carnetEmpleado}', [App\Http\Controllers\Admin\HorarioController::class, 'listar']);
+Route::get('/admin/horarios/buscar', [App\Http\Controllers\Admin\HorarioController::class, 'buscar']);
 Route::post('/admin/horarios', [App\Http\Controllers\Admin\HorarioController::class, 'store']);
 Route::put('/admin/horarios/{id}', [App\Http\Controllers\Admin\HorarioController::class, 'update']);
 Route::delete('/admin/horarios/{id}', [App\Http\Controllers\Admin\HorarioController::class, 'destroy']);

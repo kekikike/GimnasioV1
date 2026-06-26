@@ -29,7 +29,7 @@ class SocioController extends Controller
                 })
                 ->select(
                     's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.carnetSocio AS codigoAcceso',
-                    'u.nombre1', 'u.apellido1', 'u.correo', 'u.telefono',
+                    'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono',
                     's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre',
                     's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url',
                     'm.estadoMembresia', 'm.fechaCongelamiento'
@@ -126,8 +126,21 @@ class SocioController extends Controller
                 'usuarioA'     => $usuarioA
             ]);
 
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tsocios',
+                'registroId'    => $request->carnetSocio,
+                'accion'        => 'I',
+                'campo'         => 'carnetSocio|idUsuario|direccion|estadoSocio',
+                'valorAnterior' => '|||',
+                'valorNuevo'    => implode('|', [$request->carnetSocio, $idUsuario, $request->direccion ?? '', 'Activo']),
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Insercion de Socio'
+            ]);
+
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Socio registrado con éxito.']);
+            return response()->json(['success' => true, 'message' => 'Socio registrado con exito.']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error al registrar socio.'], 500);
@@ -170,6 +183,9 @@ class SocioController extends Controller
 
         $usuarioA = Auth::id() ?? 1;
 
+        $usuarioViejo = DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->first();
+        $socioViejo = DB::table('tsocios')->where('carnetSocio', $id)->first();
+
         DB::beginTransaction();
         try {
             $updateData = [
@@ -189,8 +205,7 @@ class SocioController extends Controller
 
             DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->update($updateData);
 
-            $socioActual = DB::table('tsocios')->where('carnetSocio', $id)->first();
-            $fotoPath = $socioActual->fotografiaUrl ?? null;
+            $fotoPath = $socioViejo->fotografiaUrl ?? null;
             
             if ($request->hasFile('foto')) {
                 if ($fotoPath) Storage::disk('public')->delete($fotoPath);
@@ -198,17 +213,56 @@ class SocioController extends Controller
                 $fotoPath = $request->file('foto')->storeAs('fotos_socios', 'S-' . $id . '.' . $ext, 'public');
             }
 
-            DB::table('tsocios')->where('carnetSocio', $id)->update([
+            $socioUpdateData = [
                 'direccion' => $request->direccion,
                 'nombreContactoEmergencia' => $request->contacto_emergencia_nombre,
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl' => $fotoPath,
                 'fechaA' => now(), 
                 'usuarioA' => $usuarioA
-            ]);
+            ];
+
+            DB::table('tsocios')->where('carnetSocio', $id)->update($socioUpdateData);
+
+            $campos = [];
+            $viejos = [];
+            $nuevos = [];
+            foreach (['nombre1', 'nombre2', 'apellido1' => 'apellidoPaterno', 'apellido2' => 'apellidoMaterno', 'correo', 'telefono'] as $campoDb => $campoReq) {
+                $reqKey = is_numeric($campoDb) ? $campoReq : $campoDb;
+                $dbKey = is_numeric($campoDb) ? $campoReq : $campoDb;
+                if (($usuarioViejo->$dbKey ?? '') !== ($request->$reqKey ?? '')) {
+                    $campos[] = $dbKey;
+                    $viejos[] = $usuarioViejo->$dbKey ?? '';
+                    $nuevos[] = $request->$reqKey ?? '';
+                }
+            }
+            if (($socioViejo->direccion ?? '') !== ($request->direccion ?? '')) {
+                $campos[] = 'direccion'; $viejos[] = $socioViejo->direccion ?? ''; $nuevos[] = $request->direccion ?? '';
+            }
+            if (($socioViejo->nombreContactoEmergencia ?? '') !== ($request->contacto_emergencia_nombre ?? '')) {
+                $campos[] = 'nombreContactoEmergencia'; $viejos[] = $socioViejo->nombreContactoEmergencia ?? ''; $nuevos[] = $request->contacto_emergencia_nombre ?? '';
+            }
+            if (($socioViejo->telefonoContactoEmergencia ?? '') !== ($request->contacto_emergencia_telefono ?? '')) {
+                $campos[] = 'telefonoContactoEmergencia'; $viejos[] = $socioViejo->telefonoContactoEmergencia ?? ''; $nuevos[] = $request->contacto_emergencia_telefono ?? '';
+            }
+
+            if (!empty($campos)) {
+                DB::table('tauditorias')->insert([
+                    'tablaNombre'   => 'tsocios',
+                    'registroId'    => $id,
+                    'accion'        => 'U',
+                    'campo'         => implode('|', $campos),
+                    'valorAnterior' => implode('|', $viejos),
+                    'valorNuevo'    => implode('|', $nuevos),
+                    'usuarioA'      => $usuarioA,
+                    'fechaA'        => now(),
+                    'direccionIP'   => $request->ip(),
+                    'detalles'      => 'Actualizacion de Socio'
+                ]);
+            }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => '✅ Información del socio actualizada.']);
+            return response()->json(['success' => true, 'message' => 'Informacion del socio actualizada.']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error al actualizar.'], 500);
@@ -234,6 +288,8 @@ class SocioController extends Controller
             }
 
             $diasCongelados = max(0, (int)((strtotime($request->fechaCongelamiento) - strtotime('today')) / 86400));
+            $nuevaFechaFin = date('Y-m-d', strtotime($membresia->fechaFinMembresia . " + {$diasCongelados} days"));
+            $usuarioA = Auth::id() ?? 1;
 
             DB::table('tmembresias')
                 ->where('idMembresia', $membresia->idMembresia)
@@ -242,14 +298,40 @@ class SocioController extends Controller
                     'estadoMembresia'    => 'Congelada',
                     'fechaCongelamiento' => $request->fechaCongelamiento,
                     'fechaA'             => now(),
-                    'usuarioA'           => Auth::id() ?? 1,
+                    'usuarioA'           => $usuarioA,
                 ]);
 
             DB::table('tsocios')
                 ->where('carnetSocio', $carnet)
                 ->update(['estadoSocio' => 'Congelado', 'fechaA' => now()]);
 
-            return response()->json(['success' => true, 'message' => "Membresía congelada hasta el {$request->fechaCongelamiento}. Se agregaron {$diasCongelados} día(s) al vencimiento."]);
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tmembresias',
+                'registroId'    => $membresia->idMembresia,
+                'accion'        => 'U',
+                'campo'         => 'estadoMembresia|fechaCongelamiento|fechaFinMembresia',
+                'valorAnterior' => "Activa||{$membresia->fechaFinMembresia}",
+                'valorNuevo'    => "Congelada|{$request->fechaCongelamiento}|{$nuevaFechaFin}",
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Congelamiento de Membresia'
+            ]);
+
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tsocios',
+                'registroId'    => $carnet,
+                'accion'        => 'U',
+                'campo'         => 'estadoSocio',
+                'valorAnterior' => 'Activo',
+                'valorNuevo'    => 'Congelado',
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Congelamiento de Socio por Membresia'
+            ]);
+
+            return response()->json(['success' => true, 'message' => "Membresia congelada hasta el {$request->fechaCongelamiento}. Se agregaron {$diasCongelados} dia(s) al vencimiento."]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al congelar: ' . $e->getMessage()], 500);
         }
@@ -266,8 +348,10 @@ class SocioController extends Controller
                 ->first();
 
             if (!$membresia) {
-                return response()->json(['success' => false, 'message' => 'No hay membresía congelada para activar.'], 422);
+                return response()->json(['success' => false, 'message' => 'No hay membresia congelada para activar.'], 422);
             }
+
+            $usuarioA = Auth::id() ?? 1;
 
             DB::table('tmembresias')
                 ->where('idMembresia', $membresia->idMembresia)
@@ -275,14 +359,27 @@ class SocioController extends Controller
                     'estadoMembresia'    => 'Activa',
                     'fechaCongelamiento' => null,
                     'fechaA'             => now(),
-                    'usuarioA'           => Auth::id() ?? 1,
+                    'usuarioA'           => $usuarioA,
                 ]);
 
             DB::table('tsocios')
                 ->where('carnetSocio', $carnet)
                 ->update(['estadoSocio' => 'Activo', 'fechaA' => now()]);
 
-            return response()->json(['success' => true, 'message' => 'Membresía activada correctamente.']);
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tmembresias',
+                'registroId'    => $membresia->idMembresia,
+                'accion'        => 'U',
+                'campo'         => 'estadoMembresia|fechaCongelamiento',
+                'valorAnterior' => "Congelada|{$membresia->fechaCongelamiento}",
+                'valorNuevo'    => 'Activa|',
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Activacion de Membresia'
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Membresia activada correctamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al activar: ' . $e->getMessage()], 500);
         }
@@ -317,7 +414,7 @@ class SocioController extends Controller
             DB::table('tauditorias')->insert([
                 'tablaNombre'   => 'tsocios',
                 'registroId'    => $id,
-                'accion'        => 'DELETE',
+                'accion'        => 'D',
                 'campo'         => 'estadoA',
                 'valorAnterior' => '1',
                 'valorNuevo'    => '0',

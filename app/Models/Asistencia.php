@@ -13,8 +13,11 @@ class Asistencia extends Model
     
     protected $fillable = [
         'carnetEmpleado',
+        'idHorario',
         'fechaHoraEntrada',
         'fechaHoraSalida',
+        'estadoEntrada',
+        'estadoSalida',
         'estadoAsistencia',
         'estadoA',
         'fechaA',

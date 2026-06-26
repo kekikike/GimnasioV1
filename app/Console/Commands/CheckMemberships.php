@@ -10,24 +10,22 @@ use Illuminate\Support\Facades\Log;
 class CheckMemberships extends Command
 {
     protected $signature = 'gimnasio:check-memberships';
-    protected $description = 'Verifica membresías vencidas y notifica las que están por vencer (RF-13 y RF-15).';
+    protected $description = 'Verifica membresias vencidas y notifica las que estan por vencer (RF-13 y RF-15).';
 
     public function handle()
     {
         $this->info('====================================================');
-        $this->info('🏋️ INICIANDO REVISIÓN AUTOMÁTICA DE MEMBRESÍAS 🏋️');
+        $this->info('INICIANDO REVISION AUTOMATICA DE MEMBRESIAS');
         $this->info('====================================================');
 
-        // RF-13: Actualizar membresías a "Vencida"
         $this->updateExpiredMemberships();
 
-        $this->line(''); // Espacio en blanco
+        $this->line('');
 
-        // RF-15: Enviar notificaciones para membresías por vencer
         $this->notifyEndingSoonMemberships();
 
         $this->info('====================================================');
-        $this->info('✅ TAREA DE VERIFICACIÓN FINALIZADA CON ÉXITO');
+        $this->info('TAREA DE VERIFICACION FINALIZADA CON EXITO');
         $this->info('====================================================');
         
         return 0;
@@ -35,11 +33,10 @@ class CheckMemberships extends Command
 
     private function updateExpiredMemberships()
     {
-        $this->line('⏳ Buscando membresías vencidas...');
+        $this->line('Buscando membresias vencidas...');
         $today = Carbon::today()->toDateString();
         
         try {
-            // Obtenemos los planes que ya pasaron su fecha de fin y siguen "Activos"
             $vencidas = DB::table('tmembresias')
                 ->where('fechaFinMembresia', '<', $today)
                 ->where('estadoMembresia', 'Activa')
@@ -47,7 +44,6 @@ class CheckMemberships extends Command
 
             $contador = 0;
             foreach ($vencidas as $membresia) {
-                // 1. Vencemos la membresía
                 DB::table('tmembresias')
                     ->where('idMembresia', $membresia->idMembresia)
                     ->update([
@@ -55,7 +51,6 @@ class CheckMemberships extends Command
                         'fechaA' => now()
                     ]);
 
-                // 2. Vencemos al socio (usando el nombre correcto: 'estadoSocio')
                 DB::table('tsocios')
                     ->where('carnetSocio', $membresia->carnetSocio)
                     ->update([
@@ -63,17 +58,30 @@ class CheckMemberships extends Command
                         'fechaA' => now()
                     ]);
 
+                DB::table('tauditorias')->insert([
+                    'tablaNombre'   => 'tmembresias',
+                    'registroId'    => $membresia->idMembresia,
+                    'accion'        => 'U',
+                    'campo'         => 'estadoMembresia',
+                    'valorAnterior' => 'Activa',
+                    'valorNuevo'    => 'Vencida',
+                    'usuarioA'      => 1,
+                    'fechaA'        => now(),
+                    'direccionIP'   => '127.0.0.1',
+                    'detalles'      => 'Vencimiento automatico por scheduler'
+                ]);
+
                 $contador++;
             }
 
             if ($contador > 0) {
-                $this->error("🛑 Se detectaron y actualizaron {$contador} membresías a estado 'Vencida'.");
+                $this->error("Se detectaron y actualizaron {$contador} membresias a estado 'Vencida'.");
             } else {
-                $this->info("✨ Todo al día. No se encontraron membresías vencidas hoy.");
+                $this->info("Todo al dia. No se encontraron membresias vencidas hoy.");
             }
 
         } catch (\Exception $e) {
-            $this->error('❌ Error fatal al actualizar membresías: ' . $e->getMessage());
+            $this->error('Error fatal al actualizar membresias: ' . $e->getMessage());
             Log::error('Error en CheckMemberships@updateExpired: ' . $e->getMessage());
         }
     }
@@ -82,7 +90,7 @@ class CheckMemberships extends Command
     {
         $daysToNotify = 7;
         $notificationDate = Carbon::today()->addDays($daysToNotify)->toDateString();
-        $this->line("⏳ Buscando socios que vencen en exactamente 7 días ({$notificationDate})...");
+        $this->line("Buscando socios que vencen en exactamente 7 dias ({$notificationDate})...");
 
         try {
             $socios = DB::table('tmembresias as m')
@@ -102,12 +110,12 @@ class CheckMemberships extends Command
                     ->exists();
 
                 if ($existe) {
-                    $this->line("   ⏭ Ya se notificó a {$socio->nombre1} {$socio->apellido1} hoy. Saltando.");
+                    $this->line("   Ya se notifico a {$socio->nombre1} {$socio->apellido1} hoy. Saltando.");
                     continue;
                 }
 
                 $nombreCompleto = trim("{$socio->nombre1} {$socio->nombre2} {$socio->apellido1}");
-                $fechaVen = \Carbon\Carbon::parse($socio->fechaFinMembresia)->format('d/m/Y');
+                $fechaVen = Carbon::parse($socio->fechaFinMembresia)->format('d/m/Y');
 
                 DB::table('tnotificaciones')->insert([
                     'idUsuario' => $socio->idUsuario,
@@ -118,19 +126,19 @@ class CheckMemberships extends Command
                     'usuarioA' => 1,
                 ]);
 
-                $this->line("   ✅ Notificacion registrada para: {$socio->correo} (Socio: {$socio->nombre1})");
+                $this->line("   Notificacion registrada para: {$socio->correo} (Socio: {$socio->nombre1})");
                 Log::info("Notificacion creada para {$socio->correo}. Vence el {$socio->fechaFinMembresia}.");
                 $contador++;
             }
 
             if ($contador > 0) {
-                $this->info("✅ Se registraron {$contador} notificaciones de proximo vencimiento.");
+                $this->info("Se registraron {$contador} notificaciones de proximo vencimiento.");
             } else {
-                $this->info("✨ Ningun socio vence en los proximos 7 dias, o ya fueron notificados.");
+                $this->info("Ningun socio vence en los proximos 7 dias, o ya fueron notificados.");
             }
 
         } catch (\Exception $e) {
-            $this->error('❌ Error al notificar membresias por vencer: ' . $e->getMessage());
+            $this->error('Error al notificar membresias por vencer: ' . $e->getMessage());
             Log::error('Error en CheckMemberships@notifyEndingSoon: ' . $e->getMessage());
         }
     }

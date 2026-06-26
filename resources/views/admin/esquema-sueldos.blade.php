@@ -55,13 +55,21 @@
             <h3>@{{ editando ? 'Editar Esquema' : 'Nuevo Esquema' }}</h3>
             <div class="form-group">
                 <label>Empleado</label>
-                <select v-model="form.carnetEmpleado" class="form-control" :disabled="editando" @change="onCambioEmpleado">
-                    <option value="">Seleccione un empleado...</option>
-                    <option v-for="emp in empleados" :key="emp.carnetEmpleado" :value="emp.carnetEmpleado">
-                        @{{ emp.nombre1 }} @{{ emp.apellido1 }} (CI: @{{ emp.carnetEmpleado }})
-                    </option>
-                </select>
-                <small v-if="errores.carnetEmpleado" style="color:#ef4444;">@{{ errores.carnetEmpleado }}</small>
+                <template v-if="editando">
+                    <input type="text" class="form-control" :value="editandoNombre" disabled style="background:#f1f5f9; color:#475569;">
+                </template>
+                <template v-else-if="empleados.length === 0">
+                    <div style="padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; color:#94a3b8; font-style:italic;">No hay empleados disponibles para asignar esquema.</div>
+                </template>
+                <template v-else>
+                    <select v-model="form.carnetEmpleado" class="form-control" @change="onCambioEmpleado">
+                        <option value="">Seleccione un empleado...</option>
+                        <option v-for="emp in empleados" :key="emp.carnetEmpleado" :value="emp.carnetEmpleado">
+                            @{{ emp.nombre1 }} @{{ emp.apellido1 }} (CI: @{{ emp.carnetEmpleado }})
+                        </option>
+                    </select>
+                    <small v-if="errores.carnetEmpleado" style="color:#ef4444;">@{{ errores.carnetEmpleado }}</small>
+                </template>
             </div>
             <div class="form-group">
                 <label>Modalidad de Pago</label>
@@ -101,6 +109,7 @@ createApp({
         const modalidades = @json($modalidades);
         const modalAbierto = ref(false);
         const editando = ref(false);
+        const editandoNombre = ref('');
         const guardando = ref(false);
         const mensaje = ref('');
         const mensajeTipo = ref('success');
@@ -133,6 +142,7 @@ createApp({
             errores.value = {};
             if (e) {
                 editando.value = true;
+                editandoNombre.value = (e.nombre1 || '') + ' ' + (e.nombre2 ? e.nombre2 + ' ' : '') + (e.apellido1 || '') + (e.apellido2 ? ' ' + e.apellido2 : '') + ' (CI: ' + e.carnetEmpleado + ')';
                 form.value = {
                     carnetEmpleado: e.carnetEmpleado,
                     modalidadPago: e.modalidadPago,
@@ -142,6 +152,7 @@ createApp({
                 form.value._id = e.idEsquemaSueldo;
             } else {
                 editando.value = false;
+                editandoNombre.value = '';
                 form.value = {carnetEmpleado:'', modalidadPago:'', montoBase:0, tarifaHoraOClase:0};
             }
             modalAbierto.value = true;
@@ -189,7 +200,7 @@ createApp({
 
         onMounted(cargar);
 
-        return { esquemas, empleados, modalidades, modalAbierto, editando, guardando, mensaje, mensajeTipo, errores, form, esEntrenador, onCambioEmpleado, abrirModal, cerrarModal, guardar, eliminar };
+        return { esquemas, empleados, modalidades, modalAbierto, editando, editandoNombre, guardando, mensaje, mensajeTipo, errores, form, esEntrenador, onCambioEmpleado, abrirModal, cerrarModal, guardar, eliminar };
     }
 }).mount('#appEsquemas');
 </script>

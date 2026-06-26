@@ -41,7 +41,7 @@ class PlanController extends Controller
 
         $usuarioA = Auth::id() ?? 1;
         try {
-            DB::table('tplanes')->insert([
+            $idPlan = DB::table('tplanes')->insertGetId([
                 'nombrePlan'   => $request->nombrePlan,
                 'descripcion'  => $request->descripcion,
                 'costoPlan'    => $request->costoPlan,
@@ -50,7 +50,21 @@ class PlanController extends Controller
                 'fechaA'       => now(),
                 'usuarioA'     => $usuarioA
             ]);
-            return response()->json(['success' => true, 'message' => '✅ Plan de membresía creado.']);
+
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tplanes',
+                'registroId'    => $idPlan,
+                'accion'        => 'I',
+                'campo'         => 'nombrePlan|descripcion|costoPlan|duracionDias',
+                'valorAnterior' => '|||',
+                'valorNuevo'    => implode('|', [$request->nombrePlan, $request->descripcion, $request->costoPlan, $request->duracionDias]),
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Insercion de Plan'
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Plan de membresia creado.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()], 500);
         }
@@ -72,6 +86,9 @@ class PlanController extends Controller
         }
 
         $usuarioA = Auth::id() ?? 1;
+
+        $viejo = DB::table('tplanes')->where('idPlan', $id)->first();
+
         try {
             DB::table('tplanes')->where('idPlan', $id)->update([
                 'nombrePlan'   => $request->nombrePlan,
@@ -81,15 +98,52 @@ class PlanController extends Controller
                 'fechaA'       => now(),
                 'usuarioA'     => $usuarioA
             ]);
-            return response()->json(['success' => true, 'message' => '✅ Plan actualizado.']);
+
+            $campos = []; $viejos = []; $nuevos = [];
+            foreach (['nombrePlan', 'descripcion', 'costoPlan', 'duracionDias'] as $c) {
+                $oldVal = $viejo->$c ?? '';
+                $newVal = $request->$c ?? '';
+                if ((string)$oldVal !== (string)$newVal) {
+                    $campos[] = $c; $viejos[] = $oldVal; $nuevos[] = $newVal;
+                }
+            }
+            if (!empty($campos)) {
+                DB::table('tauditorias')->insert([
+                    'tablaNombre'   => 'tplanes',
+                    'registroId'    => $id,
+                    'accion'        => 'U',
+                    'campo'         => implode('|', $campos),
+                    'valorAnterior' => implode('|', $viejos),
+                    'valorNuevo'    => implode('|', $nuevos),
+                    'usuarioA'      => $usuarioA,
+                    'fechaA'        => now(),
+                    'direccionIP'   => $request->ip(),
+                    'detalles'      => 'Actualizacion de Plan'
+                ]);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Plan actualizado.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()], 500);
         }
     }
 
     public function destroy(Request $request, $id) {
+        $usuarioA = Auth::id() ?? 1;
         try {
-            DB::table('tplanes')->where('idPlan', $id)->update(['estadoA' => 0, 'fechaA' => now(), 'usuarioA' => Auth::id() ?? 1]);
+            DB::table('tplanes')->where('idPlan', $id)->update(['estadoA' => 0, 'fechaA' => now(), 'usuarioA' => $usuarioA]);
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'tplanes',
+                'registroId'    => $id,
+                'accion'        => 'D',
+                'campo'         => 'estadoA',
+                'valorAnterior' => '1',
+                'valorNuevo'    => '0',
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => $request->ip(),
+                'detalles'      => 'Baja de Plan'
+            ]);
             return response()->json(['success' => true, 'message' => 'Plan dado de baja exitosamente.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error SQL: ' . $e->getMessage()], 500);
