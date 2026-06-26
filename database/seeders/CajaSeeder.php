@@ -11,7 +11,6 @@ class CajaSeeder extends Seeder
     {
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
         $empleados = [1001, 1002];
-        $estados = ['Cerrada', 'Cerrada', 'Cerrada', 'Auditada', 'Abierta'];
 
         $hasta = date('Y-m-d', strtotime('-1 day'));
         $registros = [];
@@ -22,13 +21,17 @@ class CajaSeeder extends Seeder
             if ($diaSemana == 0 || $diaSemana == 6) continue;
 
             $empleado = $empleados[array_rand($empleados)];
-            $estado = 'Cerrada';
             $montoApertura = round(rand(200, 1000), 2);
             $montoCierre = round($montoApertura + rand(100, 3000), 2);
-            $montoCalculado = round($montoCierre + rand(-50, 50), 2);
+            // ~80% coinciden exactamente, ~20% tienen discrepancia
+            if (rand(1, 100) <= 80) {
+                $montoCalculado = $montoCierre;
+            } else {
+                $montoCalculado = round($montoCierre + rand(10, 100), 2);
+            }
             $diferencia = round($montoCalculado - $montoCierre, 2);
-            $cierreEstado = abs($diferencia) <= 0.01 ? 'Bien' : 'Observado';
-            $cierreObservacion = $cierreEstado === 'Observado' ? 'Diferencia encontrada en arqueo de caja.' : null;
+            $cierreEstado = abs($diferencia) <= 0.01 ? 'Bien' : 'Auditada';
+            $cierreObservacion = $cierreEstado === 'Auditada' ? 'Diferencia encontrada en arqueo de caja.' : null;
 
             $registros[] = [
                 'idSucursal' => 1,
@@ -41,7 +44,7 @@ class CajaSeeder extends Seeder
                 'diferenciaArqueo' => $diferencia,
                 'cierreEstado' => $cierreEstado,
                 'cierreObservacion' => $cierreObservacion,
-                'estadoCaja' => $estado,
+                'estadoCaja' => $cierreEstado === 'Bien' ? 'Cerrada' : 'Auditada',
                 'usuarioA' => $adminId,
             ];
         }

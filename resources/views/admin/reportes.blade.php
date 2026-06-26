@@ -471,17 +471,17 @@ window.renderReporte=function(reporte, d) {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.totalAsistencias||0)+'</div><div class="label">Total Asistencias</div></div>';
             var prom=(d.asistenciasPorDia&&Object.keys(d.asistenciasPorDia).length>0)?(d.totalAsistencias/Object.keys(d.asistenciasPorDia).length).toFixed(2):0;
             h+='<div class="stat-card"><div class="number blue">'+prom+'</div><div class="label">Promedio Diario</div></div></div>';
-            h+='<table><thead><tr><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Salida</th><th>Esperado</th><th>Estado</th></tr></thead><tbody>';
+            h+='<table><thead><tr><th>CI</th><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Salida</th><th>Esperado</th><th>Estado</th></tr></thead><tbody>';
             (d.asistencias||[]).forEach(function(a){
-                var nom=a.nombreEmpleado||a.carnetEmpleado;
+                var nom=a.nombreEmpleado||'';
                 var fe=new Date(a.fechaHoraEntrada).toLocaleDateString('es-ES');
                 var en=a.fechaHoraEntrada?new Date(a.fechaHoraEntrada).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
                 var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
                 var bc=a.estadoAsistencia==='Puntual'?'badge-green':a.estadoAsistencia==='Tardanza'?'badge-amber':'badge-red';
                 var esp=a.esperadoEntrada!=='—' ? a.esperadoEntrada+' - '+a.esperadoSalida : '—';
-                h+='<tr><td><strong>'+nom+'</strong></td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td>'+sa+'</td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
+                h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td>'+sa+'</td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
             });
-            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="7" class="empty-state">No hay asistencias</td></tr>';
+            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="8" class="empty-state">No hay asistencias</td></tr>';
             h+='</tbody></table>'; return h;
         },
         clases: function() {
@@ -786,7 +786,8 @@ function cargarDetalleFinanciero(idCaja){
     detail.classList.remove('visible');
     fetch('/reportes/financiero/'+idCaja,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
-            var h='<div class="socio-header"><div><div class="nombre">Caja #'+d.caja.idCaja+' - '+d.caja.sucursalNombre+'</div><div class="carnet">'+d.caja.fechaApertura+' | Apertura: $'+Number(d.caja.montoApertura).toFixed(2)+' | Cierre: $'+Number(d.caja.montoCierre||0).toFixed(2)+' | Estado: '+d.caja.estadoCaja+'</div></div></div>';
+            var empName=d.caja.nombreEmpleado||'Desconocido';
+            var h='<div class="socio-header"><div><div class="nombre">Caja #'+d.caja.idCaja+' - '+d.caja.sucursalNombre+'</div><div class="carnet">'+d.caja.fechaApertura+' | Apertura: $'+Number(d.caja.montoApertura).toFixed(2)+' | Cierre real: $'+Number(d.caja.montoCierre||0).toFixed(2)+' | Cierre calculado: $'+Number(d.caja.montoCierreCalculado||0).toFixed(2)+' | Estado: '+d.caja.estadoCaja+'<br><strong>Encargado: '+empName+' (CI: '+d.caja.carnetEmpleado+')</strong></div></div></div>';
 
             h+='<h4>Membresias Compradas ('+(d.membresias||[]).length+')</h4>';
             h+='<table><thead><tr><th>Recibo</th><th>Socio</th><th>Plan</th><th>Costo</th><th>Inicio</th><th>Fin</th><th>Pago</th></tr></thead><tbody>';

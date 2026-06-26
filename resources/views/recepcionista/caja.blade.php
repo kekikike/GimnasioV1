@@ -76,7 +76,7 @@
             <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">
                 Caja cerrada. Monto cierre: Bs. {{ formatNum(cajaAbierta.montoCierre) }} | Calculado: Bs. {{ formatNum(cajaAbierta.montoCierreCalculado) }} | Diferencia: Bs. {{ formatNum(cajaAbierta.diferenciaArqueo) }}
                 <span :style="{ color: cajaAbierta.cierreEstado === 'Bien' ? '#22c55e' : '#ef4444', fontWeight:600 }">
-                    | {{ cajaAbierta.cierreEstado === 'Bien' ? 'Bien' : 'Observado' }}
+                    | {{ cajaAbierta.cierreEstado === 'Bien' ? 'Bien' : 'Auditada' }}
                 </span>
                 <span v-if="cajaAbierta.cierreObservacion" style="display:block; font-size:0.85rem; margin-top:0.25rem; color:#64748b;">
                     Observacion: {{ cajaAbierta.cierreObservacion }}
@@ -377,7 +377,7 @@ createApp({
             if (!cajaAbierta.value) return;
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
-            const res = await fetch('{{ url("/recepcionista/caja/cerrar") }}/' + cajaAbierta.value.idCaja, {
+            const res = await fetch('{{ url("/recepcionista/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                 body: JSON.stringify(payload)
@@ -433,7 +433,7 @@ createApp({
             montoTotal.value = '';
             metodosPagoArr.value = [];
             try {
-                const res = await fetch('{{ url("/recepcionista/caja/buscar-socio") }}/' + socioCarnet.value);
+                const res = await fetch('{{ url("/admin/caja/buscar-socio") }}/' + socioCarnet.value);
                 if (!res.ok) { alert('Socio no encontrado.'); return; }
                 const data = await res.json();
                 if (data.success) {
@@ -514,7 +514,7 @@ createApp({
 
         const verRecibo = async (id) => {
             try {
-                const res = await fetch('{{ url("/recepcionista/caja/recibo") }}/' + id);
+                const res = await fetch('{{ url("/admin/caja/recibo") }}/' + id);
                 const data = await res.json();
                 if (data.success) {
                     reciboPreview.value = data.recibo;

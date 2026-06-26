@@ -76,7 +76,7 @@
             <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">
                 Caja cerrada. Monto cierre: Bs. {{ formatNum(cajaAbierta.montoCierre) }} | Calculado: Bs. {{ formatNum(cajaAbierta.montoCierreCalculado) }} | Diferencia: Bs. {{ formatNum(cajaAbierta.diferenciaArqueo) }}
                 <span :style="{ color: cajaAbierta.cierreEstado === 'Bien' ? '#22c55e' : '#ef4444', fontWeight:600 }">
-                    | {{ cajaAbierta.cierreEstado === 'Bien' ? 'Bien' : 'Observado' }}
+                    | {{ cajaAbierta.cierreEstado === 'Bien' ? 'Bien' : 'Auditada' }}
                 </span>
                 <span v-if="cajaAbierta.cierreObservacion" style="display:block; font-size:0.85rem; margin-top:0.25rem; color:#64748b;">
                     Observacion: {{ cajaAbierta.cierreObservacion }}

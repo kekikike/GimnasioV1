@@ -169,7 +169,7 @@ class RecepcionistaController extends Controller
             $cierreObservacion = null;
         } else {
             $request->validate(['cierreObservacion' => 'required|string|max:1000']);
-            $cierreEstado = 'Observado';
+            $cierreEstado = 'Auditada';
             $cierreObservacion = $request->cierreObservacion;
         }
 
@@ -180,13 +180,14 @@ class RecepcionistaController extends Controller
                 'diferenciaArqueo' => $diferenciaArqueo,
                 'cierreEstado' => $cierreEstado,
                 'cierreObservacion' => $cierreObservacion,
-                'estadoCaja' => 'Cerrada',
+                'estadoCaja' => $cierreEstado === 'Bien' ? 'Cerrada' : 'Auditada',
                 'estadoA' => 1,
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
             ]);
 
-            $this->registrarAuditoria('TCajas', $id, 'UPDATE', 'estadoCaja', 'Abierta', 'Cerrada', "Cierre de caja. Monto real: {$request->montoCierre}, Calculado: {$montoCierreCalculado}, Diferencia: {$diferenciaArqueo}, Estado: {$cierreEstado}" . ($cierreObservacion ? ", Obs: {$cierreObservacion}" : ''));
+            $estadoFinal = $cierreEstado === 'Bien' ? 'Cerrada' : 'Auditada';
+            $this->registrarAuditoria('TCajas', $id, 'UPDATE', 'estadoCaja', 'Abierta', $estadoFinal, "Cierre de caja. Monto real: {$request->montoCierre}, Calculado: {$montoCierreCalculado}, Diferencia: {$diferenciaArqueo}, Estado: {$cierreEstado}" . ($cierreObservacion ? ", Obs: {$cierreObservacion}" : ''));
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al cerrar la caja: ' . $e->getMessage()], 500);
         }

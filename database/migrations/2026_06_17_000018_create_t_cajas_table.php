@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('montoCierre', 10, 2)->nullable();
             $table->decimal('montoCierreCalculado', 10, 2)->nullable();
             $table->decimal('diferenciaArqueo', 10, 2)->nullable();
-            $table->enum('cierreEstado', ['Bien', 'Observado'])->nullable();
+            $table->enum('cierreEstado', ['Bien', 'Auditada'])->nullable();
             $table->text('cierreObservacion')->nullable();
             $table->enum('estadoCaja', ['Abierta', 'Cerrada', 'Auditada']);
             $table->boolean('estadoA')->default(true);

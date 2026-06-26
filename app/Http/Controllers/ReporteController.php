@@ -169,7 +169,10 @@ class ReporteController extends Controller
     {
         $caja = DB::table('TCajas as c')
             ->leftJoin('TSucursales as s', 'c.idSucursal', '=', 's.idSucursal')
-            ->select('c.*', 's.nombre as sucursalNombre')
+            ->leftJoin('TEmpleados as e', 'c.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->leftJoin('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->select('c.*', 's.nombre as sucursalNombre',
+                DB::raw("CONCAT(u.nombre1, ' ', COALESCE(CONCAT(u.nombre2, ' '), ''), u.apellido1, ' ', COALESCE(u.apellido2, '')) as nombreEmpleado"))
             ->where('c.idCaja', $idCaja)
             ->first();
 
