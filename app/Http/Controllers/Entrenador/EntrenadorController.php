@@ -46,16 +46,18 @@ class EntrenadorController extends Controller
             ->orderBy('cg.horaInicio', 'desc')
             ->get()
             ->map(function ($clase) {
-                $stats = DB::table('TReservas')
+                $total = DB::table('TReservas')
                     ->where('idClaseGrupal', $clase->idClaseGrupal)
                     ->where('estadoA', 1)
-                    ->selectRaw("COUNT(*) as total")
-                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Reservado' THEN 1 ELSE 0 END) as reservados")
-                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Asistido' THEN 1 ELSE 0 END) as asistieron")
-                    ->first();
-                $clase->totalReservas = $stats->total ?? 0;
-                $clase->reservados = $stats->reservados ?? 0;
-                $clase->asistieron = $stats->asistieron ?? 0;
+                    ->count();
+                $asistieron = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoA', 1)
+                    ->where('estadoReserva', 'Asistido')
+                    ->count();
+                $clase->totalReservas = $total;
+                $clase->reservados = $clase->cuposOcupados;
+                $clase->asistieron = $asistieron;
                 return $clase;
             });
 
@@ -84,7 +86,18 @@ class EntrenadorController extends Controller
             ->orderBy('u.apellido1', 'asc')
             ->get();
 
-        return response()->json($reservas);
+        $participantes = $reservas->filter(fn($r) => in_array($r->estadoReserva, ['Reservado', 'Asistido']))->values();
+        $cancelados = $reservas->filter(fn($r) => $r->estadoReserva === 'Cancelado')->values();
+        $penalizados = $reservas->filter(fn($r) => $r->estadoReserva === 'Penalizado')->values();
+        $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+
+        return response()->json([
+            'participantes' => $participantes,
+            'cancelados' => $cancelados,
+            'penalizados' => $penalizados,
+            'cupoMaximo' => $clase->cupoMaximo ?? 0,
+            'cuposOcupados' => $clase->cuposOcupados ?? 0,
+        ]);
     }
 
     public function asistenciasClase()
@@ -121,6 +134,7 @@ class EntrenadorController extends Controller
                 'cg.horaInicio',
                 'cg.horaFin',
                 'cg.cupoMaximo',
+                'cg.cuposOcupados',
                 'cg.estadoClase',
                 'a.nombreActividad',
                 's.nombre as nombreSucursal'
@@ -128,16 +142,18 @@ class EntrenadorController extends Controller
             ->orderBy('cg.horaInicio', 'asc')
             ->get()
             ->map(function ($clase) use ($horaActual) {
-                $stats = DB::table('TReservas')
+                $total = DB::table('TReservas')
                     ->where('idClaseGrupal', $clase->idClaseGrupal)
                     ->where('estadoA', 1)
-                    ->selectRaw("COUNT(*) as total")
-                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Reservado' THEN 1 ELSE 0 END) as reservados")
-                    ->selectRaw("SUM(CASE WHEN estadoReserva = 'Asistido' THEN 1 ELSE 0 END) as asistieron")
-                    ->first();
-                $clase->totalReservas = $stats->total ?? 0;
-                $clase->reservados = $stats->reservados ?? 0;
-                $clase->asistieron = $stats->asistieron ?? 0;
+                    ->count();
+                $asistieron = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoA', 1)
+                    ->where('estadoReserva', 'Asistido')
+                    ->count();
+                $clase->totalReservas = $total;
+                $clase->reservados = $clase->cuposOcupados;
+                $clase->asistieron = $asistieron;
 
                 if ($horaActual < $clase->horaInicio) {
                     $clase->estadoAsistencia = 'proxima';
@@ -174,6 +190,16 @@ class EntrenadorController extends Controller
 
         if (!$clase) {
             return response()->json(['error' => 'Clase no encontrada o no asignada a este entrenador.'], 404);
+        }
+
+        // Calcular estadoAsistencia en tiempo real con el servidor
+        $horaActual = now()->format('H:i:s');
+        if ($horaActual < $clase->horaInicio) {
+            $clase->estadoAsistencia = 'proxima';
+        } elseif ($horaActual > $clase->horaFin) {
+            $clase->estadoAsistencia = 'expirada';
+        } else {
+            $clase->estadoAsistencia = 'en_curso';
         }
 
         $alumnos = DB::table('TReservas as r')

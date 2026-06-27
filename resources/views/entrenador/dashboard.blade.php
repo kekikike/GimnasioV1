@@ -74,32 +74,64 @@
                 <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;">
                     <strong v-text="seleccion.nombreActividad"></strong> — <span v-text="seleccion.fecha"></span>
                     <br><span v-text="seleccion.horaInicio?.substring(0, 5)"></span> - <span v-text="seleccion.horaFin?.substring(0, 5)"></span>
-                    <br>Cupo: <span v-text="seleccion.reservados"></span>/<span v-text="seleccion.cupoMaximo"></span> reservados · <span v-text="seleccion.asistieron"></span> asistieron
+                    <br>Cupo: <strong v-text="participantesData.cuposOcupados"></strong>/<span v-text="seleccion.cupoMaximo"></span> ocupados · <span v-text="seleccion.asistieron"></span> asistieron
                 </div>
 
                 <div v-if="cargandoParticipantes" style="text-align: center; padding: 2rem; color: #94a3b8;">
                     Cargando...
                 </div>
 
-                <div v-else-if="participantes.length === 0" style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
-                    No hay participantes registrados.
-                </div>
-
                 <div v-else style="flex: 1; overflow-y: auto;">
-                    <div v-for="p in participantes" :key="p.idReserva" style="display: flex; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f8fafc; align-items: center;">
-                        <div style="width: 36px; height: 36px; border-radius: 0.4rem; overflow: hidden; background: #e2e8f0; flex-shrink: 0;">
-                            <img :src="'/storage/' + (p.fotografiaUrl || 'fotos_socios/default.jpeg')" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: top;" @@error="$el.style.display='none'">
+
+                    <div v-if="participantesData.participantes.length > 0">
+                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem; color: #0f172a;">Participantes activos</h4>
+                        <div v-for="p in participantesData.participantes" :key="p.idReserva" style="display: flex; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f8fafc; align-items: center;">
+                            <div style="width: 36px; height: 36px; border-radius: 0.4rem; overflow: hidden; background: #e2e8f0; flex-shrink: 0;">
+                                <img :src="'/storage/' + (p.fotografiaUrl || 'fotos_socios/default.jpeg')" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: top;" @@error="$el.style.display='none'">
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;"><span v-text="p.nombre1"></span> <span v-text="p.apellido1"></span></div>
+                                <div style="font-size: 0.75rem; color: #94a3b8;"><span v-text="p.correo"></span><span v-if="p.telefono"> · <span v-text="p.telefono"></span></span></div>
+                                <div v-if="p.observacionesMedicas" style="font-size: 0.75rem; color: #dc2626; margin-top: 2px;">⚠️ <span v-text="p.observacionesMedicas"></span></div>
+                            </div>
+                            <span :style="{
+                                background: p.estadoReserva === 'Reservado' ? '#f5f3ff' : p.estadoReserva === 'Asistido' ? '#d1fae5' : p.estadoReserva === 'Penalizado' ? '#fee2e2' : '#f1f5f9',
+                                color: p.estadoReserva === 'Reservado' ? '#6d28d9' : p.estadoReserva === 'Asistido' ? '#065f46' : p.estadoReserva === 'Penalizado' ? '#991b1b' : '#64748b',
+                                padding: '2px 8px', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap'
+                            }" v-text="p.estadoReserva"></span>
                         </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;"><span v-text="p.nombre1"></span> <span v-text="p.apellido1"></span></div>
-                            <div style="font-size: 0.75rem; color: #94a3b8;"><span v-text="p.correo"></span><span v-if="p.telefono"> · <span v-text="p.telefono"></span></span></div>
-                            <div v-if="p.observacionesMedicas" style="font-size: 0.75rem; color: #dc2626; margin-top: 2px;">⚠️ <span v-text="p.observacionesMedicas"></span></div>
+                    </div>
+
+                    <div v-if="participantesData.penalizados.length > 0" style="margin-top: 1rem;">
+                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem; color: #dc2626;">Penalizados</h4>
+                        <div v-for="p in participantesData.penalizados" :key="p.idReserva" style="display: flex; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f8fafc; align-items: center;">
+                            <div style="width: 36px; height: 36px; border-radius: 0.4rem; overflow: hidden; background: #e2e8f0; flex-shrink: 0;">
+                                <img :src="'/storage/' + (p.fotografiaUrl || 'fotos_socios/default.jpeg')" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: top;" @@error="$el.style.display='none'">
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;"><span v-text="p.nombre1"></span> <span v-text="p.apellido1"></span></div>
+                                <div style="font-size: 0.75rem; color: #94a3b8;"><span v-text="p.correo"></span></div>
+                            </div>
+                            <span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; whiteSpace: 'nowrap'">Penalizado</span>
                         </div>
-                        <span :style="{
-                            background: p.estadoReserva === 'Reservado' ? '#f5f3ff' : p.estadoReserva === 'Asistido' ? '#d1fae5' : p.estadoReserva === 'Penalizado' ? '#fee2e2' : '#f1f5f9',
-                            color: p.estadoReserva === 'Reservado' ? '#6d28d9' : p.estadoReserva === 'Asistido' ? '#065f46' : p.estadoReserva === 'Penalizado' ? '#991b1b' : '#64748b',
-                            padding: '2px 8px', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap'
-                        }" v-text="p.estadoReserva"></span>
+                    </div>
+
+                    <div v-if="participantesData.cancelados.length > 0" style="margin-top: 1rem;">
+                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem; color: #94a3b8;">Cancelados</h4>
+                        <div v-for="p in participantesData.cancelados" :key="p.idReserva" style="display: flex; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f8fafc; align-items: center;">
+                            <div style="width: 36px; height: 36px; border-radius: 0.4rem; overflow: hidden; background: #e2e8f0; flex-shrink: 0;">
+                                <img :src="'/storage/' + (p.fotografiaUrl || 'fotos_socios/default.jpeg')" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: top;" @@error="$el.style.display='none'">
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; color: #94a3b8; font-size: 0.85rem;"><span v-text="p.nombre1"></span> <span v-text="p.apellido1"></span></div>
+                                <div style="font-size: 0.75rem; color: #cbd5e1;"><span v-text="p.correo"></span></div>
+                            </div>
+                            <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600;">Cancelado</span>
+                        </div>
+                    </div>
+
+                    <div v-if="participantesData.participantes.length === 0 && participantesData.cancelados.length === 0 && participantesData.penalizados.length === 0" style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                        No hay reservas para esta clase.
                     </div>
                 </div>
             </div>
@@ -123,7 +155,7 @@ Vue.createApp({
             clases: [],
             cargandoClases: true,
             seleccion: null,
-            participantes: [],
+            participantesData: { participantes: [], cancelados: [], penalizados: [], cupoMaximo: 0, cuposOcupados: 0 },
             cargandoParticipantes: false,
             filtroEstado: 'todas'
         };
@@ -138,13 +170,20 @@ Vue.createApp({
         async seleccionarClase(clase) {
             this.seleccion = clase;
             this.cargandoParticipantes = true;
+            this.participantesData = { participantes: [], cancelados: [], penalizados: [], cupoMaximo: 0, cuposOcupados: 0 };
             try {
                 const url = '{{ route("entrenador.clases.participantes", ["id" => ":id"]) }}';
                 const res = await fetch(url.replace(':id', clase.idClaseGrupal));
-                this.participantes = await res.json();
+                const json = await res.json();
+                this.participantesData = {
+                    participantes: json.participantes || [],
+                    cancelados: json.cancelados || [],
+                    penalizados: json.penalizados || [],
+                    cupoMaximo: json.cupoMaximo || 0,
+                    cuposOcupados: json.cuposOcupados || 0,
+                };
             } catch (e) {
                 console.error('Error cargando participantes:', e);
-                this.participantes = [];
             } finally {
                 this.cargandoParticipantes = false;
             }

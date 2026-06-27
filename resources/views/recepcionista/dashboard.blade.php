@@ -61,12 +61,11 @@
                         }">@{{ s.estadoSocio }}</span>
                     </td>
                     <td style="padding: 0.65rem 1rem; text-align: center;">
-                        <span v-if="s.membresiaEstado" :style="{
-                            background: s.membresiaEstado === 'Activa' ? '#d1fae5' : '#fee2e2',
-                            color: s.membresiaEstado === 'Activa' ? '#065f46' : '#991b1b',
+                        <span :style="{
+                            background: estadoMembresiaReal(s).fondo,
+                            color: estadoMembresiaReal(s).color,
                             padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600
-                        }">@{{ s.membresiaEstado }}</span>
-                        <span v-else style="color: #94a3b8; font-size: 0.75rem;">Sin membresía</span>
+                        }">@{{ estadoMembresiaReal(s).texto }}</span>
                     </td>
                     <td style="padding: 0.65rem 1rem; text-align: center; font-size: 0.85rem;">
                         <span v-if="s.membresiaFin" :style="{ color: diasRestantesFn(s.membresiaFin) < 0 ? '#ef4444' : diasRestantesFn(s.membresiaFin) <= 7 ? '#f59e0b' : '#64748b', fontWeight: diasRestantesFn(s.membresiaFin) <= 7 ? 700 : 400 }">
@@ -123,6 +122,13 @@ createApp({
             return Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24));
         };
 
+        const estadoMembresiaReal = (socio) => {
+            if (!socio.membresiaFin) return { texto: 'Sin membresía', fondo: '#f1f5f9', color: '#64748b' };
+            const dias = diasRestantesFn(socio.membresiaFin);
+            if (dias < 0) return { texto: 'Vencida', fondo: '#fee2e2', color: '#991b1b' };
+            return { texto: socio.membresiaEstado || 'Activa', fondo: '#d1fae5', color: '#065f46' };
+        };
+
         onMounted(async () => {
             try {
                 const res = await fetch('{{ route("recepcionista.ingreso.todos") }}');
@@ -134,7 +140,7 @@ createApp({
             }
         });
 
-        return { socios, cargando, filtro, sociosFiltrados, diasRestantesFn };
+        return { socios, cargando, filtro, sociosFiltrados, diasRestantesFn, estadoMembresiaReal };
     }
 }).mount('#appDash');
 </script>

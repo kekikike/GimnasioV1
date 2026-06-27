@@ -142,13 +142,13 @@
                             <button
                                 @click="marcar(a.idReserva, 'Asistido')"
                                 class="btn btn-success btn-sm"
-                                :disabled="claseSeleccionada.estadoAsistencia !== 'en_curso' || a.estadoReserva !== 'Reservado'"
+                                :disabled="!claseEnRango || a.estadoReserva !== 'Reservado'"
                                 style="font-size: 0.7rem; padding: 0.3rem 0.6rem;"
                             >Presente</button>
                             <button
                                 @click="marcar(a.idReserva, 'Penalizado')"
                                 class="btn btn-danger btn-sm"
-                                :disabled="claseSeleccionada.estadoAsistencia !== 'en_curso' || a.estadoReserva !== 'Reservado'"
+                                :disabled="!claseEnRango || a.estadoReserva !== 'Reservado'"
                                 style="font-size: 0.7rem; padding: 0.3rem 0.6rem;"
                             >Falta</button>
                         </div>
@@ -170,7 +170,16 @@ Vue.createApp({
             cargandoAlumnos: false,
             mensaje: '',
             mensajeTipo: 'success',
+            intervaloRefresco: null,
         };
+    },
+    computed: {
+        claseEnRango() {
+            if (!this.claseSeleccionada?.horaInicio || !this.claseSeleccionada?.horaFin) return false;
+            const ahora = new Date();
+            const horaActual = ahora.getHours().toString().padStart(2, '0') + ':' + ahora.getMinutes().toString().padStart(2, '0') + ':' + ahora.getSeconds().toString().padStart(2, '0');
+            return horaActual >= this.claseSeleccionada.horaInicio && horaActual <= this.claseSeleccionada.horaFin;
+        }
     },
     methods: {
         nombreCompleto(a) {
@@ -214,6 +223,10 @@ Vue.createApp({
                 const res = await fetch(url.replace(':id', idClase));
                 const data = await res.json();
                 this.alumnos = data.alumnos ?? [];
+                // Actualizar estadoAsistencia con valor fresco del servidor
+                if (data.clase?.estadoAsistencia && this.claseSeleccionada) {
+                    this.claseSeleccionada.estadoAsistencia = data.clase.estadoAsistencia;
+                }
             } catch (e) {
                 console.error('Error cargando alumnos:', e);
                 this.alumnos = [];
@@ -253,6 +266,15 @@ Vue.createApp({
         if (this.clases.length > 0) {
             const enCurso = this.clases.find(c => c.estadoAsistencia === 'en_curso');
             await this.seleccionarClase(enCurso || this.clases[0]);
+        }
+        // Refrescar estado de clases cada 30 segundos para detectar inicio/fin
+        this.intervaloRefresco = setInterval(() => {
+            this.cargarClasesHoy();
+        }, 30000);
+    },
+    beforeUnmount() {
+        if (this.intervaloRefresco) {
+            clearInterval(this.intervaloRefresco);
         }
     }
 }).mount('#appAsistencias');

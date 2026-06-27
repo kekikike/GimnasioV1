@@ -10,6 +10,18 @@ class ControlIngresoController extends Controller
 {
     public function listarTodos()
     {
+        // Sincronizar estados de membresías antes de listar
+        try {
+            DB::statement('CALL sp_TMembresias_SincronizarEstado()');
+        } catch (\Exception $e) {
+        }
+
+        // Limpiar strikes vencidos antes de listar
+        try {
+            DB::statement('CALL sp_TSocios_LimpiarStrikesVencidos()');
+        } catch (\Exception $e) {
+        }
+
         $socios = DB::table('TSocios as s')
             ->join('TUsuarios as u', 's.idUsuario', '=', 'u.idUsuario')
             ->where('s.estadoA', 1)
@@ -96,6 +108,22 @@ class ControlIngresoController extends Controller
 
     public function detalleSocio($carnet)
     {
+        // Forzar verificación de suspensión + limpieza automática de strikes vencidos
+        $enSuspension = false;
+        $motivoSuspension = null;
+        try {
+            $result = DB::select(
+                'CALL sp_TSocios_VerificarSuspension(?, @_detalle_enSuspension, @_detalle_motivo, @_detalle_strikes)',
+                [$carnet]
+            );
+            $suspResult = DB::select('SELECT @_detalle_enSuspension AS enSuspension, @_detalle_motivo AS motivo, @_detalle_strikes AS strikes');
+            if (!empty($suspResult)) {
+                $enSuspension = (bool) ($suspResult[0]->enSuspension ?? false);
+                $motivoSuspension = $suspResult[0]->motivo ?? null;
+            }
+        } catch (\Exception $e) {
+        }
+
         $socio = DB::table('TSocios as s')
             ->join('TUsuarios as u', 's.idUsuario', '=', 'u.idUsuario')
             ->where('s.carnetSocio', $carnet)
@@ -166,6 +194,8 @@ class ControlIngresoController extends Controller
             'ultimosAccesos' => $ultimosAccesos,
             'penalizacionesActivas' => $penalizacionesActivas,
             'reservasPendientes' => $reservasPendientes,
+            'enSuspension' => $enSuspension,
+            'motivoSuspension' => $motivoSuspension,
         ]);
     }
 

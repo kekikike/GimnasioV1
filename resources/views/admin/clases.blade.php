@@ -172,7 +172,10 @@
             </div>
             <p style="color: #64748b; font-size: 0.9rem;">
                 @{{ claseSeleccionada?.fecha }} | @{{ claseSeleccionada?.horaInicio?.substring(0,5) }} - @{{ claseSeleccionada?.horaFin?.substring(0,5) }}
+                &nbsp;|&nbsp; Cupo: <strong>@{{ reservasData.cuposOcupados }}/@{{ reservasData.cupoMaximo }}</strong>
             </p>
+
+            <h4 style="margin: 1rem 0 0.5rem; font-size: 0.95rem;">Participantes</h4>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                 <thead>
                     <tr>
@@ -183,7 +186,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="r in reservasClase" :key="r.idReserva">
+                    <tr v-for="r in reservasData.participantes" :key="r.idReserva">
                         <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">
                             <strong>@{{ r.nombre1 }} @{{ r.apellido1 }}</strong>
                             <br><small style="color: #64748b;">@{{ r.correo }}</small>
@@ -201,8 +204,35 @@
                             <button v-if="r.estadoReserva === 'Reservado'" @click="marcarAsistencia(r.idReserva, 'Penalizado')" class="btn btn-sm btn-danger" style="font-size: 0.75rem; margin-left: 4px;">🚫 No Asistió</button>
                         </td>
                     </tr>
-                    <tr v-if="reservasClase.length === 0">
-                        <td colspan="4" style="text-align: center; padding: 20px; color: #94a3b8;">Sin reservas.</td>
+                    <tr v-if="reservasData.participantes.length === 0">
+                        <td colspan="4" style="text-align: center; padding: 20px; color: #94a3b8;">Sin participantes activos.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4 v-if="reservasData.cancelados.length > 0" style="margin: 1rem 0 0.5rem; font-size: 0.95rem; color: #64748b;">Cancelados</h4>
+            <table v-if="reservasData.cancelados.length > 0" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0;">Socio</th>
+                        <th style="padding: 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0;">Reserva</th>
+                        <th style="padding: 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0;">Estado</th>
+                        <th style="padding: 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: center;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="r in reservasData.cancelados" :key="r.idReserva">
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">
+                            <strong style="color: #94a3b8;">@{{ r.nombre1 }} @{{ r.apellido1 }}</strong>
+                            <br><small style="color: #94a3b8;">@{{ r.correo }}</small>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; color: #94a3b8;">
+                            @{{ r.fechaReserva }}
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">
+                            <span class="badge badge-warning">Cancelado</span>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; text-align: center;"></td>
                     </tr>
                 </tbody>
             </table>
@@ -251,7 +281,7 @@ createApp({
         const filtroFecha = ref('');
         const filtroEstado = ref('');
         const modalReservas = ref(false);
-        const reservasClase = ref([]);
+        const reservasData = ref({ participantes: [], cancelados: [], penalizados: [], cupoMaximo: 0, cuposOcupados: 0 });
         const claseSeleccionada = ref(null);
         const editModal = ref(false);
         const editandoId = ref(null);
@@ -342,12 +372,19 @@ createApp({
         const verReservas = async (clase) => {
             claseSeleccionada.value = clase;
             modalReservas.value = true;
+            reservasData.value = { participantes: [], cancelados: [], penalizados: [], cupoMaximo: 0, cuposOcupados: 0 };
             try {
                 const res = await fetch(`{{ route("admin.clases.reservas", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal));
-                reservasClase.value = await res.json();
+                const json = await res.json();
+                reservasData.value = {
+                    participantes: json.participantes || [],
+                    cancelados: json.cancelados || [],
+                    penalizados: json.penalizados || [],
+                    cupoMaximo: json.cupoMaximo || 0,
+                    cuposOcupados: json.cuposOcupados || 0,
+                };
             } catch (e) {
                 console.error('Error cargando reservas:', e);
-                reservasClase.value = [];
             }
         };
 
@@ -375,7 +412,7 @@ createApp({
         return {
             clases, actividades, empleados, sucursales, adminSucursalId,
             mensaje, mensajeTipo, filtroFecha, filtroEstado, clasesFiltradas,
-            modalReservas, reservasClase, claseSeleccionada,
+            modalReservas, reservasData, claseSeleccionada,
             editModal, editFormulario,
             cargarClases, openEditModal, closeEditModal, guardarEdicion,
             confirmarEliminar, verReservas, marcarAsistencia,

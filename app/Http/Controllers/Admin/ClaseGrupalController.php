@@ -70,13 +70,11 @@ class ClaseGrupalController extends Controller
             ->orderBy('cg.horaInicio', 'desc')
             ->get()
             ->map(function ($clase) {
-                $reservas = DB::table('TReservas')
+                $total = DB::table('TReservas')
                     ->where('idClaseGrupal', $clase->idClaseGrupal)
                     ->where('estadoA', 1)
-                    ->selectRaw("COUNT(*) as total, SUM(CASE WHEN estadoReserva = 'Reservado' THEN 1 ELSE 0 END) as reservados")
-                    ->first();
-                $clase->totalReservas = $reservas->total ?? 0;
-                $clase->cuposOcupados = $reservas->reservados ?? 0;
+                    ->count();
+                $clase->totalReservas = $total;
                 return $clase;
             });
 
@@ -203,6 +201,9 @@ class ClaseGrupalController extends Controller
                 ->where('idClaseGrupal', $id)
                 ->where('estadoReserva', 'Reservado')
                 ->update(['estadoReserva' => 'Cancelado']);
+            DB::table('TClaseGrupales')
+                ->where('idClaseGrupal', $id)
+                ->update(['cuposOcupados' => 0]);
         }
 
         return response()->json([
@@ -223,6 +224,10 @@ class ClaseGrupalController extends Controller
             ->where('idClaseGrupal', $id)
             ->where('estadoReserva', 'Reservado')
             ->update(['estadoReserva' => 'Cancelado']);
+
+        DB::table('TClaseGrupales')
+            ->where('idClaseGrupal', $id)
+            ->update(['cuposOcupados' => 0]);
 
         DB::table('tauditorias')->insert([
             'tablaNombre'   => 'TClaseGrupales',
@@ -261,7 +266,18 @@ class ClaseGrupalController extends Controller
             ->orderBy('r.fechaReserva', 'desc')
             ->get();
 
-        return response()->json($reservas);
+        $participantes = $reservas->filter(fn($r) => in_array($r->estadoReserva, ['Reservado', 'Asistido']))->values();
+        $cancelados = $reservas->filter(fn($r) => in_array($r->estadoReserva, ['Cancelado']))->values();
+        $penalizados = $reservas->filter(fn($r) => $r->estadoReserva === 'Penalizado')->values();
+        $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+
+        return response()->json([
+            'participantes' => $participantes,
+            'cancelados' => $cancelados,
+            'penalizados' => $penalizados,
+            'cupoMaximo' => $clase->cupoMaximo ?? 0,
+            'cuposOcupados' => $clase->cuposOcupados ?? 0,
+        ]);
     }
 
     public function marcarAsistencia(Request $request)
@@ -281,30 +297,21 @@ class ClaseGrupalController extends Controller
                 ->first();
 
             if ($reserva) {
-                DB::table('TPenalizaciones')->insert([
-                    'carnetSocio' => $reserva->carnetSocio,
-                    'idReserva' => $request->idReserva,
-                    'fecha' => now()->format('Y-m-d'),
-                    'estado' => true,
-                    'usuarioA' => session('usuario')->idUsuario ?? 1,
-                ]);
+                $usuarioA = session('usuario')->idUsuario ?? 1;
+                $direccionIP = $request->ip();
 
-                DB::table('TSocios')
-                    ->where('carnetSocio', $reserva->carnetSocio)
-                    ->increment('strikes');
-
-                $socio = DB::table('TSocios')
-                    ->where('carnetSocio', $reserva->carnetSocio)
-                    ->first();
-
-                if ($socio && $socio->strikes >= 3) {
-                    DB::table('TPenalizaciones')->insert([
-                        'carnetSocio' => $reserva->carnetSocio,
-                        'idReserva' => null,
-                        'fecha' => now()->format('Y-m-d'),
-                        'estado' => true,
-                        'usuarioA' => session('usuario')->idUsuario ?? 1,
-                    ]);
+                try {
+                    DB::statement(
+                        'CALL sp_TSocios_AplicarStrike(?, ?, ?, ?, ?, @adm_nuevosStrikes, @adm_mensaje)',
+                        [
+                            $reserva->carnetSocio,
+                            $request->idReserva,
+                            now()->format('Y-m-d'),
+                            $usuarioA,
+                            $direccionIP,
+                        ]
+                    );
+                } catch (\Illuminate\Database\QueryException $e) {
                 }
             }
         }

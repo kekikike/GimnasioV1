@@ -200,8 +200,15 @@
                                 <span style="color: #9a3412; font-size: 0.85rem; margin-left: 0.5rem;">@{{ socioSeleccionado.strikes }}/3 — @{{ socioSeleccionado.strikes >= 3 ? 'SUSPENDIDO' : (3 - socioSeleccionado.strikes) + ' strike(s) para suspensión' }}</span>
                             </div>
                         </div>
-                        <div v-if="detalle?.penalizacionesActivas > 0" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-top: 0.5rem;">
-                            <div style="font-weight: 600; color: #991b1b; font-size: 0.85rem;">🚫 Penalización activa — Acceso suspendido</div>
+                        <div v-if="detalle?.enSuspension" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-top: 0.5rem;">
+                            <div style="font-weight: 600; color: #991b1b; font-size: 0.85rem;">🚫 Acceso suspendido</div>
+                            <div style="color: #7f1d1d; font-size: 0.85rem; margin-top: 0.25rem;">@{{ detalle.motivoSuspension }}</div>
+                        </div>
+                        <div v-else-if="socioSeleccionado?.strikes > 0" style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-top: 0.5rem;">
+                            <div style="font-weight: 600; color: #9a3412; font-size: 0.85rem;">⚠️ Socio con strikes</div>
+                            <div style="color: #7f1d1d; font-size: 0.85rem; margin-top: 0.25rem;">
+                                El socio tiene <strong>@{{ socioSeleccionado.strikes }}</strong> strike(s). Periodo de suspensión aún no iniciado o ya cumplido. El ingreso NO está bloqueado.
+                            </div>
                         </div>
                     </div>
 
@@ -392,6 +399,7 @@ createApp({
             if (!socioSeleccionado.value) return false;
             return socioSeleccionado.value.observacionesMedicas
                 || socioSeleccionado.value.strikes > 0
+                || detalle.value?.enSuspension
                 || detalle.value?.penalizacionesActivas > 0;
         });
 

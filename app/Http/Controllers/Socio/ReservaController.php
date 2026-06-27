@@ -104,17 +104,17 @@ class ReservaController extends Controller
             return response()->json(['success' => false, 'message' => 'Tu cuenta no está activa. No puedes realizar reservas.']);
         }
 
-        if ($socio->strikes >= 3) {
-            $penalizacion = DB::table('TPenalizaciones')
-                ->where('carnetSocio', $socio->carnetSocio)
-                ->where('estado', 1)
-                ->where('estadoA', 1)
-                ->where('fecha', '>=', now()->subDays(7)->format('Y-m-d'))
-                ->exists();
+        DB::statement(
+            'CALL sp_TSocios_VerificarSuspension(?, @_res_enSuspension, @_res_motivo, @_res_strikes)',
+            [$socio->carnetSocio]
+        );
+        $resSuspension = DB::select('SELECT @_res_enSuspension AS enSuspension')[0] ?? null;
 
-            if ($penalizacion) {
-                return response()->json(['success' => false, 'message' => 'Has acumulado 3 strikes. Tu acceso está suspendido por 1 semana.']);
-            }
+        if ($resSuspension && $resSuspension->enSuspension) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tu acceso está suspendido por strikes acumulados. No puedes realizar reservas.'
+            ]);
         }
 
         $clase = DB::table('TClaseGrupales')
@@ -155,6 +155,10 @@ class ReservaController extends Controller
             'estadoReserva' => 'Reservado',
             'usuarioA' => session('usuario')->idUsuario,
         ]);
+
+        DB::table('TClaseGrupales')
+            ->where('idClaseGrupal', $request->idClaseGrupal)
+            ->increment('cuposOcupados');
 
         return response()->json([
             'success' => true,
