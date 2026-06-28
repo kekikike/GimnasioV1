@@ -307,40 +307,66 @@ class ReporteController extends Controller
     // =========================================
     public function claseDetalle($idClase)
     {
-        $clase = Clase::with(['actividad', 'instructor.usuario'])->findOrFail($idClase);
+        $clase = DB::table('TClaseGrupales as cg')
+            ->leftJoin('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->leftJoin('TEmpleados as e', 'cg.carnetEmpleado', '=', 'e.carnetEmpleado')
+            ->leftJoin('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
+            ->where('cg.idClaseGrupal', $idClase)
+            ->select([
+                'cg.idClaseGrupal',
+                'cg.fecha',
+                'cg.horaInicio',
+                'cg.horaFin',
+                'cg.cupoMaximo',
+                'a.nombreActividad',
+                DB::raw("CONCAT(COALESCE(u.nombre1,''), ' ', COALESCE(u.apellido1,'')) as instructor"),
+                DB::raw("CAST(e.carnetEmpleado AS CHAR) as carnetInstructor"),
+            ])
+            ->first();
 
-        $reservas = Reserva::with(['socio.usuario'])
-            ->where('idClaseGrupal', $idClase)
-            ->orderBy('fechaReserva')
+        if (!$clase) {
+            return response()->json(['error' => 'Clase no encontrada'], 404);
+        }
+
+        $reservas = DB::table('TReservas as r')
+            ->leftJoin('TSocios as s', 'r.carnetSocio', '=', 's.carnetSocio')
+            ->leftJoin('TUsuarios as u', 's.idUsuario', '=', 'u.idUsuario')
+            ->where('r.idClaseGrupal', $idClase)
+            ->orderBy('r.fechaReserva')
+            ->select([
+                'r.idReserva',
+                'r.carnetSocio',
+                'r.fechaReserva',
+                'r.estadoReserva',
+                DB::raw("CONCAT(COALESCE(u.nombre1,''), ' ', COALESCE(u.apellido1,'')) as nombreSocio"),
+            ])
             ->get();
 
+        $totalReservas = $reservas->count();
+        $asistieron = $reservas->where('estadoReserva', 'Asistido')->count();
+
         $socios = $reservas->map(function($r) {
-            $s = $r->socio;
             return [
                 'idReserva' => $r->idReserva,
-                'carnetSocio' => $s ? $s->carnetSocio : null,
-                'nombreSocio' => $s && $s->usuario ? ($s->usuario->nombre1 . ' ' . $s->usuario->apellido1) : 'N/A',
+                'carnetSocio' => $r->carnetSocio,
+                'nombreSocio' => trim($r->nombreSocio) ?: 'N/A',
                 'fechaReserva' => $r->fechaReserva,
                 'estadoReserva' => $r->estadoReserva,
             ];
-        });
-
-        $nombreInstructor = 'Sin instructor';
-        if ($clase->instructor && $clase->instructor->usuario) {
-            $nombreInstructor = ($clase->instructor->usuario->nombre1 ?? '') . ' ' . ($clase->instructor->usuario->apellido1 ?? '');
-        }
+        })->values();
 
         return response()->json([
             'clase' => [
                 'idClaseGrupal' => $clase->idClaseGrupal,
-                'nombreActividad' => $clase->actividad->nombreActividad ?? 'Sin nombre',
-                'instructor' => $nombreInstructor,
+                'nombreActividad' => $clase->nombreActividad ?? 'Sin nombre',
+                'instructor' => trim($clase->instructor) ?: 'Sin instructor',
+                'carnetInstructor' => $clase->carnetInstructor ?? '',
                 'fecha' => $clase->fecha,
                 'horaInicio' => $clase->horaInicio,
                 'horaFin' => $clase->horaFin,
                 'capacidad' => $clase->cupoMaximo ?? 0,
-                'totalReservas' => $reservas->count(),
-                'asistieron' => $reservas->where('estadoReserva', 'Asistido')->count(),
+                'totalReservas' => $totalReservas,
+                'asistieron' => $asistieron,
             ],
             'socios' => $socios,
         ]);
@@ -465,10 +491,6 @@ class ReporteController extends Controller
         $html = $request->input('html');
         $nombreArchivo = $request->input('nombreArchivo', 'reporte_' . now()->format('Y-m-d'));
         $titulo = $request->input('titulo', 'Reporte');
-        $usuario = $request->input('usuario', 'Usuario');
-        $fechaGen = now()->format('d/m/Y H:i:s');
-
-        $footer = '<div style="position:fixed;bottom:10px;right:20px;font-size:0.75rem;color:#94a3b8;text-align:right;">Generado por: ' . e($usuario) . '<br>' . $fechaGen . '</div>';
 
         $fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . e($titulo) . '</title>
         <style>
@@ -492,7 +514,7 @@ class ReporteController extends Controller
             h2{margin-bottom:1rem;}
             .no-print{display:none!important;}
             .row-clickable{cursor:default;}
-        </style></head><body><h2>' . e($titulo) . '</h2>' . $html . $footer . '</body></html>';
+        </style></head><body><h2>' . e($titulo) . '</h2>' . $html . '</body></html>';
 
         $pdf = Pdf::loadHTML($fullHtml);
         $pdf->setPaper('A4', 'portrait');

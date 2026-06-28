@@ -88,7 +88,7 @@ tbody tr:hover { background:#f8fafc; }
     </div>
     <div class="action-print no-print">
         <button onclick="imprimirPDFGeneral()" class="btn btn-primary">Imprimir PDF General</button>
-        <button onclick="descargarPDF('contenido-socios','Reporte General de Socios','reporte_socios')" class="btn btn-outline">Descargar PDF</button>
+        <button onclick="descargarPDF('contenido-socios','Reporte General de Socios',new Date().toISOString().slice(0,10)+'_Reporte_Socios')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -128,7 +128,7 @@ tbody tr:hover { background:#f8fafc; }
     </div>
     <div class="action-print no-print">
         <button onclick="imprimirPDFFinancieroGeneral()" class="btn btn-primary">Imprimir PDF General</button>
-        <button onclick="descargarPDF('contenido-financiero','Reporte Financiero','reporte_financiero')" class="btn btn-outline">Descargar PDF</button>
+        <button onclick="descargarPDF('contenido-financiero','Reporte Financiero',new Date().toISOString().slice(0,10)+'_Reporte_Financiero')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -151,8 +151,7 @@ tbody tr:hover { background:#f8fafc; }
     <div id="contenido-asistencia" class="empty-state">Cargando...</div>
     <div class="action-print no-print">
         <button onclick="imprimirContenido('contenido-asistencia')" class="btn btn-primary">Exportar PDF</button>
-        <button onclick="descargarPDF('contenido-asistencia','Reporte de Asistencia','reporte_asistencia')" class="btn btn-outline">Descargar PDF</button>
-        <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
+        <button onclick="descargarPDF('contenido-asistencia','Reporte de Asistencia',new Date().toISOString().slice(0,10)+'_Reporte_Asistencia')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -177,8 +176,8 @@ tbody tr:hover { background:#f8fafc; }
         <div id="detalle-clases" class="detalle-socio"></div>
     </div>
     <div class="action-print no-print">
-        <button onclick="imprimirPDFClasesGeneral()" class="btn btn-primary">Imprimir PDF General</button>
-        <button onclick="descargarPDF('contenido-clases','Reporte de Clases','reporte_clases')" class="btn btn-outline">Descargar PDF</button>
+        <button onclick="imprimirPDFClasesGeneral()" class="btn btn-primary">Exportar PDF</button>
+        <button onclick="descargarPDF('contenido-clases','Reporte de Clases',new Date().toISOString().slice(0,10)+'_Reporte_Clases')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -203,8 +202,7 @@ tbody tr:hover { background:#f8fafc; }
     <div id="contenido-equipamiento" class="empty-state">Cargando...</div>
     <div class="action-print no-print">
         <button onclick="imprimirContenido('contenido-equipamiento')" class="btn btn-primary">Exportar PDF</button>
-        <button onclick="descargarPDF('contenido-equipamiento','Reporte de Equipamiento','reporte_equipamiento')" class="btn btn-outline">Descargar PDF</button>
-        <button onclick="window.print()" class="btn btn-outline">Imprimir</button>
+        <button onclick="descargarPDF('contenido-equipamiento','Reporte de Equipamiento',new Date().toISOString().slice(0,10)+'_Reporte_Equipamiento')" class="btn btn-outline">Descargar PDF</button>
     </div>
 </div>
 
@@ -251,8 +249,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-financiero-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-financiero-content')" class="btn btn-primary">Exportar PDF</button>
-            <button onclick="descargarPDF('admin-financiero-content','Reporte Financiero Admin','reporte_financiero_admin')" class="btn btn-outline">Descargar PDF</button>
-            <button onclick="imprimirContenido('admin-financiero-content')" class="btn btn-outline">Imprimir</button>
+            <button onclick="descargarPDF('admin-financiero-content','Reporte Financiero Admin',new Date().toISOString().slice(0,10)+'_Reporte_Financiero')" class="btn btn-outline">Descargar PDF</button>
         </div>
     </div>
 </div>
@@ -279,8 +276,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-equipos-content"><div class="empty-state">Seleccione un filtro y presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-primary">Exportar PDF</button>
-            <button onclick="descargarPDF('admin-equipos-content','Reporte de Equipos Admin','reporte_equipos_admin')" class="btn btn-outline">Descargar PDF</button>
-            <button onclick="imprimirContenido('admin-equipos-content')" class="btn btn-outline">Imprimir</button>
+            <button onclick="descargarPDF('admin-equipos-content','Reporte de Equipos',new Date().toISOString().slice(0,10)+'_Reporte_Equipos')" class="btn btn-outline">Descargar PDF</button>
         </div>
     </div>
 </div>
@@ -305,8 +301,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-desempeno-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-primary">Exportar PDF</button>
-            <button onclick="descargarPDF('admin-desempeno-content','Reporte de Desempeño','reporte_desempeno')" class="btn btn-outline">Descargar PDF</button>
-            <button onclick="imprimirContenido('admin-desempeno-content')" class="btn btn-outline">Imprimir</button>
+            <button onclick="descargarPDF('admin-desempeno-content','Reporte de Desempeño',new Date().toISOString().slice(0,10)+'_Reporte_Desempeno')" class="btn btn-outline">Descargar PDF</button>
         </div>
     </div>
 </div>
@@ -327,8 +322,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-membresias-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-primary">Exportar PDF</button>
-            <button onclick="descargarPDF('admin-membresias-content','Reporte de Membresías','reporte_membresias')" class="btn btn-outline">Descargar PDF</button>
-            <button onclick="imprimirContenido('admin-membresias-content')" class="btn btn-outline">Imprimir</button>
+            <button onclick="descargarPDF('admin-membresias-content','Reporte de Membresías',new Date().toISOString().slice(0,10)+'_Reporte_Membresias')" class="btn btn-outline">Descargar PDF</button>
         </div>
     </div>
 </div>
@@ -349,8 +343,7 @@ tbody tr:hover { background:#f8fafc; }
         <div id="admin-renovaciones-content"><div class="empty-state">Presione Generar Reporte</div></div>
         <div class="action-print no-print">
             <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-primary">Exportar PDF</button>
-            <button onclick="descargarPDF('admin-renovaciones-content','Reporte de Renovaciones','reporte_renovaciones')" class="btn btn-outline">Descargar PDF</button>
-            <button onclick="imprimirContenido('admin-renovaciones-content')" class="btn btn-outline">Imprimir</button>
+            <button onclick="descargarPDF('admin-renovaciones-content','Reporte de Renovaciones',new Date().toISOString().slice(0,10)+'_Reporte_Renovaciones')" class="btn btn-outline">Descargar PDF</button>
         </div>
     </div>
 </div>
@@ -425,9 +418,6 @@ function fetchReporte(reporte, cont, cb) {
         .then(function(r){return r.json();}).then(function(d){
             cont.setAttribute('data-cargado','1');
             cont.innerHTML=renderReporte(reporte,d);
-            if(reporte==='socios') attachSociosClickHandler();
-            if(reporte==='financiero') attachFinancieroClickHandler();
-            if(reporte==='clases') attachClasesClickHandler();
             if(cb) cb();
         }).catch(function(){cont.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar</div>';if(cb) cb();});
 }
@@ -442,13 +432,13 @@ window.renderReporte=function(reporte, d) {
             (d.socios||[]).forEach(function(s){
                 var nom=(s.usuario?s.usuario.nombre1:'')+' '+(s.usuario?s.usuario.apellido1:'');
                 var act=s.membresia&&s.membresia.estadoMembresia=='Activa';
-                h+='<tr class="row-clickable" data-carnet="'+s.carnetSocio+'"><td><strong>'+s.carnetSocio+'</strong></td><td>'+nom+'</td><td>'+(s.usuario?s.usuario.correo:'N/A')+'</td><td>'+(s.usuario?s.usuario.telefono:'N/A')+'</td>';
+                h+='<tr class="row-clickable" data-carnet="'+s.carnetSocio+'" onclick="cargarDetalleSocio(\''+s.carnetSocio+'\')"><td><strong>'+s.carnetSocio+'</strong></td><td>'+nom+'</td><td>'+(s.usuario?s.usuario.correo:'N/A')+'</td><td>'+(s.usuario?s.usuario.telefono:'N/A')+'</td>';
                 h+='<td><span class="badge '+(act?'badge-success':'badge-warning')+'">'+(act?'Activo':'Vencido/Inactivo')+'</span></td>';
                 h+='<td>'+(s.membresia?s.membresia.fechaFinMembresia:'N/A')+'</td>';
                 h+='<td>'+(s.strikes>0?'<span class="badge badge-danger">'+s.strikes+'</span>':'<span style="color:#94a3b8;">0</span>')+'</td></tr>';
             });
             if(!d.socios||!d.socios.length) h+='<tr><td colspan="7" class="empty-state">No hay socios</td></tr>';
-            h+='</tbody></table>'; return h;
+            h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         financiero: function() {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number green">$'+Number(d.totalIngresos||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
@@ -462,10 +452,10 @@ window.renderReporte=function(reporte, d) {
             h+='<table><thead><tr><th>ID Caja</th><th>Sucursal</th><th>Fecha</th><th>Apertura</th><th>Cierre</th><th>Estado</th></tr></thead><tbody>';
             (d.pagos||[]).forEach(function(p){
                 var bc=p.estadoCaja==='Abierta'?'badge-green':p.estadoCaja==='Cerrada'?'badge-amber':'badge-blue';
-                h+='<tr class="row-clickable" data-idcaja="'+p.idCaja+'"><td><strong>'+p.idCaja+'</strong></td><td>'+(p.sucursalNombre||'N/A')+'</td><td>'+p.fechaApertura+'</td><td>$'+Number(p.montoApertura).toFixed(2)+'</td><td>$'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
+                h+='<tr class="row-clickable" data-idcaja="'+p.idCaja+'" onclick="cargarDetalleFinanciero('+p.idCaja+')"><td><strong>'+p.idCaja+'</strong></td><td>'+(p.sucursalNombre||'N/A')+'</td><td>'+p.fechaApertura+'</td><td>$'+Number(p.montoApertura).toFixed(2)+'</td><td>$'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
             });
             if(!d.pagos||!d.pagos.length) h+='<tr><td colspan="6" class="empty-state">No hay pagos</td></tr>';
-            h+='</tbody></table>'; return h;
+            h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         asistencia: function() {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.totalAsistencias||0)+'</div><div class="label">Total Asistencias</div></div>';
@@ -482,17 +472,20 @@ window.renderReporte=function(reporte, d) {
                 h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td>'+sa+'</td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
             });
             if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="8" class="empty-state">No hay asistencias</td></tr>';
-            h+='</tbody></table>'; return h;
+            h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         clases: function() {
             var h='<table><thead><tr><th>Clase</th><th>Instructor</th><th>Fecha</th><th>Hora</th><th>Capacidad</th><th>Reservados</th><th>Asistieron</th><th>Ocupacion</th></tr></thead><tbody>';
             (d.estadisticas||[]).forEach(function(c){
                 var pct=c.ocupacion||0;
                 var barBg=pct>80?'#dc2626':pct>50?'#d97706':'#16a34a';
-                h+='<tr class="row-clickable" data-idclase="'+c.idClaseGrupal+'"><td><strong>'+c.nombre+'</strong></td><td>'+c.instructor+'</td><td>'+c.fecha+'</td><td>'+(c.horaInicio?c.horaInicio.substring(0,5):'')+' - '+(c.horaFin?c.horaFin.substring(0,5):'')+'</td><td>'+c.capacidad+'</td><td>'+c.reservados+'</td><td>'+c.asistieron+'</td><td><div class="ocupacion-bar"><div class="ocupacion-fill" style="width:'+pct+'%;background:'+barBg+';"></div><span class="ocupacion-text">'+pct+'%</span></div></td></tr>';
+                h+='<tr class="row-clickable" data-idclase="'+c.idClaseGrupal+'" onclick="cargarDetalleClase('+c.idClaseGrupal+')"><td><strong>'+c.nombre+'</strong></td><td>'+c.instructor+'</td><td>'+c.fecha+'</td>';
+                h+='<td>'+(c.horaInicio?c.horaInicio.substring(0,5):'')+' - '+(c.horaFin?c.horaFin.substring(0,5):'')+'</td>';
+                h+='<td>'+c.capacidad+'</td><td>'+c.reservados+'</td><td>'+c.asistieron+'</td>';
+                h+='<td><div class="ocupacion-bar"><div class="ocupacion-fill" style="width:'+pct+'%;background:'+barBg+';"></div><span class="ocupacion-text">'+pct+'%</span></div></td></tr>';
             });
             if(!d.estadisticas||!d.estadisticas.length) h+='<tr><td colspan="8" class="empty-state">No hay clases</td></tr>';
-            h+='</tbody></table>'; return h;
+            h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         equipamiento: function() {
             var e=d.estadisticas||{};
@@ -507,7 +500,7 @@ window.renderReporte=function(reporte, d) {
                 h+='<tr><td>'+eq.idEquipo+'</td><td><strong>'+eq.nombreEquipo+'</strong></td><td>'+(eq.modelo||'N/A')+'</td><td><span class="badge '+bc+'">'+eq.estadoEquipo+'</span></td><td>'+(eq.fechaAdquisicion||'N/A')+'</td></tr>';
             });
             if(!d.equipos||!d.equipos.length) h+='<tr><td colspan="5" class="empty-state">No hay equipos</td></tr>';
-            h+='</tbody></table>'; return h;
+            h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         }
     };
     return (renderers[reporte]||function(){return '<div class="empty-state">Reporte no disponible</div>';})();
@@ -519,48 +512,56 @@ function stripNoPrint(html){
     d.querySelectorAll('.no-print').forEach(function(el){el.remove();});
     return d.innerHTML;
 }
+function imprimirHTML(html, titulo){
+    var iframe=document.createElement('iframe');
+    iframe.style.position='fixed';iframe.style.width='0';iframe.style.height='0';iframe.style.border='none';
+    document.body.appendChild(iframe);
+    var doc=iframe.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><title>'+titulo+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}h2{margin-bottom:1rem;}.row-clickable{cursor:default;}</style></head><body>');
+    doc.write(html);
+    doc.write(pieReporte());
+    doc.write('</body></html>');
+    doc.close();
+    setTimeout(function(){iframe.contentWindow.print();document.body.removeChild(iframe);},500);
+}
 var usuarioReporte='{{ session("usuario") ? session("usuario")->nombre1." ".session("usuario")->nombre2." ".session("usuario")->apellido1." ".session("usuario")->apellido2 : "Usuario" }}';
 function pieReporte(){
     var now=new Date();
     var f=now.getDate().toString().padStart(2,'0')+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getFullYear()+' '+now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
     return '<div style="position:fixed;bottom:10px;right:20px;font-size:0.75rem;color:#94a3b8;text-align:right;">Generado por: '+usuarioReporte+'<br>'+f+'</div>';
 }
+function footerReporteHTML(){
+    var now=new Date();
+    var f=now.getDate().toString().padStart(2,'0')+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getFullYear()+' '+now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    return '<div style="margin-top:1.5rem;padding-top:0.75rem;border-top:1px solid #e2e8f0;font-size:0.75rem;color:#94a3b8;text-align:right;">Generado por: '+usuarioReporte+' | '+f+'</div>';
+}
 function descargarPDF(contenidoId, titulo, nombreArchivo) {
     var original=document.getElementById(contenidoId);
     if(!original) return;
     var html=stripNoPrint(original.innerHTML);
-    var f=document.createElement('form');
-    f.method='POST';f.action='/reportes/generar-pdf';
-    f.style.display='none';
-    var inp=document.createElement('input');
-    inp.type='hidden';inp.name='_token';inp.value='{{ csrf_token() }}';
-    f.appendChild(inp);
-    var inp2=document.createElement('input');
-    inp2.type='hidden';inp2.name='html';inp2.value=html;
-    f.appendChild(inp2);
-    var inp3=document.createElement('input');
-    inp3.type='hidden';inp3.name='nombreArchivo';inp3.value=nombreArchivo;
-    f.appendChild(inp3);
-    var inp4=document.createElement('input');
-    inp4.type='hidden';inp4.name='titulo';inp4.value=titulo;
-    f.appendChild(inp4);
-    var inp5=document.createElement('input');
-    inp5.type='hidden';inp5.name='usuario';inp5.value=usuarioReporte;
-    f.appendChild(inp5);
-    document.body.appendChild(f);
-    f.submit();
-    document.body.removeChild(f);
+    var csrf=document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||'';
+    fetch('/reportes/generar-pdf',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'X-Requested-With':'XMLHttpRequest'},
+        body:JSON.stringify({html:html,titulo:titulo,nombreArchivo:nombreArchivo,usuario:usuarioReporte})
+    }).then(function(r){
+        if(!r.ok) throw new Error('Error '+r.status);
+        return r.blob();
+    }).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;a.download=nombreArchivo+'.pdf';
+        document.body.appendChild(a);a.click();
+        document.body.removeChild(a);URL.revokeObjectURL(url);
+    }).catch(function(e){
+        console.error('Error PDF:',e);
+        alert('Error al descargar el PDF. Verifique la consola para detalles.');
+    });
 }
 
 function imprimirContenido(id) {
     var c=stripNoPrint(document.getElementById(id).innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Reporte</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}</style></head><body>');
-    w.document.write(c);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    imprimirHTML(c,'Reporte');
 }
 
 function cargarAdminFinanciero(btn) {
@@ -588,7 +589,7 @@ function cargarAdminFinanciero(btn) {
                 h+='<tr><td><strong>#'+r.idRecibo+'</strong></td><td>'+(r.sucursal||'')+'</td><td>'+socio+'</td><td>'+(r.fechaPago||'')+'</td><td style="font-size:0.8rem;">'+(r.metodos_pago||'')+'</td><td><strong>$'+Number(r.montoTotal||0).toFixed(2)+'</strong></td><td><span class="badge '+bc+'">'+r.estadoRecibo+'</span></td></tr>';
             });
             h+='</tbody></table>';}else{h+='<div class="empty-state">No hay transacciones</div>';}
-            c.innerHTML=h;
+            h+=footerReporteHTML(); c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-financiero-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
@@ -633,7 +634,7 @@ function cargarAdminEquipos(btn) {
                 h+='<tr><td>'+(m.nombreEquipo||m.idEquipo||'')+'</td><td>'+(m.fechaProgramada||'')+'</td><td>'+(m.fechaRealizada||'-')+'</td><td>$'+Number(m.costoMantenimiento||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+(m.estadoMantenimiento||'')+'</span></td></tr>';
             });
             h+='</tbody></table></div>';}else{h+='<div class="empty-state">Sin mantenimientos registrados</div>';}
-            h+='</div></div>';c.innerHTML=h;
+            h+=footerReporteHTML();c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-equipos-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Buscar';btn.disabled=false;}});
 }
@@ -647,7 +648,7 @@ function cargarAdminDesempeno(btn) {
             if(!d||!d.length){c.innerHTML='<div class="empty-state">No se encontraron asistencias</div>';return;}
             var h='<div style="margin-bottom:1rem;font-size:0.9rem;color:#64748b;">Total: <strong>'+d.length+'</strong> registros</div><table><thead><tr><th>Empleado</th><th>Carnet</th><th>Entrada</th><th>Salida</th></tr></thead><tbody>';
             d.forEach(function(a){var en=new Date(a.fechaHoraEntrada).toLocaleString('es-ES');var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleString('es-ES'):'Turno Activo';h+='<tr><td><strong>'+a.nombre1+' '+a.apellido1+'</strong></td><td>'+a.carnetEmpleado+'</td><td>'+en+'</td><td>'+sa+'</td></tr>';});
-            h+='</tbody></table>';c.innerHTML=h;
+            h+='</tbody></table>';h+=footerReporteHTML();c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-desempeno-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
@@ -665,7 +666,7 @@ function cargarAdminMembresias(btn) {
             d.membresias.forEach(function(m){
                 h+='<tr><td><strong>'+m.nombrePlan+'</strong></td><td>$'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.total_vendidas+'</td><td>$'+Number(m.ingresos_totales).toFixed(2)+'</td></tr>';
             });
-            h+='</tbody></table>';c.innerHTML=h;
+            h+='</tbody></table>';h+=footerReporteHTML();c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-membresias-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
@@ -684,7 +685,7 @@ function cargarAdminRenovaciones(btn) {
                 var bc=r.estadoMembresia==='Activa'?'badge-success':r.estadoMembresia==='Vencida'?'badge-warning':'badge-gray';
                 h+='<tr><td><strong>'+r.nombre_socio+'</strong></td><td>'+r.carnetSocio+'</td><td>'+r.nombrePlan+'</td><td>'+r.fechaInicioMembresia+'</td><td>'+r.fechaFinMembresia+'</td><td><span class="badge '+bc+'">'+r.estadoMembresia+'</span></td><td>#'+r.num_membresia+'</td></tr>';
             });
-            h+='</tbody></table>';c.innerHTML=h;
+            h+='</tbody></table>';h+=footerReporteHTML();c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-renovaciones-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
         .finally(function(){if(btn){btn.innerHTML='Generar Reporte';btn.disabled=false;}});
 }
@@ -693,15 +694,6 @@ var timeoutBusquedaSocios=null;
 function programarBusquedaSocios(){
     if(timeoutBusquedaSocios) clearTimeout(timeoutBusquedaSocios);
     timeoutBusquedaSocios=setTimeout(function(){recargarRF('socios');},300);
-}
-
-function attachSociosClickHandler(){
-    document.querySelectorAll('#contenido-socios .row-clickable').forEach(function(el){
-        el.addEventListener('click',function(e){
-            var carnet=this.getAttribute('data-carnet');
-            if(carnet) cargarDetalleSocio(carnet);
-        });
-    });
 }
 
 function cargarDetalleSocio(carnet){
@@ -739,45 +731,26 @@ function cargarDetalleSocio(carnet){
             if(!d.clasesFuturas||!d.clasesFuturas.length) h+='<tr><td colspan="4" class="empty-state">Sin clases futuras</td></tr>';
             h+='</tbody></table>';
 
-            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFSocio('+carnet+')" class="btn btn-primary">Imprimir PDF Socio</button> <button onclick="descargarPDF(\'detalle-socio\',\'Ficha Socio - Carnet #'+carnet+'\',\'socio_\'+carnet+\')" class="btn btn-outline">Descargar PDF</button></div>';
-
+            var socioNombre=((d.socio.usuario?d.socio.usuario.nombre1+' '+d.socio.usuario.apellido1:'Socio')||'Socio').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+            var fechaHoy=new Date().toISOString().slice(0,10);
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFSocio('+carnet+')" class="btn btn-primary">Imprimir PDF Socio</button> <button onclick="descargarPDF(\'detalle-socio\',\'Ficha Socio - Carnet #'+carnet+'\',\''+carnet+'_'+socioNombre+'_'+fechaHoy+'\')" class="btn btn-outline">Descargar PDF</button></div>';
+            h+=footerReporteHTML();
             detail.innerHTML=h;
             detail.classList.add('visible');
-        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';detail.classList.add('visible');});
 }
 
 function imprimirPDFGeneral(){
     var content=stripNoPrint(document.getElementById('contenido-socios').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Reporte General de Socios</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Reporte General de Socios</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    content='<h2 style="margin-bottom:1rem;">Reporte General de Socios</h2>'+content;
+    imprimirHTML(content,'Reporte General de Socios');
 }
 
 function imprimirPDFSocio(carnet){
     if(!carnet) return;
     var content=stripNoPrint(document.getElementById('detalle-socio').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Detalle Socio - '+carnet+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Socio - Carnet #'+carnet+'</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
-}
-
-function attachFinancieroClickHandler(){
-    document.querySelectorAll('#contenido-financiero .row-clickable').forEach(function(el){
-        el.addEventListener('click',function(e){
-            var idCaja=this.getAttribute('data-idcaja');
-            if(idCaja) cargarDetalleFinanciero(idCaja);
-        });
-    });
+    content='<h2 style="margin-bottom:1rem;">Detalle de Socio - Carnet #'+carnet+'</h2>'+content;
+    imprimirHTML(content,'Detalle Socio - '+carnet);
 }
 
 function cargarDetalleFinanciero(idCaja){
@@ -807,55 +780,46 @@ function cargarDetalleFinanciero(idCaja){
             h+='</tbody></table>';
             h+='<div style="text-align:right;font-size:0.9rem;"><strong>Total Salidas: $'+Number(d.totalSalidas||0).toFixed(2)+'</strong></div>';
 
-            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFFinancieroDetalle('+idCaja+')" class="btn btn-primary">Imprimir PDF Caja</button> <button onclick="descargarPDF(\'detalle-financiero\',\'Detalle de Caja #'+idCaja+'\',\'caja_\'+idCaja+\')" class="btn btn-outline">Descargar PDF</button></div>';
-
+            var sucursalNombreSanitized=(d.caja.sucursalNombre||'Sucursal').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+            var fechaHoy=new Date().toISOString().slice(0,10);
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFFinancieroDetalle('+idCaja+')" class="btn btn-primary">Imprimir PDF Caja</button> <button onclick="descargarPDF(\'detalle-financiero\',\'Detalle de Caja #'+idCaja+'\',\''+idCaja+'_'+sucursalNombreSanitized+'_'+fechaHoy+'\')" class="btn btn-outline">Descargar PDF</button></div>';
+            h+=footerReporteHTML();
             detail.innerHTML=h;
             detail.classList.add('visible');
-        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';detail.classList.add('visible');});
 }
 
 function imprimirPDFFinancieroGeneral(){
     var content=stripNoPrint(document.getElementById('contenido-financiero').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Reporte Financiero</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Reporte Financiero</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    content='<h2 style="margin-bottom:1rem;">Reporte Financiero</h2>'+content;
+    imprimirHTML(content,'Reporte Financiero');
 }
 
 function imprimirPDFFinancieroDetalle(idCaja){
     if(!idCaja) return;
     var content=stripNoPrint(document.getElementById('detalle-financiero').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Detalle Caja #'+idCaja+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Caja #'+idCaja+'</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    content='<h2 style="margin-bottom:1rem;">Detalle de Caja #'+idCaja+'</h2>'+content;
+    imprimirHTML(content,'Detalle Caja - '+idCaja);
 }
 
-function attachClasesClickHandler(){
-    document.querySelectorAll('#contenido-clases .row-clickable').forEach(function(el){
-        el.addEventListener('click',function(e){
-            var idClase=this.getAttribute('data-idclase');
-            if(idClase) cargarDetalleClase(idClase);
-        });
-    });
-}
-
+var _cargandoDetalleClase=0;
 function cargarDetalleClase(idClase){
+    if(_cargandoDetalleClase) return;
+    _cargandoDetalleClase=1;
     var detail=document.getElementById('detalle-clases');
     detail.innerHTML='<div class="empty-state">Cargando detalle...</div>';
     detail.classList.remove('visible');
     fetch('/reportes/clases/'+idClase,{headers:{'Accept':'application/json'}})
-        .then(function(r){return r.json();}).then(function(d){
+        .then(function(r){
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            return r.text();
+        }).then(function(txt){
+            var d=JSON.parse(txt);
+            if(!d||!d.clase) throw new Error('Respuesta sin clase');
             var c=d.clase;
-            var h='<div class="socio-header"><div><div class="nombre">'+c.nombreActividad+'</div><div class="carnet">'+c.fecha+' | '+c.horaInicio.substring(0,5)+' - '+c.horaFin.substring(0,5)+' | Instructor: '+c.instructor+'</div></div><div><span class="badge badge-blue">Capacidad: '+c.capacidad+'</span> <span class="badge badge-success">Reservados: '+c.totalReservas+'</span> <span class="badge badge-amber">Asistieron: '+c.asistieron+'</span></div></div>';
+            var hi=c.horaInicio?c.horaInicio.substring(0,5):'--:--';
+            var hf=c.horaFin?c.horaFin.substring(0,5):'--:--';
+            var h='<div class="socio-header"><div><div class="nombre">'+c.nombreActividad+'</div><div class="carnet">'+c.fecha+' | '+hi+' - '+hf+' | Instructor: '+c.instructor+'</div></div><div><span class="badge badge-blue">Capacidad: '+c.capacidad+'</span> <span class="badge badge-success">Reservados: '+c.totalReservas+'</span> <span class="badge badge-amber">Asistieron: '+c.asistieron+'</span></div></div>';
 
             h+='<h4>Socios que Reservaron ('+(d.socios||[]).length+')</h4>';
             h+='<table><thead><tr><th>Socio</th><th>Carnet</th><th>Reserva</th><th>Estado</th></tr></thead><tbody>';
@@ -866,39 +830,43 @@ function cargarDetalleClase(idClase){
             if(!d.socios||!d.socios.length) h+='<tr><td colspan="4" class="empty-state">Sin reservas</td></tr>';
             h+='</tbody></table>';
 
-            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="imprimirPDFClasesDetalle('+idClase+')" class="btn btn-primary">Imprimir PDF Clase</button> <button onclick="descargarPDF(\'detalle-clases\',\'Detalle de Clase #'+idClase+'\',\'clase_\'+idClase+\')" class="btn btn-outline">Descargar PDF</button></div>';
-
+            var claseNombre=String(c.nombreActividad||'Clase').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+            var ciInstructor=String(c.carnetInstructor||'sin_ci').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+            var fechaHoy=new Date().toISOString().slice(0,10);
+            h+='<div class="no-print" style="margin-top:1rem;text-align:right;"><button onclick="descargarPDF(\'detalle-clases\',\'Detalle de Clase #'+idClase+'\',\''+claseNombre+'_'+ciInstructor+'_'+fechaHoy+'\')" class="btn btn-outline">Descargar PDF</button></div>';
+            h+=footerReporteHTML();
             detail.innerHTML=h;
             detail.classList.add('visible');
-        }).catch(function(){detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error al cargar detalle</div>';});
+            _cargandoDetalleClase=0;
+        }).catch(function(e){
+            console.error('cargarDetalleClase error:',e);
+            detail.innerHTML='<div class="empty-state" style="color:#ef4444;">Error: '+(e.message||'desconocido')+'</div>';
+            detail.classList.add('visible');
+            _cargandoDetalleClase=0;
+        });
 }
 
 function imprimirPDFClasesGeneral(){
     var content=stripNoPrint(document.getElementById('contenido-clases').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Reporte de Clases</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}.stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}.stat-card .label{font-size:0.8rem;color:#64748b;}.row-clickable{cursor:default;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Reporte de Clases Grupales</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    content='<h2 style="margin-bottom:1rem;">Reporte de Clases Grupales</h2>'+content;
+    imprimirHTML(content,'Reporte de Clases');
 }
 
 function imprimirPDFClasesDetalle(idClase){
     if(!idClase) return;
     var content=stripNoPrint(document.getElementById('detalle-clases').innerHTML);
-    var w=window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><title>Detalle Clase #'+idClase+'</title><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700" rel="stylesheet"><style>body{font-family:Inter,sans-serif;padding:20px;padding-bottom:40px;}table{width:100%;border-collapse:collapse;margin-bottom:1rem;}th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}.badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}.badge-green,.badge-success{background:#dcfce7;color:#166534;}.badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}.badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}.badge-blue{background:#dbeafe;color:#1e40af;}.badge-gray{background:#f1f5f9;color:#475569;}.socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}.socio-header .nombre{font-size:1.1rem;font-weight:700;}.socio-header .carnet{color:#64748b;font-size:0.85rem;}h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}</style></head><body>');
-    w.document.write('<h2 style="margin-bottom:1rem;">Detalle de Clase</h2>');
-    w.document.write(content);
-    w.document.write(pieReporte());
-    w.document.write('</body></html>');
-    w.document.close();
-    setTimeout(function(){w.print();},500);
+    content='<h2 style="margin-bottom:1rem;">Detalle de Clase</h2>'+content;
+    imprimirHTML(content,'Detalle Clase');
 }
 
 document.addEventListener('DOMContentLoaded',function(){
+    document.getElementById('contenido-clases').addEventListener('click',function(e){
+        var row=e.target.closest('.row-clickable');
+        if(row){
+            var idClase=row.getAttribute('data-idclase');
+            if(idClase) cargarDetalleClase(idClase);
+        }
+    });
     setTimeout(function(){
         var btn=document.querySelector('.tab-btn.active');if(btn)btn.click();
         cargarAdminEquipos();

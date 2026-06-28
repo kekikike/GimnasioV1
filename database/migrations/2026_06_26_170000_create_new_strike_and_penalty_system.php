@@ -149,6 +149,12 @@ CREATE PROCEDURE sp_TSocios_AplicarStrike(
 )
 BEGIN
     DECLARE v_diasSuspension INT;
+    DECLARE v_strikesAnteriores INT DEFAULT 0;
+
+    -- Capturar strikes actuales antes del incremento
+    SELECT strikes INTO v_strikesAnteriores
+    FROM TSocios
+    WHERE carnetSocio = p_carnetSocio;
 
     -- Insertar registro de penalización
     INSERT INTO TPenalizaciones (carnetSocio, idReserva, fecha, estado, usuarioA)
@@ -178,7 +184,7 @@ BEGIN
         'Fecha de levantamiento: ', DATE_ADD(p_fechaHoy, INTERVAL v_diasSuspension DAY), '.'
     );
 
-    -- Auditoría
+    -- Auditoría: nuevo registro en TPenalizaciones
     INSERT INTO TAuditorias (tablaNombre, registroId, accion, campo, valorAnterior, valorNuevo, usuarioA, fechaA, direccionIP, detalles)
     VALUES (
         'TPenalizaciones', LAST_INSERT_ID(), 'I',
@@ -189,6 +195,19 @@ BEGIN
         CONCAT('Nuevo strike aplicado. Socio: ', p_carnetSocio,
                '. Total strikes: ', p_nuevosStrikes,
                '. Suspensión: ', v_diasSuspension, ' días.')
+    );
+
+    -- Auditoría: incremento de strikes en TSocios
+    INSERT INTO TAuditorias (tablaNombre, registroId, accion, campo, valorAnterior, valorNuevo, usuarioA, fechaA, direccionIP, detalles)
+    VALUES (
+        'TSocios', p_carnetSocio, 'U',
+        'strikes',
+        CAST(v_strikesAnteriores AS CHAR),
+        CAST(p_nuevosStrikes AS CHAR),
+        p_usuarioA, NOW(), p_direccionIP,
+        CONCAT('Strike incrementado. Socio: ', p_carnetSocio,
+               '. De ', CAST(v_strikesAnteriores AS CHAR),
+               ' a ', CAST(p_nuevosStrikes AS CHAR), ' strikes.')
     );
 END
         ");
