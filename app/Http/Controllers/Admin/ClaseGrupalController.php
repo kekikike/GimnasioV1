@@ -74,7 +74,13 @@ class ClaseGrupalController extends Controller
                     ->where('idClaseGrupal', $clase->idClaseGrupal)
                     ->where('estadoA', 1)
                     ->count();
+                $cuposOcupados = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoReserva', 'Reservado')
+                    ->where('estadoA', 1)
+                    ->count();
                 $clase->totalReservas = $total;
+                $clase->cuposOcupados = $cuposOcupados;
                 return $clase;
             });
 
@@ -201,9 +207,6 @@ class ClaseGrupalController extends Controller
                 ->where('idClaseGrupal', $id)
                 ->where('estadoReserva', 'Reservado')
                 ->update(['estadoReserva' => 'Cancelado']);
-            DB::table('TClaseGrupales')
-                ->where('idClaseGrupal', $id)
-                ->update(['cuposOcupados' => 0]);
         }
 
         return response()->json([
@@ -224,10 +227,6 @@ class ClaseGrupalController extends Controller
             ->where('idClaseGrupal', $id)
             ->where('estadoReserva', 'Reservado')
             ->update(['estadoReserva' => 'Cancelado']);
-
-        DB::table('TClaseGrupales')
-            ->where('idClaseGrupal', $id)
-            ->update(['cuposOcupados' => 0]);
 
         DB::table('tauditorias')->insert([
             'tablaNombre'   => 'TClaseGrupales',
@@ -270,13 +269,18 @@ class ClaseGrupalController extends Controller
         $cancelados = $reservas->filter(fn($r) => in_array($r->estadoReserva, ['Cancelado']))->values();
         $penalizados = $reservas->filter(fn($r) => $r->estadoReserva === 'Penalizado')->values();
         $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+        $cuposOcupados = DB::table('TReservas')
+            ->where('idClaseGrupal', $id)
+            ->where('estadoReserva', 'Reservado')
+            ->where('estadoA', 1)
+            ->count();
 
         return response()->json([
             'participantes' => $participantes,
             'cancelados' => $cancelados,
             'penalizados' => $penalizados,
             'cupoMaximo' => $clase->cupoMaximo ?? 0,
-            'cuposOcupados' => $clase->cuposOcupados ?? 0,
+            'cuposOcupados' => $cuposOcupados,
         ]);
     }
 

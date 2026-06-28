@@ -55,8 +55,13 @@ class EntrenadorController extends Controller
                     ->where('estadoA', 1)
                     ->where('estadoReserva', 'Asistido')
                     ->count();
+                $reservados = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoReserva', 'Reservado')
+                    ->where('estadoA', 1)
+                    ->count();
                 $clase->totalReservas = $total;
-                $clase->reservados = $clase->cuposOcupados;
+                $clase->reservados = $reservados;
                 $clase->asistieron = $asistieron;
                 return $clase;
             });
@@ -90,13 +95,18 @@ class EntrenadorController extends Controller
         $cancelados = $reservas->filter(fn($r) => $r->estadoReserva === 'Cancelado')->values();
         $penalizados = $reservas->filter(fn($r) => $r->estadoReserva === 'Penalizado')->values();
         $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+        $cuposOcupados = DB::table('TReservas')
+            ->where('idClaseGrupal', $id)
+            ->where('estadoReserva', 'Reservado')
+            ->where('estadoA', 1)
+            ->count();
 
         return response()->json([
             'participantes' => $participantes,
             'cancelados' => $cancelados,
             'penalizados' => $penalizados,
             'cupoMaximo' => $clase->cupoMaximo ?? 0,
-            'cuposOcupados' => $clase->cuposOcupados ?? 0,
+            'cuposOcupados' => $cuposOcupados,
         ]);
     }
 
@@ -134,7 +144,6 @@ class EntrenadorController extends Controller
                 'cg.horaInicio',
                 'cg.horaFin',
                 'cg.cupoMaximo',
-                'cg.cuposOcupados',
                 'cg.estadoClase',
                 'a.nombreActividad',
                 's.nombre as nombreSucursal'
@@ -151,8 +160,13 @@ class EntrenadorController extends Controller
                     ->where('estadoA', 1)
                     ->where('estadoReserva', 'Asistido')
                     ->count();
+                $reservados = DB::table('TReservas')
+                    ->where('idClaseGrupal', $clase->idClaseGrupal)
+                    ->where('estadoReserva', 'Reservado')
+                    ->where('estadoA', 1)
+                    ->count();
                 $clase->totalReservas = $total;
-                $clase->reservados = $clase->cuposOcupados;
+                $clase->reservados = $reservados;
                 $clase->asistieron = $asistieron;
 
                 if ($horaActual < $clase->horaInicio) {

@@ -156,10 +156,6 @@ class ReservaController extends Controller
             'usuarioA' => session('usuario')->idUsuario,
         ]);
 
-        DB::table('TClaseGrupales')
-            ->where('idClaseGrupal', $request->idClaseGrupal)
-            ->increment('cuposOcupados');
-
         return response()->json([
             'success' => true,
             'message' => 'Reserva confirmada correctamente.',

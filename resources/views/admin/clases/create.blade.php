@@ -73,17 +73,17 @@
 
             <div class="form-group">
                 <label for="fecha">Fecha *</label>
-                <input type="date" id="fecha" name="fecha" class="form-control" value="{{ old('fecha') }}" required>
+                <input type="date" id="fecha" name="fecha" class="form-control" value="{{ old('fecha', date('Y-m-d')) }}" required>
             </div>
 
             <div class="form-group">
                 <label for="horaInicio">Hora Inicio *</label>
-                <input type="time" id="horaInicio" name="horaInicio" class="form-control" value="{{ old('horaInicio') }}" required>
+                <input type="time" id="horaInicio" name="horaInicio" class="form-control" value="{{ old('horaInicio', date('H:i', strtotime('+1 hour'))) }}" required>
             </div>
 
             <div class="form-group">
                 <label for="horaFin">Hora Fin *</label>
-                <input type="time" id="horaFin" name="horaFin" class="form-control" value="{{ old('horaFin') }}" required>
+                <input type="time" id="horaFin" name="horaFin" class="form-control" value="{{ old('horaFin', date('H:i', strtotime('+2 hours'))) }}" required>
             </div>
 
             <div class="form-group">
