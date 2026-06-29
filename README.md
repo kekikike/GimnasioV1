@@ -96,3 +96,7 @@ recepcionista: kike@gmail.com
 entrenador: max@gmail.com
 
 contraseñas: 123456
+
+### 6. Ejecutar
+
+Localhost:8000
