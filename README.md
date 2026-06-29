@@ -41,7 +41,7 @@ npm install
 ### 3. Configurar el archivo de entorno `.env`
 1. Copia el archivo de ejemplo externo ejecutando este comando en la terminal (o duplícalo manualmente):
    ```bash
-   cp .env.example .env
+   cp .env-example .env
    ```
 2. Abre el nuevo archivo `.env` que se creó y edita las credenciales de tu base de datos local:
    ```env
