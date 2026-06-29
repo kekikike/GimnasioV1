@@ -12,7 +12,7 @@ class ReservaSeeder extends Seeder
         $adminId = DB::table('TUsuarios')->where('correo', 'admin@gimnasio.com')->value('idUsuario');
         $carnetsSocios = [6700001, 6700002, 6700003, 6700004, 6700005];
         $claseIds = DB::table('TClaseGrupales')->where('estadoA', 1)->pluck('idClaseGrupal')->toArray();
-        $estados = ['Reservado', 'Asistido', 'Cancelado', 'Penalizado'];
+        $estados = ['Asistido', 'Asistido', 'Cancelado', 'Penalizado'];
 
         $reservas = [];
         for ($i = 0; $i < 105 && count($claseIds) > 0; $i++) {
