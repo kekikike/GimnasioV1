@@ -407,7 +407,7 @@
 
                 const formData = new FormData();
                 for (let key in formulario.value) {
-                    if (formulario.value[key] !== null && formulario.value[key] !== '') {
+                    if (formulario.value[key] !== null) {
                         formData.append(key, formulario.value[key]);
                     }
                 }

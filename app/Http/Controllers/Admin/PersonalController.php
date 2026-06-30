@@ -105,9 +105,9 @@ class PersonalController extends Controller
             $idUsuario = DB::table('tusuarios')->insertGetId([
                 'idRol'      => $request->idRol,
                 'nombre1'    => $request->nombre1,
-                'nombre2'    => null,
+                'nombre2'    => $request->nombre2,
                 'apellido1'  => $request->apellido1,
-                'apellido2'  => null,
+                'apellido2'  => $request->apellido2,
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'contrasena' => bcrypt($request->contrasena),
@@ -223,7 +223,9 @@ class PersonalController extends Controller
             $updateData = [
                 'idRol'      => $request->idRol,
                 'nombre1'    => $request->nombre1,
+                'nombre2'    => $request->nombre2,
                 'apellido1'  => $request->apellido1,
+                'apellido2'  => $request->apellido2,
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'usuarioA'   => $usuarioA,
