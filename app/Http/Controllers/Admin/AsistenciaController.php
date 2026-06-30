@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class AsistenciaController extends Controller
@@ -55,21 +56,46 @@ class AsistenciaController extends Controller
 
     public function registrarEntrada(Request $request)
     {
-        $request->validate(['carnetEmpleado' => 'required|string|exists:templeados,carnetEmpleado']);
+        $validator = Validator::make($request->all(), [
+            'carnetEmpleado' => 'required|string|exists:templeados,carnetEmpleado',
+        ], [
+            'carnetEmpleado.required' => 'El número de carnet es obligatorio.',
+            'carnetEmpleado.exists' => 'El carnet ingresado no corresponde a un empleado registrado.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first('carnetEmpleado')], 422);
+        }
+
         $usuarioA = Auth::id() ?? 1;
 
         try {
-            $entradaExistente = DB::table('tasistenciaspersonal')
-                ->where('carnetEmpleado', $request->carnetEmpleado)
-                ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
-                ->whereNull('fechaHoraSalida')
-                ->exists();
+            $horario = $this->getHorario($request->carnetEmpleado);
 
-            if ($entradaExistente) {
-                return response()->json(['success' => false, 'message' => 'Ya existe una entrada registrada sin salida para hoy.'], 409);
+            // Un solo registro por d�a por horario
+            if ($horario) {
+                $existeHoy = DB::table('tasistenciaspersonal')
+                    ->where('carnetEmpleado', $request->carnetEmpleado)
+                    ->where('idHorario', $horario->idHorario)
+                    ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
+                    ->exists();
+
+                if ($existeHoy) {
+                    return response()->json(['success' => false, 'message' => 'Ya existe un registro de asistencia para este turno el d�a de hoy.'], 409);
+                }
+            } else {
+                // Sin horario: solo validar que no haya entrada abierta
+                $entradaAbierta = DB::table('tasistenciaspersonal')
+                    ->where('carnetEmpleado', $request->carnetEmpleado)
+                    ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
+                    ->whereNull('fechaHoraSalida')
+                    ->exists();
+
+                if ($entradaAbierta) {
+                    return response()->json(['success' => false, 'message' => 'Ya existe una entrada registrada sin salida para hoy.'], 409);
+                }
             }
 
-            $horario = $this->getHorario($request->carnetEmpleado);
             $ahora = Carbon::now();
 
             $estadoEntrada = null;
@@ -83,7 +109,7 @@ class AsistenciaController extends Controller
                     $estadoEntrada = 'puntual';
                     $msg = 'Entrada registrada - Llegaste a tiempo.';
                 } else {
-                    $estadoEntrada = 'tarde';
+                    $estadoEntrada = 'tardanza';
                     $msg = 'Entrada registrada - Llegaste tarde.';
                 }
 
@@ -96,7 +122,7 @@ class AsistenciaController extends Controller
                 'fechaHoraEntrada' => $ahora,
                 'estadoEntrada' => $estadoEntrada,
                 'estadoSalida' => null,
-                'estadoAsistencia' => $estadoEntrada ?? 'Puntual',
+                'estadoAsistencia' => $estadoEntrada ? 'presente' : 'presente',
                 'usuarioA' => $usuarioA,
                 'fechaA' => now(),
                 'estadoA' => 1
@@ -110,7 +136,17 @@ class AsistenciaController extends Controller
 
     public function registrarSalida(Request $request)
     {
-        $request->validate(['carnetEmpleado' => 'required|string|exists:templeados,carnetEmpleado']);
+        $validator = Validator::make($request->all(), [
+            'carnetEmpleado' => 'required|string|exists:templeados,carnetEmpleado',
+        ], [
+            'carnetEmpleado.required' => 'El número de carnet es obligatorio.',
+            'carnetEmpleado.exists' => 'El carnet ingresado no corresponde a un empleado registrado.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first('carnetEmpleado')], 422);
+        }
+
         $usuarioA = Auth::id() ?? 1;
 
         try {
@@ -136,11 +172,8 @@ class AsistenciaController extends Controller
                     $diferenciaMinutos = $ahora->diffInMinutes($horaSalidaEsperada, false);
 
                     if ($diferenciaMinutos < -10) {
-                        $estadoSalida = 'salió antes';
+                        $estadoSalida = 'temprano';
                         $msg = 'Salida registrada - Te fuiste antes de la hora.';
-                    } elseif ($diferenciaMinutos > 30) {
-                        $estadoSalida = 'salió tarde';
-                        $msg = 'Salida registrada - Te fuiste despues de la hora.';
                     } else {
                         $estadoSalida = 'puntual';
                         $msg = 'Salida registrada - A tiempo.';
@@ -155,7 +188,7 @@ class AsistenciaController extends Controller
                 ->update([
                     'fechaHoraSalida' => $ahora,
                     'estadoSalida' => $estadoSalida,
-                    'estadoAsistencia' => $estadoSalida ?? $asistenciaAbierta->estadoEntrada ?? 'Puntual',
+                    'estadoAsistencia' => 'presente',
                     'usuarioA' => $usuarioA,
                     'fechaA' => now()
                 ]);

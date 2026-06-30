@@ -236,6 +236,8 @@ class ReporteController extends Controller
                 'ap.fechaHoraEntrada',
                 'ap.fechaHoraSalida',
                 'ap.estadoAsistencia',
+                'ap.estadoEntrada',
+                'ap.estadoSalida',
                 'u.nombre1',
                 'u.nombre2',
                 'u.apellido1',
@@ -494,26 +496,27 @@ class ReporteController extends Controller
 
         $fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . e($titulo) . '</title>
         <style>
-            body{font-family:Inter,DejaVu Sans,sans-serif;padding:20px;padding-bottom:40px;}
-            table{width:100%;border-collapse:collapse;}
-            th{text-align:left;padding:0.75rem;font-size:0.8rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;}
-            td{padding:0.75rem;font-size:0.85rem;color:#1e293b;border-bottom:1px solid #f1f5f9;}
-            .badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;}
+            body{font-family:Inter,DejaVu Sans,sans-serif;padding:15px;padding-bottom:40px;font-size:0.75rem;}
+            table{width:100%;border-collapse:collapse;font-size:0.7rem;}
+            th{text-align:left;padding:0.35rem 0.4rem;font-size:0.6rem;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.3px;}
+            td{padding:0.35rem 0.4rem;font-size:0.7rem;color:#1e293b;border-bottom:1px solid #f1f5f9;word-break:break-word;}
+            .badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:999px;font-size:0.6rem;font-weight:600;}
             .badge-green,.badge-success{background:#dcfce7;color:#166534;}
             .badge-amber,.badge-warning{background:#fef3c7;color:#92400e;}
             .badge-red,.badge-danger{background:#fee2e2;color:#991b1b;}
             .badge-blue{background:#dbeafe;color:#1e40af;}
             .badge-gray{background:#f1f5f9;color:#475569;}
-            .stat-card{text-align:center;padding:1rem;display:inline-block;margin:0.5rem;}
-            .stat-card .number{font-size:2rem;font-weight:700;color:#0f172a;}
-            .stat-card .label{font-size:0.8rem;color:#64748b;}
+            .stat-card{text-align:center;padding:0.6rem;display:inline-block;margin:0.3rem;}
+            .stat-card .number{font-size:1.5rem;font-weight:700;color:#0f172a;}
+            .stat-card .label{font-size:0.7rem;color:#64748b;}
             .socio-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
-            .socio-header .nombre{font-size:1.1rem;font-weight:700;}
-            .socio-header .carnet{color:#64748b;font-size:0.85rem;}
-            h4{font-size:0.9rem;font-weight:600;margin:1.25rem 0 0.5rem 0;color:#1e293b;}
-            h2{margin-bottom:1rem;}
+            .socio-header .nombre{font-size:0.95rem;font-weight:700;}
+            .socio-header .carnet{color:#64748b;font-size:0.75rem;}
+            h4{font-size:0.8rem;font-weight:600;margin:1rem 0 0.4rem 0;color:#1e293b;}
+            h2{margin-bottom:0.75rem;font-size:1.1rem;}
             .no-print{display:none!important;}
             .row-clickable{cursor:default;}
+            .stats-grid{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;}
         </style></head><body><h2>' . e($titulo) . '</h2>' . $html . '</body></html>';
 
         $pdf = Pdf::loadHTML($fullHtml);

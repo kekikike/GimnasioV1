@@ -24,7 +24,7 @@
             </ul>
         </div>
 
-        <form @submit.prevent="guardarEmpleado" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
+        <form @submit.prevent="guardarEmpleado" novalidate style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
 
             <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; color: #3b82f6; font-weight: 600;">Datos de Usuario (Acceso al Sistema)</div>
 
@@ -64,9 +64,9 @@
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Teléfono <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :class="{ 'is-invalid': errores.telefono }" required maxlength="15" placeholder="Ej: 71234567">
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :class="{ 'is-invalid': errores.telefono }" required maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.telefono" class="text-danger">@{{ errores.telefono }}</small>
-                <small v-else style="color:#64748b;font-size:0.75em;">Debe iniciar con 6 o 7 (8-15 dígitos)</small>
+                <small v-else style="color:#64748b;font-size:0.75em;">Debe iniciar con 6 o 7 (7-8 dígitos)</small>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">
@@ -262,11 +262,11 @@
             };
 
             const validarTelefono = () => {
-                let val = formulario.value.telefono.replace(/[^0-9]/g, '');
+                let val = String(formulario.value.telefono || '').replace(/[^0-9]/g, '');
                 if (val.length > 0 && val[0] !== '6' && val[0] !== '7') {
                     val = val.substring(1);
                 }
-                if (val.length > 15) val = val.substring(0, 15);
+                if (val.length > 8) val = val.substring(0, 8);
                 formulario.value.telefono = val;
             };
 
@@ -282,9 +282,69 @@
                 formulario.value.carnetEmpleado_confirmation = val;
             };
 
+            const preValidar = () => {
+                const errs = {};
+                const f = formulario.value;
+
+                if (!f.nombre1?.trim()) errs.nombre1 = 'El primer nombre es obligatorio.';
+                else if (f.nombre1.length > 50) errs.nombre1 = 'El nombre no debe exceder 50 caracteres.';
+
+                if (!f.apellido1?.trim()) errs.apellido1 = 'El apellido paterno es obligatorio.';
+                else if (f.apellido1.length > 50) errs.apellido1 = 'El apellido no debe exceder 50 caracteres.';
+
+                if (!f.idRol) errs.idRol = 'Debe seleccionar un rol.';
+
+                if (!f.correo?.trim()) errs.correo = 'El correo electrónico es obligatorio.';
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.correo)) errs.correo = 'Ingrese un correo electrónico válido.';
+
+                const tel = String(f.telefono || '').replace(/\D/g, '');
+                if (!tel) errs.telefono = 'El teléfono es obligatorio.';
+                else if (tel.length < 7 || tel.length > 8) errs.telefono = 'El teléfono debe tener entre 7 y 8 dígitos.';
+                else if (tel[0] !== '6' && tel[0] !== '7') errs.telefono = 'El teléfono debe iniciar con 6 o 7.';
+
+                if (!modoEdicion.value) {
+                    if (!f.carnetEmpleado?.trim()) errs.carnetEmpleado = 'El número de carnet es obligatorio.';
+                    else if (!/^\d+$/.test(f.carnetEmpleado)) errs.carnetEmpleado = 'El carnet solo debe contener números.';
+                    else if (f.carnetEmpleado.length > 10) errs.carnetEmpleado = 'El carnet no debe exceder 10 dígitos.';
+
+                    if (f.carnetEmpleado !== f.carnetEmpleado_confirmation) {
+                        errs.carnetEmpleado_confirmation = 'Los números de carnet no coinciden.';
+                    }
+                }
+
+                if (!modoEdicion.value && !f.contrasena) errs.contrasena = 'La contraseña es obligatoria.';
+                else if (f.contrasena && f.contrasena.length < 8) errs.contrasena = 'La contraseña debe tener al menos 8 caracteres.';
+
+                if (f.contrasena || f.contrasena_confirmation) {
+                    if (f.contrasena !== f.contrasena_confirmation) {
+                        errs.contrasena_confirmation = 'Las contraseñas no coinciden.';
+                    }
+                }
+
+                if (!f.idSucursal) errs.idSucursal = 'Debe seleccionar una sucursal.';
+
+                if (!f.fechaContratoInicio) errs.fechaContratoInicio = 'La fecha de inicio es obligatoria.';
+                else {
+                    const hoy = new Date();
+                    hoy.setHours(23, 59, 59, 0);
+                    const fechaInicio = new Date(f.fechaContratoInicio + 'T23:59:59');
+                    if (fechaInicio > hoy) errs.fechaContratoInicio = 'La fecha de inicio no puede ser en el futuro.';
+                }
+
+                return errs;
+            };
+
             const guardarEmpleado = async () => {
                 guardando.value = true;
                 errores.value = {};
+
+                const errs = preValidar();
+                if (Object.keys(errs).length > 0) {
+                    errores.value = errs;
+                    guardando.value = false;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
 
                 try {
                     const url = modoEdicion.value ? `/admin/personal/${idActual.value}` : `/admin/personal`;
@@ -294,7 +354,7 @@
                     const data = await res.json();
 
                     if (res.ok && data.success) {
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cancelarEdicion();
                         cargarEmpleados();
                     } else if (res.status === 422) {
@@ -303,11 +363,11 @@
                         }
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } else {
-                        alert(data.message || 'Error inesperado. Intente nuevamente.');
+                        mostrarToast(data.message || 'Error inesperado. Intente nuevamente.', 'error');
                     }
                 } catch(e) {
                     console.error("Error guardando:", e);
-                    alert('Error de conexión. Verifique su red e intente nuevamente.');
+                    mostrarToast('Error de conexión. Verifique su red e intente nuevamente.', 'error');
                 } finally {
                     guardando.value = false;
                 }
@@ -345,27 +405,27 @@
             };
 
             const eliminarEmpleado = async (id) => {
-                if (confirm("Esta accion dara de baja al empleado y quedara registrada en la auditoria. Continuar?")) {
+                confirmarAccion("Esta acción dará de baja al empleado y quedará registrada en la auditoría. ¿Continuar?", async function() {
                     const res = await fetch(`/admin/personal/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
-                    if (data.success) { alert(data.message); cargarEmpleados(); }
-                }
+                    if (data.success) { mostrarToast(data.message, 'success'); cargarEmpleados(); }
+                });
             };
 
             const confirmarContrato = async (emp) => {
-                if (confirm(`Finalizar contrato de ${nombreCompleto(emp)} (CI: ${emp.carnetEmpleado})? Se dara de baja al empleado.`)) {
+                confirmarAccion(`Finalizar contrato de ${nombreCompleto(emp)} (CI: ${emp.carnetEmpleado})? Se dará de baja al empleado.`, async function() {
                     const res = await fetch(`/admin/personal/${emp.carnetEmpleado}/acabar-contrato`, { method: 'PUT', headers: headers });
                     const data = await res.json();
-                    if (data.success) { alert(data.message); cargarEmpleados(); }
-                }
+                    if (data.success) { mostrarToast(data.message, 'success'); cargarEmpleados(); }
+                });
             };
 
             const reactivarEmpleado = async (id) => {
-                if (confirm("Reactivar este empleado? Se restablecera su estado activo y se limpiara la fecha de fin de contrato.")) {
+                confirmarAccion("Reactivar este empleado? Se restablecerá su estado activo y se limpiará la fecha de fin de contrato.", async function() {
                     const res = await fetch(`/admin/personal/${id}/reactivar`, { method: 'PUT', headers: headers });
                     const data = await res.json();
-                    if (data.success) { alert(data.message); cargarEmpleados(); }
-                }
+                    if (data.success) { mostrarToast(data.message, 'success'); cargarEmpleados(); }
+                });
             };
 
             onMounted(() => {

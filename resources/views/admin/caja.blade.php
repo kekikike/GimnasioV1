@@ -30,7 +30,8 @@
                 </div>
                 <div>
                     <label>Monto apertura (Bs)</label>
-                    <input v-model="montoApertura" type="number" step="0.01" class="form-control" min="0" placeholder="0.00">
+                    <input @input="filtrarMonto($event, montoApertura)" :value="montoApertura" type="text" class="form-control" :class="{ 'is-invalid': errores.montoApertura }" placeholder="0.00">
+                    <small v-if="errores.montoApertura" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.montoApertura }}</small>
                 </div>
                 <div>
                     <button @click="abrirCaja" class="btn btn-primary" style="width:100%;" :disabled="!montoApertura">Abrir Caja</button>
@@ -52,9 +53,11 @@
                 <div style="display:flex; gap:1rem; align-items:end;">
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
-                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0"
+                        <input @input="filtrarMonto($event, montoCierre)" :value="montoCierre" type="text" class="form-control"
+                               :class="{ 'is-invalid': errores.montoCierre }"
                                :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
-                        <small v-if="montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
+                        <small v-if="errores.montoCierre" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.montoCierre }}</small>
+                        <small v-if="!errores.montoCierre && montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
                             <template v-if="diferenciaCierre <= 0.01">Coinciden</template>
                             <template v-else>Diferencia: Bs. {{ formatNum(diferenciaCierre) }}</template>
                         </small>
@@ -160,14 +163,16 @@
             <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:1rem; align-items:end;">
                 <div>
                     <label>Descripcion</label>
-                    <input v-model="descripcionSalida" type="text" class="form-control" placeholder="Ej: Compra de insumos...">
+                    <input v-model="descripcionSalida" type="text" class="form-control" :class="{ 'is-invalid': errores.descripcionSalida }" placeholder="Ej: Compra de insumos...">
+                    <small v-if="errores.descripcionSalida" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.descripcionSalida }}</small>
                 </div>
                 <div>
                     <label>Costo (Bs)</label>
-                    <input v-model="costosalida" type="number" step="0.01" class="form-control" min="0.01" placeholder="0.00">
+                    <input @input="filtrarMonto($event, costosalida)" :value="costosalida" type="text" class="form-control" :class="{ 'is-invalid': errores.costosalida }" placeholder="0.00">
+                    <small v-if="errores.costosalida" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.costosalida }}</small>
                 </div>
                 <div>
-                    <button @click="registrarSalida" class="btn btn-warning" style="width:100%;" :disabled="!descripcionSalida || !costosalida || costosalida <= 0">Registrar Salida</button>
+                    <button @click="registrarSalida" class="btn btn-warning" style="width:100%;">Registrar Salida</button>
                 </div>
             </div>
             <div v-if="salidas.length > 0" style="margin-top:1rem;">
@@ -302,6 +307,16 @@ createApp({
         const salidas = ref([]);
         const descripcionSalida = ref('');
         const costosalida = ref('');
+        const errores = ref({});
+
+        const filtrarMonto = (e, campo) => {
+            let val = String(e.target.value || '').replace(/[^0-9.]/g, '');
+            const pts = val.match(/\./g);
+            if (pts && pts.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+            if (val.startsWith('.')) val = '0' + val;
+            e.target.value = val;
+            campo.value = val;
+        };
 
         const textoStatus = computed(() => {
             if (!cajaAbierta.value) return 'Caja cerrada / no abierta';
@@ -362,19 +377,33 @@ createApp({
         const formatNum = (n) => parseFloat(n || 0).toFixed(2);
         const formatFecha = (d) => { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('es-ES'); };
 
+        const preValidarApertura = () => {
+            const errs = {};
+            const val = String(montoApertura.value || '').replace(/[^0-9.]/g, '');
+            if (!val || parseFloat(val) <= 0) errs.montoApertura = 'El monto de apertura debe ser un número mayor a 0.';
+            return errs;
+        };
+
         const abrirCaja = async () => {
+            errores.value = {};
+            const errs = preValidarApertura();
+            if (Object.keys(errs).length > 0) { errores.value = errs; return; }
+
             const res = await fetch('{{ route("admin.caja.abrir") }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                 body: JSON.stringify({ montoApertura: montoApertura.value })
             });
             const data = await res.json();
-            alert(data.message);
-            if (data.success) { montoApertura.value = ''; cierreObservacion.value = ''; cargarEstado(); cargarMovimientos(); }
+            mostrarToast(data.message, data.success ? 'success' : 'error');
+            if (data.success) { montoApertura.value = ''; cierreObservacion.value = ''; errores.value = {}; cargarEstado(); cargarMovimientos(); }
         };
 
         const cerrarCaja = async () => {
             if (!cajaAbierta.value) return;
+            errores.value = {};
+            const val = String(montoCierre.value || '').replace(/[^0-9.]/g, '');
+            if (!val || parseFloat(val) <= 0) { errores.value = { montoCierre: 'El monto de cierre debe ser un número mayor a 0.' }; return; }
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
             const res = await fetch('{{ url("/admin/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
@@ -383,7 +412,7 @@ createApp({
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            alert(data.message);
+            mostrarToast(data.message, data.success ? 'success' : 'error');
             if (data.success) { montoCierre.value = ''; cierreObservacion.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
         };
 
@@ -408,14 +437,19 @@ createApp({
         };
 
         const registrarSalida = async () => {
-            if (!descripcionSalida.value || !costosalida.value || costosalida.value <= 0) return;
+            errores.value = {};
+            const errsSalida = {};
+            if (!descripcionSalida.value?.trim()) errsSalida.descripcionSalida = 'La descripción es obligatoria.';
+            const costoParse = parseFloat(String(costosalida.value || '').replace(/[^0-9.]/g, ''));
+            if (!costosalida.value || isNaN(costoParse) || costoParse <= 0) errsSalida.costosalida = 'El costo debe ser un número mayor a 0.';
+            if (Object.keys(errsSalida).length > 0) { errores.value = errsSalida; return; }
             const res = await fetch('{{ route("admin.caja.salidas.store") }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
                 body: JSON.stringify({ descripcion: descripcionSalida.value, costo: costosalida.value })
             });
             const data = await res.json();
-            alert(data.message);
+            mostrarToast(data.message, data.success ? 'success' : 'error');
             if (data.success) {
                 descripcionSalida.value = '';
                 costosalida.value = '';
@@ -426,6 +460,7 @@ createApp({
 
         const buscarSocio = async () => {
             if (!socioCarnet.value) return;
+            errores.value = {};
             socioInfo.value = null;
             membresiaActiva.value = null;
             esRenovacion.value = false;
@@ -434,7 +469,7 @@ createApp({
             metodosPagoArr.value = [];
             try {
                 const res = await fetch('{{ url("/admin/caja/buscar-socio") }}/' + socioCarnet.value);
-                if (!res.ok) { alert('Socio no encontrado.'); return; }
+                if (!res.ok) { mostrarToast('Socio no encontrado.', 'error'); return; }
                 const data = await res.json();
                 if (data.success) {
                     socioInfo.value = data.socio;
@@ -447,7 +482,7 @@ createApp({
                         metodosPagoArr.value = [{ idMetodoPago: '', monto: '' }];
                     }
                 }
-            } catch (e) { alert('Error al buscar socio.'); }
+            } catch (e) { mostrarToast('Error al buscar socio.', 'error'); }
         };
 
         const cargarPlanes = async () => {
@@ -480,6 +515,7 @@ createApp({
 
         const registrarRecibo = async () => {
             if (!puedeRegistrar.value) return;
+            errores.value = {};
             const payload = {
                 carnetSocio: socioInfo.value.carnetSocio,
                 idPlan: idPlan.value,
@@ -495,11 +531,11 @@ createApp({
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                    if (data.errors) { const msgs = Object.values(data.errors).flat().join('\n'); alert(msgs); }
-                    else alert(data.message || 'Error al registrar recibo.');
+                    if (data.errors) { const msgs = Object.values(data.errors).flat().join(' | '); mostrarToast(msgs, 'error'); }
+                    else mostrarToast(data.message || 'Error al registrar recibo.', 'error');
                     return;
                 }
-                alert(data.message);
+                mostrarToast(data.message, 'success');
                 socioInfo.value = null;
                 membresiaActiva.value = null;
                 esRenovacion.value = false;
@@ -509,7 +545,7 @@ createApp({
                 metodosPagoArr.value = [];
                 cargarMovimientos();
                 if (data.idRecibo) verRecibo(data.idRecibo);
-            } catch (e) { alert('Error: ' + e.message); }
+            } catch (e) { mostrarToast('Error: ' + e.message, 'error'); }
         };
 
         const verRecibo = async (id) => {
@@ -555,7 +591,7 @@ createApp({
         return {
             cajaAbierta, sucursalNombre, montoApertura, montoCierre, cierreObservacion, metodosPago, planes, movimientos,
             socioCarnet, socioInfo, membresiaActiva, esRenovacion, idPlan, montoTotal, metodosPagoArr,
-            reciboPreview, reciboMetodos,
+            reciboPreview, reciboMetodos, errores, filtrarMonto,
             textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaCierre, planesFiltrados, diferenciaMetodos, puedeRegistrar,
             salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,

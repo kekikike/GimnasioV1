@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ClaseGrupalController extends Controller
 {
@@ -89,7 +90,7 @@ class ClaseGrupalController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'idActividad' => 'required|integer',
             'carnetEmpleado' => 'required|integer',
             'idSucursal' => 'required|integer',
@@ -97,7 +98,26 @@ class ClaseGrupalController extends Controller
             'horaInicio' => 'required',
             'horaFin' => 'required',
             'cupoMaximo' => 'required|integer|min:1',
+        ], [
+            'idActividad.required' => 'Debe seleccionar una actividad.',
+            'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
+            'idSucursal.required' => 'Debe seleccionar una sucursal.',
+            'fecha.required' => 'La fecha es obligatoria.',
+            'horaInicio.required' => 'La hora de inicio es obligatoria.',
+            'horaFin.required' => 'La hora de fin es obligatoria.',
+            'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
+            'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        }
+
+        // Validar duración mínima de 30 minutos
+        $diffMinutos = $this->calcularDiferenciaMinutos($request->horaInicio, $request->horaFin);
+        if ($diffMinutos < 30) {
+            return response()->json(['success' => false, 'message' => 'La duración mínima de la clase debe ser de 30 minutos.'], 422);
+        }
 
         $usuarioA = session('usuario')->idUsuario ?? 1;
         $direccionIP = $request->ip();
@@ -161,7 +181,7 @@ class ClaseGrupalController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'idActividad' => 'required|integer',
             'carnetEmpleado' => 'required|integer',
             'idSucursal' => 'required|integer',
@@ -170,13 +190,25 @@ class ClaseGrupalController extends Controller
             'horaFin' => 'required',
             'cupoMaximo' => 'required|integer|min:1',
             'estadoClase' => 'required|in:Programada,Cursandose,Cancelada',
+        ], [
+            'idActividad.required' => 'Debe seleccionar una actividad.',
+            'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
+            'idSucursal.required' => 'Debe seleccionar una sucursal.',
+            'fecha.required' => 'La fecha es obligatoria.',
+            'horaInicio.required' => 'La hora de inicio es obligatoria.',
+            'horaFin.required' => 'La hora de fin es obligatoria.',
+            'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
+            'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
         ]);
 
-        if ($request->horaFin <= $request->horaInicio) {
-            return response()->json([
-                'success' => false,
-                'message' => 'La hora de fin debe ser posterior a la hora de inicio.',
-            ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        }
+
+        // Validar duración mínima de 30 minutos
+        $diffMinutos = $this->calcularDiferenciaMinutos($request->horaInicio, $request->horaFin);
+        if ($diffMinutos < 30) {
+            return response()->json(['success' => false, 'message' => 'La duración mínima de la clase debe ser de 30 minutos.'], 422);
         }
 
         $usuarioA = session('usuario')->idUsuario ?? 1;
@@ -217,6 +249,18 @@ class ClaseGrupalController extends Controller
 
     public function destroy($id)
     {
+        $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+        if (!$clase) {
+            return response()->json(['success' => false, 'message' => 'Clase no encontrada.'], 404);
+        }
+
+        if (in_array($clase->estadoClase, ['Programada', 'Cursandose'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar una clase que está "' . $clase->estadoClase . '". Cancele la clase primero.'
+            ], 422);
+        }
+
         $usuarioA = session('usuario')->idUsuario ?? 1;
 
         DB::table('TClaseGrupales')
@@ -369,6 +413,15 @@ class ClaseGrupalController extends Controller
             });
 
         return response()->json($clases);
+    }
+
+    private function calcularDiferenciaMinutos($horaInicio, $horaFin)
+    {
+        $partsInicio = explode(':', $horaInicio);
+        $partsFin = explode(':', $horaFin);
+        $minutosInicio = (int)$partsInicio[0] * 60 + (int)$partsInicio[1];
+        $minutosFin = (int)$partsFin[0] * 60 + (int)$partsFin[1];
+        return $minutosFin - $minutosInicio;
     }
 
     private function extraerMensajeError(\Illuminate\Database\QueryException $e)

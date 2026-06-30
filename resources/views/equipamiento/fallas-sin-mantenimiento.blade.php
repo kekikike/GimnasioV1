@@ -84,7 +84,7 @@
             <h3>Iniciar Mantenimiento</h3>
             <button onclick="closeMantoModal()" class="modal-close">&times;</button>
         </div>
-        <form id="mantoForm" method="POST" action="">
+        <form id="mantoForm" method="POST" action="" novalidate>
             @csrf
             <div class="grid-2">
                 <div class="form-group">
@@ -92,17 +92,20 @@
                     <input type="date" name="fechaProgramada" id="manto_fecha" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}" required>
                 </div>
                 <div class="form-group">
-                    <label>Tecnico Asignado</label>
-                    <input type="text" name="tecnicoAsignado" id="manto_tecnico" class="form-control" placeholder="Nombre del tecnico">
+                    <label>Tecnico Asignado <span style="color:#ef4444;">*</span></label>
+                    <input type="text" name="tecnicoAsignado" id="manto_tecnico" class="form-control" required placeholder="Nombre del tecnico">
+                    <small id="error_tecnico" style="color:#ef4444; font-size:0.8em; display:none;">El técnico asignado es obligatorio.</small>
                 </div>
                 <div class="form-group">
-                    <label>Costo Estimado</label>
-                    <input type="number" step="0.01" min="0" name="costoMantenimiento" id="manto_costo" class="form-control" placeholder="0.00">
+                    <label>Costo Estimado (Bs.) <span style="color:#ef4444;">*</span></label>
+                    <input type="text" name="costoMantenimiento" id="manto_costo" class="form-control" required placeholder="0.00" oninput="filtrarMonto(this)">
+                    <small id="error_costo" style="color:#ef4444; font-size:0.8em; display:none;">El costo estimado debe ser un número mayor a 0.</small>
                 </div>
             </div>
             <div class="form-group">
-                <label>Descripcion del Mantenimiento</label>
-                <textarea name="descripcionMantenimiento" id="manto_descripcion" class="form-control" rows="3" placeholder="Describa las tareas a realizar..."></textarea>
+                <label>Descripcion del Mantenimiento <span style="color:#ef4444;">*</span></label>
+                <textarea name="descripcionMantenimiento" id="manto_descripcion" class="form-control" rows="3" required placeholder="Describa las tareas a realizar..."></textarea>
+                <small id="error_descripcion" style="color:#ef4444; font-size:0.8em; display:none;">La descripción del mantenimiento es obligatoria.</small>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-primary">
@@ -116,6 +119,61 @@
 </div>
 
 <script>
+function filtrarMonto(input) {
+    var val = input.value.replace(/[^0-9.]/g, '');
+    var pts = val.match(/\./g);
+    if (pts && pts.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+    if (val.startsWith('.')) val = '0' + val;
+    input.value = val;
+}
+
+function preValidarManto() {
+    var valido = true;
+    var limpiarError = function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; };
+
+    limpiarError('error_tecnico');
+    limpiarError('error_costo');
+    limpiarError('error_descripcion');
+
+    var tecnico = document.getElementById('manto_tecnico').value.trim();
+    if (!tecnico) {
+        document.getElementById('error_tecnico').style.display = 'block';
+        valido = false;
+    }
+
+    var costo = document.getElementById('manto_costo').value.replace(/[^0-9.]/g, '');
+    if (!costo || parseFloat(costo) <= 0) {
+        document.getElementById('error_costo').style.display = 'block';
+        valido = false;
+    }
+
+    var desc = document.getElementById('manto_descripcion').value.trim();
+    if (!desc) {
+        document.getElementById('error_descripcion').style.display = 'block';
+        valido = false;
+    }
+
+    return valido;
+}
+
+(function() {
+    var form = document.getElementById('mantoForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!preValidarManto()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    @if(session('manto_equipo_id'))
+        openMantoModal({{ session('manto_equipo_id') }});
+        document.getElementById('manto_tecnico').value = {{ json_encode(old('tecnicoAsignado', '')) }};
+        document.getElementById('manto_costo').value = {{ json_encode(old('costoMantenimiento', '')) }};
+        document.getElementById('manto_descripcion').value = {{ json_encode(old('descripcionMantenimiento', '')) }};
+    @endif
+})();
+
 function openMantoModal(id) {
     document.getElementById('mantoForm').action = '{{ url("equipamiento") }}/' + id + '/iniciar-mantenimiento';
     document.getElementById('manto_fecha').value = new Date().toISOString().split('T')[0];
@@ -123,6 +181,10 @@ function openMantoModal(id) {
     document.getElementById('manto_costo').value = '';
     document.getElementById('manto_descripcion').value = '';
     document.getElementById('mantoModal').style.display = 'flex';
+    ['error_tecnico','error_costo','error_descripcion'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 }
 
 function closeMantoModal() {

@@ -26,6 +26,11 @@
         .btn:active { transform: scale(0.98); }
         .error { background: #fee2e2; color: #991b1b; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; margin-bottom: 1.25rem; text-align: center; border: 1px solid #fecaca; }
         .footer-text { text-align: center; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid #f1f5f9; font-size: 0.78rem; color: #94a3b8; }
+        .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+        .toast{padding:14px 28px;border-radius:12px;font-size:0.9rem;font-weight:500;color:white;box-shadow:0 8px 32px rgba(0,0,0,0.25);margin-bottom:8px;animation:toastIn .3s ease,toastOut .3s ease 1.7s forwards;pointer-events:auto;max-width:520px;text-align:center;line-height:1.4;}
+        .toast-error{background:#ef4444;}
+        @keyframes toastIn{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
     </style>
 </head>
 <body>
@@ -42,12 +47,12 @@
             <div class="error">{{ $errors->first('correo') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login') }}" novalidate>
             @csrf
             <div class="form-group">
                 <label for="correo">Correo electrónico</label>
                 <div class="input-wrapper">
-                    <input type="email" id="correo" name="correo" class="form-control" value="{{ old('correo') }}" required autofocus placeholder="correo@ejemplo.com">
+                    <input type="text" id="correo" name="correo" class="form-control" value="{{ old('correo') }}" required autofocus placeholder="correo@ejemplo.com">
                 </div>
             </div>
             <div class="form-group">
@@ -89,6 +94,21 @@
                 btn.title = 'Mostrar contraseña';
             }
         }
+        function mostrarToast(m,t){t=t||'success';var c=document.querySelector('.toast-container');if(!c){c=document.createElement('div');c.className='toast-container';document.body.appendChild(c)}var o=document.createElement('div');o.className='toast toast-'+t;o.textContent=m;c.appendChild(o);setTimeout(function(){if(o.parentNode)o.parentNode.removeChild(o)},2000)}
+        document.querySelector('form').addEventListener('submit',function(e){
+            var err=document.querySelector('.error');
+            if(err)err.style.display='none';
+            var c=document.getElementById('correo');
+            var p=document.getElementById('contrasena');
+            var msgs=[];
+            if(!c.value.trim())msgs.push('El correo electrónico es obligatorio.');
+            else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.value.trim()))msgs.push('Ingrese un correo electrónico válido.');
+            if(!p.value)msgs.push('La contraseña es obligatoria.');
+            if(msgs.length){
+                e.preventDefault();
+                mostrarToast(msgs.join(' | '),'error');
+            }
+        });
     </script>
 </body>
 </html>

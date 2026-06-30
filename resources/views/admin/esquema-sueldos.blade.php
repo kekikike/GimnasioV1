@@ -36,8 +36,8 @@
                 <tr v-for="e in esquemas" :key="e.idEsquemaSueldo">
                     <td><strong>@{{ e.nombre1 }} @{{ e.apellido1 }}</strong> <span style="color:#94a3b8;font-size:0.8rem;">(@{{ e.carnetEmpleado }})</span></td>
                     <td><span class="badge badge-blue">@{{ e.modalidadPago }}</span></td>
-                    <td>$@{{ Number(e.montoBase).toFixed(2) }}</td>
-                    <td>@{{ e.tarifaHoraOClase > 0 ? '$' + e.tarifaHoraOClase + '/h' : '--' }}</td>
+                    <td>Bs. @{{ Number(e.montoBase).toFixed(2) }}</td>
+                    <td>@{{ e.tarifaHoraOClase > 0 ? 'Bs. ' + e.tarifaHoraOClase + '/h' : '--' }}</td>
                     <td style="text-align:center;">
                         <button @click="abrirModal(e)" class="btn btn-sm" style="background:#3b82f6;color:#fff;margin-right:5px;">Editar</button>
                         <button @click="eliminar(e.idEsquemaSueldo)" class="btn btn-sm" style="background:#ef4444;color:#fff;">Eliminar</button>
@@ -80,15 +80,20 @@
                 <small v-if="errores.modalidadPago" style="color:#ef4444;">@{{ errores.modalidadPago }}</small>
             </div>
             <div class="form-group">
-                <label>Monto Base ($)</label>
-                <input type="number" step="0.01" min="0" v-model.number="form.montoBase" class="form-control" placeholder="0.00">
+                <label>Monto Base (Bs.)</label>
+                <input type="text" v-model="form.montoBase" @input="validarMontoBase" class="form-control" placeholder="0.00">
                 <small v-if="errores.montoBase" style="color:#ef4444;">@{{ errores.montoBase }}</small>
             </div>
             <div class="form-group">
                 <label>Tarifa por Hora / Clase</label>
-                <input type="number" min="0" v-model.number="form.tarifaHoraOClase" class="form-control" placeholder="0" :disabled="!esEntrenador">
-                <small style="color:#64748b;font-size:0.75rem;" v-if="!esEntrenador && !editando">Solo entrenadores pueden tener tarifa.</small>
-                <small v-if="errores.tarifaHoraOClase" style="color:#ef4444;">@{{ errores.tarifaHoraOClase }}</small>
+                <template v-if="esEntrenador">
+                    <input type="text" v-model="form.tarifaHoraOClase" @input="validarTarifa" class="form-control" placeholder="0">
+                    <small v-if="errores.tarifaHoraOClase" style="color:#ef4444;">@{{ errores.tarifaHoraOClase }}</small>
+                </template>
+                <template v-else>
+                    <input type="text" class="form-control" value="Solo disponible para Entrenador" disabled style="background:#f1f5f9; color:#94a3b8; font-style:italic;">
+                    <small style="color:#f59e0b;font-size:0.75rem;display:block;margin-top:2px;">Seleccione un empleado con rol Entrenador para habilitar este campo.</small>
+                </template>
             </div>
             <div class="modal-actions">
                 <button @click="cerrarModal" class="btn" style="background:#64748b;color:#fff;">Cancelar</button>
@@ -128,6 +133,22 @@ createApp({
             }
         };
 
+        const validarMontoBase = () => {
+            let val = String(form.value.montoBase || '').replace(/[^0-9.]/g, '');
+            const puntos = val.match(/\./g);
+            if (puntos && puntos.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+            if (val.startsWith('.')) val = '0' + val;
+            form.value.montoBase = val;
+        };
+
+        const validarTarifa = () => {
+            let val = String(form.value.tarifaHoraOClase || '').replace(/[^0-9.]/g, '');
+            const puntos = val.match(/\./g);
+            if (puntos && puntos.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+            if (val.startsWith('.')) val = '0' + val;
+            form.value.tarifaHoraOClase = val;
+        };
+
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const headers = {'Content-Type':'application/json', 'X-CSRF-TOKEN': csrf};
 
@@ -161,14 +182,30 @@ createApp({
         const cerrarModal = () => { modalAbierto.value = false; errores.value = {}; };
 
         const mostrarMsg = (tipo, texto) => {
-            mensajeTipo.value = tipo;
-            mensaje.value = texto;
-            setTimeout(() => mensaje.value = '', 5000);
+            mostrarToast(texto, tipo);
+        };
+
+        const preValidarEsquema = () => {
+            const errs = {};
+            const f = form.value;
+            if (!f.carnetEmpleado) errs.carnetEmpleado = 'Debe seleccionar un empleado.';
+            if (!f.modalidadPago) errs.modalidadPago = 'Debe seleccionar una modalidad de pago.';
+            const monto = parseFloat(String(f.montoBase).replace(/[^0-9.]/g, ''));
+            if (!monto || monto < 100) errs.montoBase = 'El monto base mínimo es de 100 Bs.';
+            return errs;
         };
 
         const guardar = async () => {
             guardando.value = true;
             errores.value = {};
+
+            const errs = preValidarEsquema();
+            if (Object.keys(errs).length > 0) {
+                errores.value = errs;
+                guardando.value = false;
+                return;
+            }
+
             try {
                 const url = editando.value ? `/admin/esquema-sueldos/${form.value._id}` : '/admin/esquema-sueldos';
                 const method = editando.value ? 'PUT' : 'POST';
@@ -191,16 +228,17 @@ createApp({
         };
 
         const eliminar = async (id) => {
-            if (!confirm('Eliminar este esquema de sueldo?')) return;
-            const r = await fetch(`/admin/esquema-sueldos/${id}`, {method:'DELETE', headers});
-            const d = await r.json();
-            mostrarMsg(r.ok ? 'success' : 'error', d.message);
-            if (r.ok) await cargar();
+            confirmarAccion('Eliminar este esquema de sueldo?', async function() {
+                const r = await fetch(`/admin/esquema-sueldos/${id}`, {method:'DELETE', headers});
+                const d = await r.json();
+                mostrarMsg(r.ok ? 'success' : 'error', d.message);
+                if (r.ok) await cargar();
+            });
         };
 
         onMounted(cargar);
 
-        return { esquemas, empleados, modalidades, modalAbierto, editando, editandoNombre, guardando, mensaje, mensajeTipo, errores, form, esEntrenador, onCambioEmpleado, abrirModal, cerrarModal, guardar, eliminar };
+        return { esquemas, empleados, modalidades, modalAbierto, editando, editandoNombre, guardando, mensaje, mensajeTipo, errores, form, esEntrenador, onCambioEmpleado, validarMontoBase, validarTarifa, abrirModal, cerrarModal, guardar, eliminar };
     }
 }).mount('#appEsquemas');
 </script>

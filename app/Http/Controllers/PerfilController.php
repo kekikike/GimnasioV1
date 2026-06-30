@@ -41,14 +41,15 @@ class PerfilController extends Controller
         $data = $this->loadProfile();
         $usuario = session('usuario');
 
-        if (!$data) {
-            return view('admin.perfil', [
-                'data' => null,
-                'usuario' => $usuario,
-            ]);
-        }
+        $view = match ((int) $usuario->idRol) {
+            1 => 'admin.perfil',
+            2 => 'recepcionista.perfil',
+            3 => 'entrenador.perfil',
+            4 => 'socio.perfil',
+            default => 'admin.perfil',
+        };
 
-        return view('admin.perfil', compact('data', 'usuario'));
+        return view($view, compact('data', 'usuario'));
     }
 
     public function updatePerfil(Request $request)
@@ -69,12 +70,24 @@ class PerfilController extends Controller
             'apellido1'        => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'apellido2'        => 'nullable|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'           => 'required|email|unique:tusuarios,correo,' . $usuario->idUsuario . ',idUsuario',
-            'telefono'         => 'required|numeric|digits_between:7,15',
+            'telefono'         => ['required', 'numeric', 'digits_between:7,8', 'regex:/^[67]\d+$/'],
             'contrasena'       => 'nullable|string|min:8|confirmed',
         ], [
+            'nombre1.required' => 'El primer nombre es obligatorio.',
+            'nombre1.regex' => 'El nombre solo puede contener letras.',
+            'nombre1.max' => 'El nombre no debe exceder 50 caracteres.',
+            'apellido1.required' => 'El apellido paterno es obligatorio.',
+            'apellido1.regex' => 'El apellido solo puede contener letras.',
+            'apellido1.max' => 'El apellido no debe exceder 50 caracteres.',
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email' => 'Ingrese un correo válido (debe contener @ y .).',
+            'correo.unique' => 'Este correo ya pertenece a otra persona.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.numeric' => 'El teléfono solo debe contener números.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 8 dígitos.',
+            'telefono.regex' => 'El teléfono debe comenzar con 6 o 7.',
             'contrasena.confirmed' => 'Las contraseñas no coinciden.',
             'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'correo.unique' => 'Este correo ya pertenece a otra persona.',
         ]);
 
         if ($validator->fails()) {

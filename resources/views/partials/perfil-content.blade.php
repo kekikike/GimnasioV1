@@ -68,11 +68,14 @@
                     </div>
                     <div class="field-group">
                         <label>Correo Electronico <span style="color:#ef4444;">*</span></label>
-                        <input type="email" v-model="formulario.correo" class="form-control" :disabled="!editando" required>
+                        <input type="text" v-model="formulario.correo" @input="limpiarError('correo')" class="form-control" :class="{'is-invalid': errores.correo}" :disabled="!editando" required>
+                        <small v-if="errores.correo" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.correo }}</small>
                     </div>
                     <div class="field-group">
                         <label>Telefono <span style="color:#ef4444;">*</span></label>
-                        <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" :disabled="!editando" required maxlength="15">
+                        <input type="text" v-model="formulario.telefono" @input="filtrarTelefono" class="form-control" :class="{'is-invalid': errores.telefono}" :disabled="!editando" required maxlength="8">
+                        <small style="color:#94a3b8; font-size:0.75em; display:block; margin-top:2px;">Debe comenzar con 6 o 7 y tener 7-8 d&iacute;gitos.</small>
+                        <small v-if="errores.telefono" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.telefono }}</small>
                     </div>
                 </div>
             </div>
@@ -112,7 +115,7 @@
 </div>
 
 <script>
-const { createApp, ref } = Vue;
+const { createApp, ref, reactive } = Vue;
 
 createApp({
     setup() {
@@ -131,30 +134,90 @@ createApp({
             apellido1: pdata.apellido1 || usr.apellido1 || '',
             apellido2: pdata.apellido2 || usr.apellido2 || '',
             correo: pdata.correo || usr.correo || '',
-            telefono: pdata.telefono || usr.telefono || '',
+            telefono: String(pdata.telefono || usr.telefono || ''),
             contrasena: '',
             contrasena_confirmation: ''
         });
+
+        const errores = reactive({
+            nombre1: '',
+            apellido1: '',
+            correo: '',
+            telefono: '',
+            contrasena: '',
+            general: ''
+        });
+
+        const limpiarError = (campo) => { errores[campo] = ''; };
+
+        const limpiarErrores = () => {
+            for (var k in errores) errores[k] = '';
+        };
 
         const toggleEditar = () => {
             editando.value = !editando.value;
             if (!editando.value) {
                 formulario.value.contrasena = '';
                 formulario.value.contrasena_confirmation = '';
+                limpiarErrores();
             }
         };
 
         const validarLetras = (campo) => {
             formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, '');
+            limpiarError(campo);
         };
 
-        const validarTelefono = () => {
+        const filtrarTelefono = () => {
             formulario.value.telefono = formulario.value.telefono.replace(/[^0-9]/g, '');
+            limpiarError('telefono');
+        };
+
+        const preValidar = () => {
+            limpiarErrores();
+            var valido = true;
+
+            if (!formulario.value.nombre1.trim()) {
+                errores.nombre1 = 'El primer nombre es obligatorio.';
+                valido = false;
+            }
+            if (!formulario.value.apellido1.trim()) {
+                errores.apellido1 = 'El apellido paterno es obligatorio.';
+                valido = false;
+            }
+
+            var correo = formulario.value.correo.trim();
+            if (!correo) {
+                errores.correo = 'El correo electrónico es obligatorio.';
+                valido = false;
+            } else if (correo.indexOf('@') === -1 || correo.indexOf('.') === -1) {
+                errores.correo = 'Ingrese un correo válido (debe contener @ y .).';
+                valido = false;
+            }
+
+            var tel = formulario.value.telefono.replace(/[^0-9]/g, '');
+            if (!tel) {
+                errores.telefono = 'El teléfono es obligatorio.';
+                valido = false;
+            } else if (tel.length < 7 || tel.length > 8) {
+                errores.telefono = 'El teléfono debe tener entre 7 y 8 dígitos.';
+                valido = false;
+            } else if (tel.charAt(0) !== '6' && tel.charAt(0) !== '7') {
+                errores.telefono = 'El teléfono debe comenzar con 6 o 7.';
+                valido = false;
+            }
+
+            return valido;
         };
 
         const guardarPerfil = async () => {
             guardando.value = true;
             try {
+                if (!preValidar()) {
+                    guardando.value = false;
+                    return;
+                }
+
                 const res = await fetch('/perfil', {
                     method: 'PUT',
                     headers: {
@@ -178,29 +241,29 @@ createApp({
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    alert(data.message);
+                    errores.general = '';
                     formulario.value.contrasena = '';
                     formulario.value.contrasena_confirmation = '';
                     editando.value = false;
+                    mostrarToast(data.message, 'success');
                     window.location.reload();
                 } else if (res.status === 422) {
-                    let msgs = [];
+                    limpiarErrores();
                     for (const campo in data.errors) {
-                        msgs.push('• ' + data.errors[campo][0]);
+                        if (errores.hasOwnProperty(campo)) errores[campo] = data.errors[campo][0];
                     }
-                    alert('Error:\n\n' + msgs.join('\n'));
                 } else {
-                    alert(data.message || 'Error inesperado');
+                    errores.general = data.message || 'Error inesperado.';
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error de conexion.');
+                errores.general = 'Error de conexión con el servidor.';
             } finally {
                 guardando.value = false;
             }
         };
 
-        return { formulario, editando, guardando, tabActiva, mostrarPassword, toggleEditar, validarLetras, validarTelefono, guardarPerfil };
+        return { formulario, errores, editando, guardando, tabActiva, mostrarPassword, toggleEditar, validarLetras, filtrarTelefono, limpiarError, guardarPerfil };
     }
 }).mount('#appPerfil');
 </script>

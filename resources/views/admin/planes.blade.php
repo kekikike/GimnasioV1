@@ -5,19 +5,12 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
 <div id="appPlanes">
-    <div style="margin-bottom: 20px;">
-        <a href="{{ route('admin.socios.index') }}" class="btn btn-outline">
-            <svg fill="none" stroke="currentColor" width="16" height="16" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Volver a Socios
-        </a>
-    </div>
-
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
         <h3 style="margin-bottom: 15px; color: #1e293b;">
             <template v-if="modoEdicion">✏️ Editar Plan</template>
             <template v-else>➕ Crear Nuevo Plan</template>
         </h3>
-        <form @submit.prevent="guardarPlan" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
+        <form @submit.prevent="guardarPlan" novalidate style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Nombre del Plan</label>
                 <input type="text" v-model="formulario.nombrePlan" class="form-control" required placeholder="Ej. Plan Estudiante">
@@ -34,7 +27,9 @@
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Costo Total (Bs.)</label>
-                <input type="number" v-model="formulario.costoPlan" class="form-control" required min="0" step="0.1">
+                <input type="text" v-model="formulario.costoPlan" @input="validarCostoPlan" class="form-control" :class="{ 'is-invalid': errores.costoPlan }" required placeholder="0.00">
+                <small v-if="errores.costoPlan" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.costoPlan }}</small>
+                <small style="color:#ef4444; font-size:0.75em; display:block; margin-top:2px;">No se permiten costos negativos.</small>
             </div>
 
             <div style="grid-column: span 2; margin-top: 10px;">
@@ -93,6 +88,16 @@
 
             const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
 
+            const validarCostoPlan = () => {
+                let val = String(formulario.value.costoPlan || '').replace(/[^0-9.]/g, '');
+                const pts = val.match(/\./g);
+                if (pts && pts.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+                if (val.startsWith('.')) val = '0' + val;
+                if (val.startsWith('-')) val = val.substring(1);
+                if (val.length > 10) val = val.substring(0, 10);
+                formulario.value.costoPlan = val;
+            };
+
             const cargarPlanes = async () => {
                 const res = await fetch('{{ route("admin.planes.listar") }}');
                 planes.value = await res.json();
@@ -101,6 +106,14 @@
             const guardarPlan = async () => {
                 guardando.value = true;
                 errores.value = {};
+
+                const costo = parseFloat(String(formulario.value.costoPlan || '').replace(/[^0-9.]/g, ''));
+                if (!costo || costo <= 0) {
+                    errores.value.costoPlan = 'El costo debe ser un número mayor a 0.';
+                    guardando.value = false;
+                    return;
+                }
+
                 try {
                     const url = modoEdicion.value ? `/admin/planes/${idActual.value}` : `/admin/planes`;
                     const metodo = modoEdicion.value ? 'PUT' : 'POST';
@@ -108,13 +121,13 @@
                     const data = await res.json();
                     
                     if(res.ok && data.success) { 
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cancelarEdicion(); 
                         cargarPlanes(); 
                     } else if (res.status === 422) {
                         for (const campo in data.errors) errores.value[campo] = data.errors[campo][0];
                     } else {
-                        alert(data.message || 'Error inesperado.');
+                        mostrarToast(data.message || 'Error inesperado.', 'error');
                     }
                 } catch(e) {
                     console.error("Error guardando plan:", e);
@@ -138,14 +151,16 @@
             };
 
             const eliminarPlan = async (id) => {
-                if(confirm("¿Dar de baja este plan?")) {
-                    await fetch(`/admin/planes/${id}`, { method: 'DELETE', headers: headers });
+                confirmarAccion("¿Dar de baja este plan?", async function() {
+                    const res = await fetch(`/admin/planes/${id}`, { method: 'DELETE', headers: headers });
+                    const data = await res.json();
+                    if(data.success) mostrarToast(data.message, 'success');
                     cargarPlanes();
-                }
+                });
             };
 
             onMounted(cargarPlanes);
-            return { planes, formulario, errores, modoEdicion, guardando, guardarPlan, editarPlan, cancelarEdicion, eliminarPlan };
+            return { planes, formulario, errores, modoEdicion, guardando, validarCostoPlan, guardarPlan, editarPlan, cancelarEdicion, eliminarPlan };
         }
     }).mount('#appPlanes');
 </script>

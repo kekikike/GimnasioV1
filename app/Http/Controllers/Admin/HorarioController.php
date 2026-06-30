@@ -83,6 +83,11 @@ class HorarioController extends Controller
             'diaSemana'      => 'required',
             'horaEntrada'    => 'required',
             'horaSalida'     => 'required',
+        ], [
+            'carnetEmpleado.required' => 'Debe seleccionar un empleado.',
+            'diaSemana.required' => 'Debe seleccionar un día de la semana.',
+            'horaEntrada.required' => 'La hora de entrada es obligatoria.',
+            'horaSalida.required' => 'La hora de salida es obligatoria.',
         ]);
 
         if ($validator->fails()) {
@@ -152,6 +157,11 @@ class HorarioController extends Controller
             'diaSemana'      => 'required',
             'horaEntrada'    => 'required',
             'horaSalida'     => 'required',
+        ], [
+            'carnetEmpleado.required' => 'Debe seleccionar un empleado.',
+            'diaSemana.required' => 'Debe seleccionar un día de la semana.',
+            'horaEntrada.required' => 'La hora de entrada es obligatoria.',
+            'horaSalida.required' => 'La hora de salida es obligatoria.',
         ]);
 
         if ($validator->fails()) {

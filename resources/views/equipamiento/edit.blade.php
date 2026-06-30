@@ -9,7 +9,7 @@
         Editar Equipo: {{ $equipo->nombreEquipo }}
     </h3>
 
-    <form method="POST" action="{{ route('equipamiento.update', $equipo->idEquipo) }}">
+    <form method="POST" action="{{ route('equipamiento.update', $equipo->idEquipo) }}" novalidate>
         @csrf
         @method('PUT')
 
@@ -59,7 +59,6 @@
                 <select id="estadoEquipo" name="estadoEquipo" class="form-control" required>
                     <option value="Operativo" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Operativo' ? 'selected' : '' }}>Operativo</option>
                     <option value="Mantenimiento" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Mantenimiento' ? 'selected' : '' }}>En Mantenimiento</option>
-                    <option value="Dañado" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Dañado' ? 'selected' : '' }}>Dañado</option>
                     <option value="Fuera de Servicio" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Fuera de Servicio' ? 'selected' : '' }}>Fuera de Servicio</option>
                 </select>
                 @error('estadoEquipo') <small style="color:#ef4444;">{{ $message }}</small> @enderror

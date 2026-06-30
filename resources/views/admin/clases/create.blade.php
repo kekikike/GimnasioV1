@@ -27,34 +27,36 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.clases.store') }}" id="formCrearClase">
+    <form method="POST" action="{{ route('admin.clases.store') }}" id="formCrearClase" novalidate>
         @csrf
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
             <div class="form-group">
                 <label for="idActividad">Actividad *</label>
-                <select id="idActividad" name="idActividad" class="form-control" required>
+                <select id="idActividad" name="idActividad" class="form-control @error('idActividad') is-invalid @enderror" required>
                     <option value="" disabled {{ old('idActividad') ? '' : 'selected' }}>Seleccione actividad...</option>
                     @foreach($actividades as $a)
                         <option value="{{ $a->idActividad }}" {{ old('idActividad') == $a->idActividad ? 'selected' : '' }}>{{ $a->nombreActividad }}</option>
                     @endforeach
                 </select>
+                @error('idActividad')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
                 <label for="carnetEmpleado">Instructor *</label>
-                <select id="carnetEmpleado" name="carnetEmpleado" class="form-control" required>
+                <select id="carnetEmpleado" name="carnetEmpleado" class="form-control @error('carnetEmpleado') is-invalid @enderror" required>
                     <option value="" disabled {{ old('carnetEmpleado') ? '' : 'selected' }}>Seleccione instructor...</option>
                     @foreach($empleados as $e)
                         <option value="{{ $e->carnetEmpleado }}" {{ old('carnetEmpleado') == $e->carnetEmpleado ? 'selected' : '' }}>{{ $e->nombre1 }} {{ $e->apellido1 }}</option>
                     @endforeach
                 </select>
+                @error('carnetEmpleado')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
                 <small style="color: #64748b;">Solo se listan usuarios con rol Entrenador.</small>
             </div>
 
             <div class="form-group">
                 <label for="idSucursal">Sucursal *</label>
-                <select id="idSucursal" name="idSucursal" class="form-control" required>
+                <select id="idSucursal" name="idSucursal" class="form-control @error('idSucursal') is-invalid @enderror" required>
                     @if(!$adminSucursalId)
                         <option value="" disabled {{ old('idSucursal') ? '' : 'selected' }}>Seleccione sucursal...</option>
                     @endif
@@ -66,6 +68,7 @@
                         >{{ $s->nombre }}</option>
                     @endforeach
                 </select>
+                @error('idSucursal')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
                 @if($adminSucursalId)
                     <small style="color: #64748b;">Sucursal pre-seleccionada según tu perfil.</small>
                 @endif
@@ -73,22 +76,26 @@
 
             <div class="form-group">
                 <label for="fecha">Fecha *</label>
-                <input type="date" id="fecha" name="fecha" class="form-control" value="{{ old('fecha', date('Y-m-d')) }}" required>
+                <input type="date" id="fecha" name="fecha" class="form-control @error('fecha') is-invalid @enderror" value="{{ old('fecha', date('Y-m-d')) }}" required>
+                @error('fecha')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
                 <label for="horaInicio">Hora Inicio *</label>
-                <input type="time" id="horaInicio" name="horaInicio" class="form-control" value="{{ old('horaInicio', date('H:i', strtotime('+1 hour'))) }}" required>
+                <input type="time" id="horaInicio" name="horaInicio" class="form-control @error('horaInicio') is-invalid @enderror" value="{{ old('horaInicio', date('H:i', strtotime('+1 hour'))) }}" required>
+                @error('horaInicio')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
                 <label for="horaFin">Hora Fin *</label>
-                <input type="time" id="horaFin" name="horaFin" class="form-control" value="{{ old('horaFin', date('H:i', strtotime('+2 hours'))) }}" required>
+                <input type="time" id="horaFin" name="horaFin" class="form-control @error('horaFin') is-invalid @enderror" value="{{ old('horaFin', date('H:i', strtotime('+2 hours'))) }}" required>
+                @error('horaFin')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
 
             <div class="form-group">
                 <label for="cupoMaximo">Cupo Máximo *</label>
-                <input type="number" id="cupoMaximo" name="cupoMaximo" class="form-control" value="{{ old('cupoMaximo', 20) }}" required min="1">
+                <input type="number" id="cupoMaximo" name="cupoMaximo" class="form-control @error('cupoMaximo') is-invalid @enderror" value="{{ old('cupoMaximo', 20) }}" required min="1">
+                @error('cupoMaximo')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
         </div>
 

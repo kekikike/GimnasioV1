@@ -8,6 +8,7 @@ use App\Models\Sucursal;
 use App\Models\ReporteFalla;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class EquipamientoController extends Controller
 {
@@ -132,12 +133,29 @@ class EquipamientoController extends Controller
             return back()->with('error', 'No se puede iniciar mantenimiento en un equipo dado de baja.');
         }
 
-        $data = $request->validate([
-            'descripcionMantenimiento' => 'nullable|string|max:500',
-            'tecnicoAsignado'          => 'nullable|string|max:150',
-            'costoMantenimiento'       => 'nullable|numeric|min:0',
+        $validator = Validator::make($request->all(), [
+            'descripcionMantenimiento' => 'required|string|max:500',
+            'tecnicoAsignado'          => 'required|string|max:100',
+            'costoMantenimiento'       => 'required|numeric|min:0',
             'fechaProgramada'          => 'required|date|after:today',
+        ], [
+            'descripcionMantenimiento.required' => 'La descripción del mantenimiento es obligatoria.',
+            'descripcionMantenimiento.max' => 'La descripción no debe exceder 500 caracteres.',
+            'tecnicoAsignado.required' => 'El técnico asignado es obligatorio.',
+            'tecnicoAsignado.max' => 'El técnico asignado no debe exceder 100 caracteres.',
+            'costoMantenimiento.required' => 'El costo estimado es obligatorio.',
+            'costoMantenimiento.numeric' => 'El costo estimado debe ser un número.',
+            'costoMantenimiento.min' => 'El costo estimado debe ser mayor o igual a 0.',
+            'fechaProgramada.required' => 'La fecha de mantenimiento es obligatoria.',
+            'fechaProgramada.date' => 'La fecha de mantenimiento no es válida.',
+            'fechaProgramada.after' => 'La fecha debe ser posterior a hoy.',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withInput()->withErrors($validator)->with('error', 'Corrija los errores del formulario.')->with('manto_equipo_id', $id);
+        }
+
+        $data = $validator->validated();
 
         $usuarioA   = session('usuario')->idUsuario;
         $direccionIP = request()->ip();
@@ -148,9 +166,9 @@ class EquipamientoController extends Controller
                 (int) $id,
                 $data['fechaProgramada'],
                 null,
-                $data['descripcionMantenimiento'] ?? null,
-                $data['costoMantenimiento'] ?? null,
-                $data['tecnicoAsignado'] ?? null,
+                $data['descripcionMantenimiento'],
+                $data['costoMantenimiento'],
+                $data['tecnicoAsignado'],
                 'Pendiente',
                 $usuarioA,
                 $direccionIP,
@@ -182,11 +200,24 @@ class EquipamientoController extends Controller
 
     public function reportarFallaStore(Request $request)
     {
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'idEquipo'        => 'required|integer|exists:TEquipamientos,idEquipo',
-            'descripcionFalla' => 'required|string|max:500',
+            'descripcionFalla' => 'required|string|max:255',
             'gravedad'         => 'required|in:Baja,Media,Alta,Critica',
+        ], [
+            'idEquipo.required' => 'Debe seleccionar un equipo.',
+            'idEquipo.exists' => 'El equipo seleccionado no es válido.',
+            'descripcionFalla.required' => 'La descripción de la falla es obligatoria.',
+            'descripcionFalla.max' => 'La descripción no debe exceder 255 caracteres.',
+            'gravedad.required' => 'Debe seleccionar la gravedad de la falla.',
+            'gravedad.in' => 'La gravedad seleccionada no es válida.',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withInput()->withErrors($validator)->with('error', 'Corrija los errores del formulario.');
+        }
+
+        $data = $validator->validated();
 
         $usuario    = session('usuario');
         $empleado   = DB::table('TEmpleados')

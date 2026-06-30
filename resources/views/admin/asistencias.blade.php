@@ -13,11 +13,11 @@
             @{{ horaActual }}
         </div>
 
-        <div v-if="mensaje" :style="{ padding: '15px', borderRadius: '8px', marginBottom: '20px', backgroundColor: mensajeTipo === 'success' ? '#dcfce3' : '#fee2e2', color: mensajeTipo === 'success' ? '#166534' : '#991b1b', fontWeight: 'bold' }">
+        <div v-if="mensaje" :style="mensajeEstilo">
             @{{ mensaje }}
         </div>
 
-        <form @submit.prevent>
+        <form @submit.prevent novalidate>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #374151;">Ingrese su Nro. de Carnet (CI)</label>
                 <input type="text" v-model="carnetEmpleado" class="form-control" placeholder="Ej. 1234567" required style="font-size: 1.2rem; text-align: center; max-width: 300px; margin: 0 auto; border: 2px solid #cbd5e1;">
@@ -39,17 +39,30 @@
 </div>
 
 <script>
-    const { createApp, ref, onMounted, onUnmounted } = Vue;
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
     createApp({
         setup() {
             const carnetEmpleado = ref('');
             const mensaje = ref('');
             const mensajeTipo = ref('');
+            const mensajeEstado = ref('');
             const cargando = ref(false);
             const tipoActual = ref('');
             const horaActual = ref('');
             let intervaloReloj = null;
+
+            const mensajeEstilo = computed(function() {
+                var bg, color;
+                if (mensajeEstado.value === 'tardanza' || mensajeEstado.value === 'temprano') {
+                    bg = '#fef3c7'; color = '#92400e';
+                } else if (mensajeTipo.value === 'success') {
+                    bg = '#dcfce7'; color = '#166534';
+                } else {
+                    bg = '#fee2e2'; color = '#991b1b';
+                }
+                return { padding: '15px', borderRadius: '8px', marginBottom: '20px', backgroundColor: bg, color: color, fontWeight: 'bold' };
+            });
 
             const actualizarReloj = () => {
                 const ahora = new Date();
@@ -74,8 +87,14 @@
                     
                     mensajeTipo.value = res.ok ? 'success' : 'error';
                     mensaje.value = data.message || (res.ok ? 'Operación exitosa.' : 'Ocurrió un error.');
+                    mensajeEstado.value = '';
+                    if (res.ok && data.message) {
+                        var msg = data.message.toLowerCase();
+                        if (msg.indexOf('tarde') !== -1 || msg.indexOf('tardanza') !== -1) mensajeEstado.value = 'tardanza';
+                        else if (msg.indexOf('antes') !== -1 || msg.indexOf('temprano') !== -1) mensajeEstado.value = 'temprano';
+                    }
                     
-                    if (res.ok) carnetEmpleado.value = ''; // Limpiar input si fue exitoso
+                    if (res.ok) carnetEmpleado.value = '';
 
                 } catch (error) {
                     mensajeTipo.value = 'error';
@@ -98,7 +117,7 @@
                 clearInterval(intervaloReloj);
             });
 
-            return { carnetEmpleado, mensaje, mensajeTipo, cargando, tipoActual, horaActual, marcar };
+            return { carnetEmpleado, mensaje, mensajeTipo, mensajeEstado, mensajeEstilo, cargando, tipoActual, horaActual, marcar };
         }
     }).mount('#appAsistencias');
 </script>

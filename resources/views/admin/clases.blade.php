@@ -107,7 +107,7 @@
                 <h3>✏️ Editar Clase</h3>
                 <button @click="closeEditModal" class="modal-close">&times;</button>
             </div>
-            <form @submit.prevent="guardarEdicion" style="padding: 1.5rem;">
+            <form @submit.prevent="guardarEdicion" novalidate style="padding: 1.5rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
                         <label>Actividad *</label>
@@ -340,33 +340,30 @@ createApp({
                     { method: 'PUT', headers, body: JSON.stringify(editFormulario.value) }
                 );
                 const data = await res.json();
-                mensaje.value = data.message;
-                mensajeTipo.value = data.success ? 'success' : 'error';
+                mostrarToast(data.message, data.success ? 'success' : 'error');
                 if (data.success) {
                     closeEditModal();
                     await cargarClases();
                 }
             } catch (e) {
-                mensaje.value = 'Error de conexión.';
-                mensajeTipo.value = 'error';
+                mostrarToast('Error de conexión.', 'error');
             }
         };
 
         const confirmarEliminar = async (clase) => {
-            if (!confirm(`¿Cancelar la clase "${clase.nombreActividad}" del ${clase.fecha}?`)) return;
-            try {
-                const res = await fetch(
-                    `{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
-                    { method: 'DELETE', headers }
-                );
-                const data = await res.json();
-                mensaje.value = data.message;
-                mensajeTipo.value = data.success ? 'success' : 'error';
-                if (data.success) await cargarClases();
-            } catch (e) {
-                mensaje.value = 'Error de conexión.';
-                mensajeTipo.value = 'error';
-            }
+            confirmarAccion(`¿Cancelar la clase "${clase.nombreActividad}" del ${clase.fecha}?`, async function() {
+                try {
+                    const res = await fetch(
+                        `{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
+                        { method: 'DELETE', headers }
+                    );
+                    const data = await res.json();
+                    mostrarToast(data.message, data.success ? 'success' : 'error');
+                    if (data.success) await cargarClases();
+                } catch (e) {
+                    mostrarToast('Error de conexión.', 'error');
+                }
+            });
         };
 
         const verReservas = async (clase) => {

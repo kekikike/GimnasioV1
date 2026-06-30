@@ -31,10 +31,10 @@
             <template v-else>Asignar Nuevo Turno</template>
         </h3>
         
-        <form @submit.prevent="guardarHorario" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
+        <form @submit.prevent="guardarHorario" novalidate style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Día de la Semana <span style="color:#ef4444;">*</span></label>
-                <select v-model="formulario.diaSemana" class="form-control" required>
+                <select v-model="formulario.diaSemana" class="form-control" :class="{ 'is-invalid': errores.diaSemana }" required>
                     <option value="" disabled>Seleccione...</option>
                     <option value="Lunes">Lunes</option>
                     <option value="Martes">Martes</option>
@@ -44,14 +44,17 @@
                     <option value="Sábado">Sábado</option>
                     <option value="Domingo">Domingo</option>
                 </select>
+                <small v-if="errores.diaSemana" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.diaSemana }}</small>
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Hora de Entrada <span style="color:#ef4444;">*</span></label>
-                <input type="time" v-model="formulario.horaEntrada" class="form-control" required>
+                <input type="time" v-model="formulario.horaEntrada" class="form-control" :class="{ 'is-invalid': errores.horaEntrada }" required>
+                <small v-if="errores.horaEntrada" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.horaEntrada }}</small>
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Hora de Salida <span style="color:#ef4444;">*</span></label>
-                <input type="time" v-model="formulario.horaSalida" class="form-control" required>
+                <input type="time" v-model="formulario.horaSalida" class="form-control" :class="{ 'is-invalid': errores.horaSalida }" required>
+                <small v-if="errores.horaSalida" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.horaSalida }}</small>
             </div>
 
             <div style="grid-column: span 3; margin-top: 10px;">
@@ -212,6 +215,19 @@
             const guardarHorario = async () => {
                 guardando.value = true;
                 errores.value = {};
+
+                // Validar diferencia mínima de 1 hora
+                if (formulario.value.horaEntrada && formulario.value.horaSalida) {
+                    const [hE, mE] = formulario.value.horaEntrada.split(':').map(Number);
+                    const [hS, mS] = formulario.value.horaSalida.split(':').map(Number);
+                    const diffMinutos = (hS * 60 + mS) - (hE * 60 + mE);
+                    if (diffMinutos < 60) {
+                        errores.value.horaSalida = 'La hora de salida debe ser al menos 1 hora después de la entrada.';
+                        guardando.value = false;
+                        return;
+                    }
+                }
+
                 try {
                     const url = modoEdicion.value ? `/admin/horarios/${idActual.value}` : `/admin/horarios`;
                     const metodo = modoEdicion.value ? 'PUT' : 'POST';
@@ -221,20 +237,18 @@
                     const data = await res.json();
                     
                     if (res.ok && data.success) {
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cargarHorarios();
                     } else if (res.status === 422) {
-                        let mensajesError = [];
                         for (const campo in data.errors) {
-                            mensajesError.push("• " + data.errors[campo][0]);
+                            errores.value[campo] = data.errors[campo][0];
                         }
-                        alert("AVISO:\n\n" + mensajesError.join("\n"));
                     } else {
-                        alert(data.message || 'Error inesperado del servidor');
+                        mostrarToast(data.message || 'Error inesperado del servidor', 'error');
                     }
                 } catch (e) { 
                     console.error("Error crítico:", e); 
-                    alert("Ocurrio un error de conexion.");
+                    mostrarToast('Ocurrió un error de conexión.', 'error');
                 } finally { 
                     guardando.value = false; 
                 }
@@ -259,20 +273,20 @@
             };
 
             const eliminarHorario = async (id) => {
-                if (confirm("¿Estás seguro de eliminar este turno?")) {
+                confirmarAccion("¿Estás seguro de eliminar este turno?", async function() {
                     try {
                         const res = await fetch(`/admin/horarios/${id}`, { method: 'DELETE', headers: headers });
                         const data = await res.json();
                         if (res.ok && data.success) {
-                            alert(data.message);
+                            mostrarToast(data.message, 'success');
                             cargarHorarios();
                         } else {
-                            alert(data.message || "No se pudo eliminar.");
+                            mostrarToast(data.message || "No se pudo eliminar.", 'error');
                         }
                     } catch (e) {
                         console.error("Error al eliminar", e);
                     }
-                }
+                });
             };
 
             return { termino, resultados, sinResultados, empleadoSeleccionado, buscar, buscarNow, seleccionarEmpleado, horariosAgrupados, formulario, errores, modoEdicion, guardando, cargarHorarios, guardarHorario, editarHorario, eliminarHorario, cancelarEdicion };

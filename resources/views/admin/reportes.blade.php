@@ -441,18 +441,18 @@ window.renderReporte=function(reporte, d) {
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         financiero: function() {
-            var h='<div class="stats-grid"><div class="stat-card"><div class="number green">$'+Number(d.totalIngresos||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
+            var h='<div class="stats-grid"><div class="stat-card"><div class="number green">Bs.'+Number(d.totalIngresos||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
             h+='<div class="stat-card"><div class="number blue">'+d.totalTransacciones+'</div><div class="label">Transacciones</div></div>';
-            h+='<div class="stat-card"><div class="number amber">$'+Number(d.totalTransacciones>0?d.totalIngresos/d.totalTransacciones:0).toFixed(2)+'</div><div class="label">Promedio</div></div></div>';
+            h+='<div class="stat-card"><div class="number amber">Bs.'+Number(d.totalTransacciones>0?d.totalIngresos/d.totalTransacciones:0).toFixed(2)+'</div><div class="label">Promedio</div></div></div>';
             if(d.ingresosPorEstado&&Object.keys(d.ingresosPorEstado).length){
                 h+='<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">';
-                for(var k in d.ingresosPorEstado) h+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.5rem;padding:0.75rem 1rem;text-align:center;flex:1;min-width:120px;"><strong style="display:block;font-size:0.75rem;color:#64748b;">'+k+'</strong><span style="font-size:1.1rem;font-weight:700;color:#0f172a;">$'+Number(d.ingresosPorEstado[k]).toFixed(2)+'</span></div>';
+                for(var k in d.ingresosPorEstado) h+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.5rem;padding:0.75rem 1rem;text-align:center;flex:1;min-width:120px;"><strong style="display:block;font-size:0.75rem;color:#64748b;">'+k+'</strong><span style="font-size:1.1rem;font-weight:700;color:#0f172a;">Bs.'+Number(d.ingresosPorEstado[k]).toFixed(2)+'</span></div>';
                 h+='</div>';
             }
             h+='<table><thead><tr><th>ID Caja</th><th>Sucursal</th><th>Fecha</th><th>Apertura</th><th>Cierre</th><th>Estado</th></tr></thead><tbody>';
             (d.pagos||[]).forEach(function(p){
                 var bc=p.estadoCaja==='Abierta'?'badge-green':p.estadoCaja==='Cerrada'?'badge-amber':'badge-blue';
-                h+='<tr class="row-clickable" data-idcaja="'+p.idCaja+'" onclick="cargarDetalleFinanciero('+p.idCaja+')"><td><strong>'+p.idCaja+'</strong></td><td>'+(p.sucursalNombre||'N/A')+'</td><td>'+p.fechaApertura+'</td><td>$'+Number(p.montoApertura).toFixed(2)+'</td><td>$'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
+                h+='<tr class="row-clickable" data-idcaja="'+p.idCaja+'" onclick="cargarDetalleFinanciero('+p.idCaja+')"><td><strong>'+p.idCaja+'</strong></td><td>'+(p.sucursalNombre||'N/A')+'</td><td>'+p.fechaApertura+'</td><td>Bs.'+Number(p.montoApertura).toFixed(2)+'</td><td>Bs.'+Number(p.montoCierre||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+p.estadoCaja+'</span></td></tr>';
             });
             if(!d.pagos||!d.pagos.length) h+='<tr><td colspan="6" class="empty-state">No hay pagos</td></tr>';
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
@@ -461,17 +461,19 @@ window.renderReporte=function(reporte, d) {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.totalAsistencias||0)+'</div><div class="label">Total Asistencias</div></div>';
             var prom=(d.asistenciasPorDia&&Object.keys(d.asistenciasPorDia).length>0)?(d.totalAsistencias/Object.keys(d.asistenciasPorDia).length).toFixed(2):0;
             h+='<div class="stat-card"><div class="number blue">'+prom+'</div><div class="label">Promedio Diario</div></div></div>';
-            h+='<table><thead><tr><th>CI</th><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Salida</th><th>Esperado</th><th>Estado</th></tr></thead><tbody>';
+            h+='<table><thead><tr><th>CI</th><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Estado Entrada</th><th>Salida</th><th>Estado Salida</th><th>Esperado</th><th>Asistencia</th></tr></thead><tbody>';
             (d.asistencias||[]).forEach(function(a){
                 var nom=a.nombreEmpleado||'';
                 var fe=new Date(a.fechaHoraEntrada).toLocaleDateString('es-ES');
                 var en=a.fechaHoraEntrada?new Date(a.fechaHoraEntrada).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
                 var sa=a.fechaHoraSalida?new Date(a.fechaHoraSalida).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'N/A';
-                var bc=a.estadoAsistencia==='Puntual'?'badge-green':a.estadoAsistencia==='Tardanza'?'badge-amber':'badge-red';
+                var bcEE=a.estadoEntrada==='puntual'?'badge-green':'badge-amber';
+                var bcES=a.estadoSalida==='puntual'?'badge-green':a.estadoSalida==='temprano'?'badge-amber':'badge-gray';
+                var bcAsis=a.estadoAsistencia==='presente'?'badge-green':'badge-red';
                 var esp=a.esperadoEntrada!=='—' ? a.esperadoEntrada+' - '+a.esperadoSalida : '—';
-                h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td>'+sa+'</td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bc+'">'+(a.estadoAsistencia||'Falta')+'</span></td></tr>';
+                h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td><span class="badge '+bcEE+'">'+(a.estadoEntrada||'—')+'</span></td><td>'+sa+'</td><td><span class="badge '+bcES+'">'+(a.estadoSalida||'—')+'</span></td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bcAsis+'">'+(a.estadoAsistencia||'falta')+'</span></td></tr>';
             });
-            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="8" class="empty-state">No hay asistencias</td></tr>';
+            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="10" class="empty-state">No hay asistencias</td></tr>';
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         clases: function() {
@@ -555,7 +557,7 @@ function descargarPDF(contenidoId, titulo, nombreArchivo) {
         document.body.removeChild(a);URL.revokeObjectURL(url);
     }).catch(function(e){
         console.error('Error PDF:',e);
-        alert('Error al descargar el PDF. Verifique la consola para detalles.');
+        mostrarToast('Error al descargar el PDF. Verifique la consola para detalles.', 'error');
     });
 }
 
@@ -579,14 +581,14 @@ function cargarAdminFinanciero(btn) {
         .then(function(r){return r.json();}).then(function(d){
             var c=document.getElementById('admin-financiero-content');
             if(!d||!d.ingresos){c.innerHTML='<div class="empty-state">No hay datos</div>';return;}
-            var h='<div class="stats-grid"><div class="stat-card"><div class="number green">$'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
+            var h='<div class="stats-grid"><div class="stat-card"><div class="number green">Bs.'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Total Ingresos</div></div>';
             h+='<div class="stat-card"><div class="number blue">'+d.ingresos.length+'</div><div class="label">Transacciones</div></div>';
-            h+='<div class="stat-card"><div class="number amber">$'+Number(d.ingresos.length>0?d.totalGeneral/d.ingresos.length:0).toFixed(2)+'</div><div class="label">Promedio</div></div></div>';
+            h+='<div class="stat-card"><div class="number amber">Bs.'+Number(d.ingresos.length>0?d.totalGeneral/d.ingresos.length:0).toFixed(2)+'</div><div class="label">Promedio</div></div></div>';
             if(d.ingresos.length){h+='<table><thead><tr><th>Recibo</th><th>Sucursal</th><th>Socio</th><th>Fecha</th><th>Metodos de Pago</th><th>Total</th><th>Estado</th></tr></thead><tbody>';
             d.ingresos.forEach(function(r){
                 var bc=r.estadoRecibo==='Emitido'?'badge-green':'badge-red';
                 var socio=r.nombre1+' '+r.apellido1+(r.carnetSocio?' ('+r.carnetSocio+')':'');
-                h+='<tr><td><strong>#'+r.idRecibo+'</strong></td><td>'+(r.sucursal||'')+'</td><td>'+socio+'</td><td>'+(r.fechaPago||'')+'</td><td style="font-size:0.8rem;">'+(r.metodos_pago||'')+'</td><td><strong>$'+Number(r.montoTotal||0).toFixed(2)+'</strong></td><td><span class="badge '+bc+'">'+r.estadoRecibo+'</span></td></tr>';
+                h+='<tr><td><strong>#'+r.idRecibo+'</strong></td><td>'+(r.sucursal||'')+'</td><td>'+socio+'</td><td>'+(r.fechaPago||'')+'</td><td style="font-size:0.8rem;">'+(r.metodos_pago||'')+'</td><td><strong>Bs.'+Number(r.montoTotal||0).toFixed(2)+'</strong></td><td><span class="badge '+bc+'">'+r.estadoRecibo+'</span></td></tr>';
             });
             h+='</tbody></table>';}else{h+='<div class="empty-state">No hay transacciones</div>';}
             h+=footerReporteHTML(); c.innerHTML=h;
@@ -631,7 +633,7 @@ function cargarAdminEquipos(btn) {
             if(d.historialMantenimientos&&d.historialMantenimientos.length){h+='<div style="overflow-x:auto;"><table><thead><tr><th>Equipo</th><th>Programada</th><th>Realizada</th><th>Costo</th><th>Estado</th></tr></thead><tbody>';
             d.historialMantenimientos.forEach(function(m){
                 var bc=m.estadoMantenimiento==='Realizado'?'badge-green':m.estadoMantenimiento==='Pendiente'?'badge-amber':'badge-red';
-                h+='<tr><td>'+(m.nombreEquipo||m.idEquipo||'')+'</td><td>'+(m.fechaProgramada||'')+'</td><td>'+(m.fechaRealizada||'-')+'</td><td>$'+Number(m.costoMantenimiento||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+(m.estadoMantenimiento||'')+'</span></td></tr>';
+                h+='<tr><td>'+(m.nombreEquipo||m.idEquipo||'')+'</td><td>'+(m.fechaProgramada||'')+'</td><td>'+(m.fechaRealizada||'-')+'</td><td>Bs.'+Number(m.costoMantenimiento||0).toFixed(2)+'</td><td><span class="badge '+bc+'">'+(m.estadoMantenimiento||'')+'</span></td></tr>';
             });
             h+='</tbody></table></div>';}else{h+='<div class="empty-state">Sin mantenimientos registrados</div>';}
             h+=footerReporteHTML();c.innerHTML=h;
@@ -661,10 +663,10 @@ function cargarAdminMembresias(btn) {
             var c=document.getElementById('admin-membresias-content');
             if(!d||!d.membresias||!d.membresias.length){c.innerHTML='<div class="empty-state">No hay datos</div>';return;}
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+d.totalMembresias+'</div><div class="label">Total Membresias</div></div>';
-            h+='<div class="stat-card"><div class="number green">$'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Ingresos Totales</div></div></div>';
+            h+='<div class="stat-card"><div class="number green">Bs.'+Number(d.totalGeneral||0).toFixed(2)+'</div><div class="label">Ingresos Totales</div></div></div>';
             h+='<table><thead><tr><th>Plan</th><th>Costo</th><th>Vendidas</th><th>Ingresos</th></tr></thead><tbody>';
             d.membresias.forEach(function(m){
-                h+='<tr><td><strong>'+m.nombrePlan+'</strong></td><td>$'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.total_vendidas+'</td><td>$'+Number(m.ingresos_totales).toFixed(2)+'</td></tr>';
+                h+='<tr><td><strong>'+m.nombrePlan+'</strong></td><td>Bs.'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.total_vendidas+'</td><td>Bs.'+Number(m.ingresos_totales).toFixed(2)+'</td></tr>';
             });
             h+='</tbody></table>';h+=footerReporteHTML();c.innerHTML=h;
         }).catch(function(){document.getElementById('admin-membresias-content').innerHTML='<div class="empty-state" style="color:#ef4444;">Error</div>';})
@@ -760,25 +762,25 @@ function cargarDetalleFinanciero(idCaja){
     fetch('/reportes/financiero/'+idCaja,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();}).then(function(d){
             var empName=d.caja.nombreEmpleado||'Desconocido';
-            var h='<div class="socio-header"><div><div class="nombre">Caja #'+d.caja.idCaja+' - '+d.caja.sucursalNombre+'</div><div class="carnet">'+d.caja.fechaApertura+' | Apertura: $'+Number(d.caja.montoApertura).toFixed(2)+' | Cierre real: $'+Number(d.caja.montoCierre||0).toFixed(2)+' | Cierre calculado: $'+Number(d.caja.montoCierreCalculado||0).toFixed(2)+' | Estado: '+d.caja.estadoCaja+'<br><strong>Encargado: '+empName+' (CI: '+d.caja.carnetEmpleado+')</strong></div></div></div>';
+            var h='<div class="socio-header"><div><div class="nombre">Caja #'+d.caja.idCaja+' - '+d.caja.sucursalNombre+'</div><div class="carnet">'+d.caja.fechaApertura+' | Apertura: Bs.'+Number(d.caja.montoApertura).toFixed(2)+' | Cierre real: Bs.'+Number(d.caja.montoCierre||0).toFixed(2)+' | Cierre calculado: Bs.'+Number(d.caja.montoCierreCalculado||0).toFixed(2)+' | Estado: '+d.caja.estadoCaja+'<br><strong>Encargado: '+empName+' (CI: '+d.caja.carnetEmpleado+')</strong></div></div></div>';
 
             h+='<h4>Membresias Compradas ('+(d.membresias||[]).length+')</h4>';
             h+='<table><thead><tr><th>Recibo</th><th>Socio</th><th>Plan</th><th>Costo</th><th>Inicio</th><th>Fin</th><th>Pago</th></tr></thead><tbody>';
             (d.membresias||[]).forEach(function(m){
-                h+='<tr><td>#'+m.idRecibo+'</td><td>'+m.nombreSocio+' ('+m.carnetSocio+')</td><td>'+m.nombrePlan+'</td><td>$'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.fechaInicioMembresia+'</td><td>'+m.fechaFinMembresia+'</td><td>$'+Number(m.montoTotal).toFixed(2)+'</td></tr>';
+                h+='<tr><td>#'+m.idRecibo+'</td><td>'+m.nombreSocio+' ('+m.carnetSocio+')</td><td>'+m.nombrePlan+'</td><td>Bs.'+Number(m.costoPlan).toFixed(2)+'</td><td>'+m.fechaInicioMembresia+'</td><td>'+m.fechaFinMembresia+'</td><td>Bs.'+Number(m.montoTotal).toFixed(2)+'</td></tr>';
             });
             if(!d.membresias||!d.membresias.length) h+='<tr><td colspan="7" class="empty-state">Sin membresias en esta caja</td></tr>';
             h+='</tbody></table>';
-            h+='<div style="text-align:right;margin-bottom:1rem;font-size:0.9rem;"><strong>Total Membresias: $'+Number(d.totalMembresias||0).toFixed(2)+'</strong></div>';
+            h+='<div style="text-align:right;margin-bottom:1rem;font-size:0.9rem;"><strong>Total Membresias: Bs.'+Number(d.totalMembresias||0).toFixed(2)+'</strong></div>';
 
             h+='<h4>Salidas de Caja ('+(d.salidas||[]).length+')</h4>';
             h+='<table><thead><tr><th>ID</th><th>Descripcion</th><th>Costo</th><th>Fecha</th></tr></thead><tbody>';
             (d.salidas||[]).forEach(function(s){
-                h+='<tr><td>'+s.idSalida+'</td><td>'+s.descripcion+'</td><td>$'+Number(s.costo).toFixed(2)+'</td><td>'+s.fechaA+'</td></tr>';
+                h+='<tr><td>'+s.idSalida+'</td><td>'+s.descripcion+'</td><td>Bs.'+Number(s.costo).toFixed(2)+'</td><td>'+s.fechaA+'</td></tr>';
             });
             if(!d.salidas||!d.salidas.length) h+='<tr><td colspan="4" class="empty-state">Sin salidas en esta caja</td></tr>';
             h+='</tbody></table>';
-            h+='<div style="text-align:right;font-size:0.9rem;"><strong>Total Salidas: $'+Number(d.totalSalidas||0).toFixed(2)+'</strong></div>';
+            h+='<div style="text-align:right;font-size:0.9rem;"><strong>Total Salidas: Bs.'+Number(d.totalSalidas||0).toFixed(2)+'</strong></div>';
 
             var sucursalNombreSanitized=(d.caja.sucursalNombre||'Sucursal').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
             var fechaHoy=new Date().toISOString().slice(0,10);

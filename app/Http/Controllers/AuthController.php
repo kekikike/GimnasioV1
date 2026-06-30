@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -34,7 +35,24 @@ class AuthController extends Controller
 
         $usuario = Usuario::findByEmail($request->correo);
 
-        if (!$usuario || !Hash::check($request->contrasena, $usuario->contrasena)) {
+        if (!$usuario) {
+            // Verificar si el usuario est� inactivo con contrato finalizado
+            $inactivo = DB::select('
+                SELECT u.*, e.fechaContratoFin
+                FROM TUsuarios u
+                LEFT JOIN TEmpleados e ON u.idUsuario = e.idUsuario
+                WHERE u.correo = ? COLLATE utf8mb4_unicode_ci AND u.estadoA = 0
+                LIMIT 1
+            ', [$request->correo]);
+
+            if (!empty($inactivo) && !empty($inactivo[0]->fechaContratoFin)) {
+                return back()->withErrors(['correo' => 'Usuario no disponible.'])->withInput();
+            }
+
+            return back()->withErrors(['correo' => 'Credenciales incorrectas.'])->withInput();
+        }
+
+        if (!Hash::check($request->contrasena, $usuario->contrasena)) {
             return back()->withErrors(['correo' => 'Credenciales incorrectas.'])->withInput();
         }
 

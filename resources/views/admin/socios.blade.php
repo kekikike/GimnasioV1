@@ -25,7 +25,7 @@
     </div>
 
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
-        <form @submit.prevent="guardarSocio" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
+        <form @submit.prevent="guardarSocio" novalidate style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
 
             <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; color: #3b82f6; font-weight: bold;">Datos Personales y de Contacto</div>
 
@@ -36,7 +36,8 @@
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: bold; font-size: 0.85rem;">Confirmar CI <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" required maxlength="10">
+                <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" :class="{ 'is-invalid': errores.carnetSocio_confirmation }" required maxlength="10">
+                <small v-if="errores.carnetSocio_confirmation" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio_confirmation }}</small>
             </div>
             <div v-else></div> <div style="grid-row: span 2;">
                 <label style="font-weight: bold; font-size: 0.85rem;">Foto Perfil (JPG, PNG)</label>
@@ -61,7 +62,14 @@
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
-                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <input :type="mostrarConfirmPassword ? 'text' : 'password'" v-model="formulario.contrasena_confirmation" class="form-control" :class="{ 'is-invalid': errores.contrasena_confirmation }" :required="!modoEdicion || formulario.contrasena !== ''" style="flex:1;">
+                    <button type="button" @click="mostrarConfirmPassword = !mostrarConfirmPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarConfirmPassword ? 'Ocultar' : 'Mostrar'">
+                        <svg v-if="mostrarConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <small v-if="errores.contrasena_confirmation" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contrasena_confirmation }}</small>
             </div>
 
             <div>
@@ -92,7 +100,7 @@
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Teléfono Móvil <span style="color:#ef4444;">*</span></label>
-                <input type="number" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono('telefono')" class="form-control" required maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.telefono }}</small>
                 <small style="color:#64748b; font-size:0.75rem;">Debe comenzar con 6 o 7 (7-8 dígitos)</small>
             </div>
@@ -110,7 +118,7 @@
             </div>
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Telf. Cont. Emergencia</label>
-                <input type="number" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
+                <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.contacto_emergencia_telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contacto_emergencia_telefono }}</small>
             </div>
             <div></div> <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
@@ -144,7 +152,7 @@
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Socio y Estado</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Membresia</th>
                     <th style="padding: 12px; border-bottom: 2px solid #cbd5e1;">Contacto</th>
-                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: center;">Acciones</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #cbd5e1; text-align: left;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -177,7 +185,7 @@
                         @{{ socio.correo }}<br>
                         @{{ socio.telefono }}
                     </td>
-                    <td style="padding: 12px; text-align: center;">
+                    <td style="padding: 12px; text-align: left; white-space: nowrap;">
                         <button @click="editarSocio(socio)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
                         <button @click="congelarMembresia(socio)" :disabled="socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada'" class="btn btn-sm" :style="{ background: socio.estadoMembresia === 'Congelada' ? '#22c55e' : '#f59e0b', color: '#fff', marginRight: '5px', opacity: socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada' ? '0.5' : '1' }">
                             @{{ socio.estadoMembresia === 'Congelada' ? 'Activar Memb.' : 'Congelar Memb.' }}
@@ -265,6 +273,7 @@
             let fotoBlob = null;
             const msjError = ref('');
             const mostrarPassword = ref(false);
+            const mostrarConfirmPassword = ref(false);
 
             const formBase = {
                 carnetSocio: '', carnetSocio_confirmation: '', idUsuario: '',
@@ -288,7 +297,10 @@
             };
 
             const validarTelefono = (campo) => {
-                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 8);
+                let val = String(formulario.value[campo] || '').replace(/[^0-9]/g, '');
+                if (val.length > 0 && val[0] !== '6' && val[0] !== '7') val = val.substring(1);
+                if (val.length > 8) val = val.substring(0, 8);
+                formulario.value[campo] = val;
             };
 
             const manejarFoto = (event) => {
@@ -344,9 +356,54 @@
                 }
             };
 
+            const preValidar = () => {
+                const errs = {};
+                const f = formulario.value;
+
+                if (!f.nombre1?.trim()) errs.nombre1 = 'El primer nombre es obligatorio.';
+
+                if (!f.apellidoPaterno?.trim()) errs.apellidoPaterno = 'El apellido paterno es obligatorio.';
+
+                if (!f.correo?.trim()) errs.correo = 'El correo electrónico es obligatorio.';
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.correo)) errs.correo = 'Ingrese un correo electrónico válido.';
+
+                const tel = String(f.telefono || '').replace(/\D/g, '');
+                if (!tel) errs.telefono = 'El teléfono es obligatorio.';
+                else if (tel.length < 7 || tel.length > 8) errs.telefono = 'El teléfono debe tener entre 7 y 8 dígitos.';
+                else if (tel[0] !== '6' && tel[0] !== '7') errs.telefono = 'El teléfono debe iniciar con 6 o 7.';
+
+                if (!modoEdicion.value) {
+                    if (!f.carnetSocio?.trim()) errs.carnetSocio = 'El carnet de socio es obligatorio.';
+                    else if (!/^\d+$/.test(f.carnetSocio)) errs.carnetSocio = 'El carnet solo debe contener números.';
+                    if (f.carnetSocio !== f.carnetSocio_confirmation) {
+                        errs.carnetSocio_confirmation = 'Los números de carnet no coinciden.';
+                    }
+                    if (!f.contrasena) errs.contrasena = 'La contraseña es obligatoria.';
+                }
+                if (f.contrasena && f.contrasena.length < 8) errs.contrasena = 'La contraseña debe tener al menos 8 caracteres.';
+                if ((f.contrasena || f.contrasena_confirmation) && f.contrasena !== f.contrasena_confirmation) {
+                    errs.contrasena_confirmation = 'Las contraseñas no coinciden.';
+                }
+
+                const telEmergencia = String(f.contacto_emergencia_telefono || '').replace(/\D/g, '');
+                if (telEmergencia && (telEmergencia.length < 7 || telEmergencia.length > 8)) {
+                    errs.contacto_emergencia_telefono = 'El teléfono de emergencia debe tener entre 7 y 8 dígitos.';
+                }
+
+                return errs;
+            };
+
             const guardarSocio = async () => {
                 guardando.value = true;
                 errores.value = {};
+
+                const errs = preValidar();
+                if (Object.keys(errs).length > 0) {
+                    errores.value = errs;
+                    guardando.value = false;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
 
                 const formData = new FormData();
                 for (let key in formulario.value) {
@@ -372,13 +429,13 @@
                     const data = await res.json();
 
                     if (res.ok && data.success) {
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cancelarEdicion();
                         cargarSocios();
                     } else if (res.status === 422) {
                         for (const campo in data.errors) errores.value[campo] = data.errors[campo][0];
                     } else {
-                        alert(data.message || 'Error inesperado.');
+                        mostrarToast(data.message || 'Error inesperado.', 'error');
                     }
                 } catch (e) { console.error(e); } finally { guardando.value = false; }
             };
@@ -423,14 +480,15 @@
 
             const congelarMembresia = async (socio) => {
                 if (socio.estadoMembresia === 'Congelada') {
-                    if (!confirm(`¿Activar la membresía de ${socio.nombre1} ${socio.apellido1}?`)) return;
-                    const res = await fetch(`/admin/socios/${socio.carnetSocio}/activar-membresia`, {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                    confirmarAccion(`¿Activar la membresía de ${socio.nombre1} ${socio.apellido1}?`, async function() {
+                        const res = await fetch(`/admin/socios/${socio.carnetSocio}/activar-membresia`, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                        });
+                        const data = await res.json();
+                        mostrarToast(data.message, data.success ? 'success' : 'error');
+                        if (data.success) cargarSocios();
                     });
-                    const data = await res.json();
-                    alert(data.message);
-                    if (data.success) cargarSocios();
                 } else {
                     freezeCarnet.value = socio.carnetSocio;
                     freezeNombre.value = `${socio.nombre1} ${socio.apellido1}`;
@@ -455,7 +513,7 @@
                     body: JSON.stringify({ fechaCongelamiento: freezeFecha.value })
                 });
                 const data = await res.json();
-                alert(data.message);
+                mostrarToast(data.message, data.success ? 'success' : 'error');
                 cerrarFreezeModal();
                 if (data.success) cargarSocios();
             };
@@ -483,7 +541,7 @@
 
             onMounted(() => { cargarSocios(); });
 
-            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
         }
     }).mount('#appSocios');
 </script>

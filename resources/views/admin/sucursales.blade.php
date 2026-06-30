@@ -11,16 +11,16 @@
             <template v-else>Registrar Nueva Sucursal</template>
         </h3>
 
-        <form @submit.prevent="guardarSucursal" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
+        <form @submit.prevent="guardarSucursal" novalidate style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: start;">
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Nombre de la Sede <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.nombre" class="form-control" required placeholder="Ej. Sede Central">
+                <input type="text" v-model="formulario.nombre" class="form-control" placeholder="Ej. Sede Central">
                 <small v-if="errores.nombre" style="color: #ef4444; font-size: 0.8em; display: block; margin-top: 4px;">@{{ errores.nombre }}</small>
             </div>
             
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Telefono <span style="color:#ef4444;">*</span></label>
-                <input type="number" v-model="formulario.telefono" @input="validarTelefono" class="form-control" required min="6000000" max="99999999" onkeydown="return event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Tab' || event.key === 'Escape' || event.key === 'Enter' || (event.key.match(/^\d$/) && this.value.length < 8)">
+                <input type="text" v-model="formulario.telefono" @input="validarTelefono" class="form-control" placeholder="Ej. 71234567" maxlength="8">
                 <small v-if="errores.telefono" style="color: #ef4444; font-size: 0.8em; display: block; margin-top: 4px;">@{{ errores.telefono }}</small>
             </div>
 
@@ -115,13 +115,13 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
             };
 
-            // Solo permite ingresar números en el campo de teléfono (en tiempo real)
             const validarTelefono = () => {
                 let val = formulario.value.telefono;
                 if (typeof val === 'string') val = val.replace(/\D/g, '');
                 if (val.length > 0 && val[0] !== '6' && val[0] !== '7') val = '';
                 if (val.length > 8) val = val.slice(0, 8);
                 formulario.value.telefono = val;
+                errores.value.telefono = '';
             };
 
             const cargarSucursales = async () => {
@@ -144,8 +144,14 @@
             };
 
             const guardarSucursal = async () => {
-                guardando.value = true;
                 errores.value = { nombre: '', direccion: '', telefono: '' };
+                if (!formulario.value.nombre.trim()) { errores.value.nombre = 'El nombre de la sede es obligatorio.'; return; }
+                if (!formulario.value.direccion.trim()) { errores.value.direccion = 'La dirección es obligatoria.'; return; }
+                if (!formulario.value.telefono) { errores.value.telefono = 'El teléfono es obligatorio.'; return; }
+                let t = formulario.value.telefono.replace(/\D/g, '');
+                if (t.length < 7 || t.length > 8) { errores.value.telefono = 'El teléfono debe tener entre 7 y 8 dígitos.'; return; }
+                if (t[0] !== '6' && t[0] !== '7') { errores.value.telefono = 'El teléfono debe iniciar con 6 o 7.'; return; }
+                guardando.value = true;
 
                 try {
                     const url = modoEdicion.value ? `/admin/sucursales/${idActual.value}` : '/admin/sucursales';
@@ -160,7 +166,7 @@
                     const data = await res.json();
 
                     if (res.ok && data.success) {
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cancelarEdicion();
                         cargarSucursales();
                     } else if (res.status === 422) {
@@ -168,7 +174,7 @@
                             errores.value[campo] = data.errors[campo][0];
                         }
                     } else {
-                        alert(data.message || 'Ocurrió un error inesperado');
+                        mostrarToast(data.message || 'Ocurrió un error inesperado', 'error');
                     }
                 } catch(e) {
                     console.error("Error guardando sucursal:", e);
@@ -185,21 +191,23 @@
             };
 
             const eliminarSucursal = async (id) => {
-                if(confirm("¿Esta acción dará de baja la sucursal y quedará registrada en la auditoría. Continuar?")) {
-                    await fetch(`/admin/sucursales/${id}`, { method: 'DELETE', headers: headers });
+                confirmarAccion("¿Esta acción dará de baja la sucursal y quedará registrada en la auditoría. Continuar?", async function() {
+                    const res = await fetch(`/admin/sucursales/${id}`, { method: 'DELETE', headers: headers });
+                    const data = await res.json();
+                    if(data.success) mostrarToast(data.message, 'success');
                     cargarSucursales();
-                }
+                });
             };
 
             const restaurarSucursal = async (id) => {
-                if(confirm("¿Estás seguro de reactivar esta sucursal? Volverá a estar disponible en el sistema.")) {
+                confirmarAccion("¿Estás seguro de reactivar esta sucursal? Volverá a estar disponible en el sistema.", async function() {
                     const res = await fetch(`/admin/sucursales/${id}/restaurar`, { method: 'PATCH', headers: headers });
                     const data = await res.json();
                     if(data.success) {
-                        alert(data.message);
+                        mostrarToast(data.message, 'success');
                         cargarSucursales();
                     }
-                }
+                });
             };
 
             const cancelarEdicion = () => {

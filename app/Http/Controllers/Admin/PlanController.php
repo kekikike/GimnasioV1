@@ -31,8 +31,18 @@ class PlanController extends Controller
             'costoPlan'    => 'required|numeric|min:0',
             'duracionDias' => 'required|integer|min:1'
         ], [
+            'nombrePlan.required' => 'El nombre del plan es obligatorio.',
             'nombrePlan.regex' => 'El nombre del plan debe contener letras (no puede ser solo números).',
-            'descripcion.min'  => 'La descripción es muy corta. Escribe al menos 15 caracteres detallando el plan.'
+            'nombrePlan.max' => 'El nombre del plan no debe exceder 100 caracteres.',
+            'descripcion.required' => 'La descripción es obligatoria.',
+            'descripcion.min'  => 'La descripción es muy corta. Escribe al menos 15 caracteres detallando el plan.',
+            'descripcion.max' => 'La descripción no debe exceder 255 caracteres.',
+            'costoPlan.required' => 'El costo del plan es obligatorio.',
+            'costoPlan.numeric' => 'El costo debe ser un número.',
+            'costoPlan.min' => 'El costo no puede ser negativo.',
+            'duracionDias.required' => 'La duración es obligatoria.',
+            'duracionDias.integer' => 'La duración debe ser un número entero.',
+            'duracionDias.min' => 'La duración debe ser al menos 1 día.',
         ]);
 
         if ($validator->fails()) {
@@ -77,8 +87,18 @@ class PlanController extends Controller
             'costoPlan'    => 'required|numeric|min:0',
             'duracionDias' => 'required|integer|min:1'
         ], [
+            'nombrePlan.required' => 'El nombre del plan es obligatorio.',
             'nombrePlan.regex' => 'El nombre del plan debe contener letras (no puede ser solo números).',
-            'descripcion.min'  => 'La descripción es muy corta. Escribe al menos 15 caracteres detallando el plan.'
+            'nombrePlan.max' => 'El nombre del plan no debe exceder 100 caracteres.',
+            'descripcion.required' => 'La descripción es obligatoria.',
+            'descripcion.min'  => 'La descripción es muy corta. Escribe al menos 15 caracteres detallando el plan.',
+            'descripcion.max' => 'La descripción no debe exceder 255 caracteres.',
+            'costoPlan.required' => 'El costo del plan es obligatorio.',
+            'costoPlan.numeric' => 'El costo debe ser un número.',
+            'costoPlan.min' => 'El costo no puede ser negativo.',
+            'duracionDias.required' => 'La duración es obligatoria.',
+            'duracionDias.integer' => 'La duración debe ser un número entero.',
+            'duracionDias.min' => 'La duración debe ser al menos 1 día.',
         ]);
 
         if ($validator->fails()) {
@@ -131,6 +151,19 @@ class PlanController extends Controller
     public function destroy(Request $request, $id) {
         $usuarioA = Auth::id() ?? 1;
         try {
+            // Verificar si hay membresías activas con este plan
+            $membresiasActivas = DB::table('TMembresias')
+                ->where('idPlan', $id)
+                ->where('estadoA', 1)
+                ->count();
+
+            if ($membresiasActivas > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede dar de baja el plan porque tiene {$membresiasActivas} membresía(s) activa(s) asignada(s)."
+                ], 422);
+            }
+
             DB::table('tplanes')->where('idPlan', $id)->update(['estadoA' => 0, 'fechaA' => now(), 'usuarioA' => $usuarioA]);
             DB::table('tauditorias')->insert([
                 'tablaNombre'   => 'tplanes',

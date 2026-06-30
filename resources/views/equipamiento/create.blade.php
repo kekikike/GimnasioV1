@@ -9,7 +9,7 @@
         Registrar Nuevo Equipo
     </h3>
 
-    <form method="POST" action="{{ route('equipamiento.store') }}">
+    <form method="POST" action="{{ route('equipamiento.store') }}" novalidate>
         @csrf
 
         <div class="grid-2">
@@ -59,7 +59,6 @@
                     <option value="">Seleccione un estado</option>
                     <option value="Operativo" {{ old('estadoEquipo') == 'Operativo' ? 'selected' : '' }}>Operativo</option>
                     <option value="Mantenimiento" {{ old('estadoEquipo') == 'Mantenimiento' ? 'selected' : '' }}>En Mantenimiento</option>
-                    <option value="Dañado" {{ old('estadoEquipo') == 'Dañado' ? 'selected' : '' }}>Dañado</option>
                     <option value="Fuera de Servicio" {{ old('estadoEquipo') == 'Fuera de Servicio' ? 'selected' : '' }}>Fuera de Servicio</option>
                 </select>
                 @error('estadoEquipo') <small style="color:#ef4444;">{{ $message }}</small> @enderror

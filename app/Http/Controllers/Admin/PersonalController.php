@@ -58,21 +58,36 @@ class PersonalController extends Controller
             'nombre1'             => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo',
-            'telefono'            => 'required|numeric|digits_between:7,15',
+            'telefono'            => 'required|numeric|digits_between:7,8',
             'contrasena'          => 'required|string|min:8',
             'carnetEmpleado'      => 'required|numeric|max:2147483647|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'fechaContratoInicio' => 'required|date|before_or_equal:today', // No puede ser en el futuro
         ], [
+            'required' => 'El campo :attribute es obligatorio.',
             'idRol.not_in' => 'No se puede registrar un Socio desde este formulario.',
+            'nombre1.required' => 'El primer nombre es obligatorio.',
             'nombre1.regex' => 'El nombre solo puede contener letras y espacios.',
+            'nombre1.max' => 'El nombre no debe exceder 50 caracteres.',
+            'apellido1.required' => 'El apellido paterno es obligatorio.',
             'apellido1.regex' => 'El apellido solo puede contener letras y espacios.',
+            'apellido1.max' => 'El apellido no debe exceder 50 caracteres.',
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email' => 'Ingrese un correo electrónico válido.',
             'correo.unique' => 'Este correo electrónico ya está en uso.',
-            'contrasena.confirmed' => 'Las contraseñas no coinciden.',
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.numeric' => 'El teléfono solo debe contener números.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 8 dígitos.',
+            'contrasena.required' => 'La contraseña es obligatoria.',
             'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'carnetEmpleado.required' => 'El número de carnet es obligatorio.',
+            'carnetEmpleado.numeric' => 'El carnet solo debe contener números.',
             'carnetEmpleado.unique' => 'Este carnet ya está registrado en el sistema.',
             'carnetEmpleado.max' => 'El número de carnet es demasiado grande para el sistema.',
+            'idSucursal.required' => 'Debe seleccionar una sucursal.',
+            'idSucursal.exists' => 'La sucursal seleccionada no es válida.',
+            'fechaContratoInicio.required' => 'La fecha de inicio es obligatoria.',
+            'fechaContratoInicio.date' => 'Ingrese una fecha válida.',
             'fechaContratoInicio.before_or_equal' => 'La fecha de inicio no puede ser en el futuro.',
         ]);
 
@@ -164,16 +179,32 @@ class PersonalController extends Controller
             'nombre1'             => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'apellido1'           => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
             'correo'              => 'required|email|unique:tusuarios,correo,' . $request->idUsuario . ',idUsuario',
-            'telefono'            => 'required|numeric|digits_between:7,15',
+            'telefono'            => 'required|numeric|digits_between:7,8',
             'contrasena'          => 'nullable|string|min:8',
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'fechaContratoInicio' => 'required|date|before_or_equal:today',
         ], [
+            'required' => 'El campo :attribute es obligatorio.',
+            'idUsuario.required' => 'Error de referencia del usuario.',
+            'idUsuario.exists' => 'El usuario de referencia no existe.',
             'idRol.not_in' => 'No se puede asignar el rol de Socio a un empleado.',
+            'nombre1.required' => 'El primer nombre es obligatorio.',
             'nombre1.regex' => 'El nombre solo puede contener letras.',
+            'nombre1.max' => 'El nombre no debe exceder 50 caracteres.',
+            'apellido1.required' => 'El apellido paterno es obligatorio.',
             'apellido1.regex' => 'El apellido solo puede contener letras.',
+            'apellido1.max' => 'El apellido no debe exceder 50 caracteres.',
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email' => 'Ingrese un correo electrónico válido.',
             'correo.unique' => 'El correo electrónico ya está en uso.',
-            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 15 dígitos.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.numeric' => 'El teléfono solo debe contener números.',
+            'telefono.digits_between' => 'El teléfono debe tener entre 7 y 8 dígitos.',
+            'contrasena.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'idSucursal.required' => 'Debe seleccionar una sucursal.',
+            'idSucursal.exists' => 'La sucursal seleccionada no es válida.',
+            'fechaContratoInicio.required' => 'La fecha de inicio es obligatoria.',
+            'fechaContratoInicio.date' => 'Ingrese una fecha válida.',
             'fechaContratoInicio.before_or_equal' => 'La fecha no puede ser en el futuro.',
         ]);
 
@@ -265,7 +296,27 @@ class PersonalController extends Controller
                 return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
             }
 
+            // Verificar si tiene clases programadas o en curso
+            $clasesFuturas = DB::table('TClaseGrupales')
+                ->where('carnetEmpleado', $id)
+                ->whereIn('estadoClase', ['Programada', 'Cursandose'])
+                ->where('estadoA', 1)
+                ->count();
+
+            if ($clasesFuturas > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede dar de baja al empleado porque tiene {$clasesFuturas} clase(s) programada(s) o en curso."
+                ], 422);
+            }
+
             DB::table('templeados')->where('carnetEmpleado', $id)->update([
+                'estadoA' => 0,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tusuarios')->where('idUsuario', $empleado->idUsuario)->update([
                 'estadoA' => 0,
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
@@ -302,8 +353,28 @@ class PersonalController extends Controller
                 return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
             }
 
+            // Verificar si tiene clases programadas o en curso
+            $clasesFuturas = DB::table('TClaseGrupales')
+                ->where('carnetEmpleado', $id)
+                ->whereIn('estadoClase', ['Programada', 'Cursandose'])
+                ->where('estadoA', 1)
+                ->count();
+
+            if ($clasesFuturas > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede finalizar el contrato porque el empleado tiene {$clasesFuturas} clase(s) programada(s) o en curso."
+                ], 422);
+            }
+
             DB::table('templeados')->where('carnetEmpleado', $id)->update([
                 'fechaContratoFin' => now()->toDateString(),
+                'estadoA' => 0,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tusuarios')->where('idUsuario', $empleado->idUsuario)->update([
                 'estadoA' => 0,
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
@@ -342,6 +413,12 @@ class PersonalController extends Controller
 
             DB::table('templeados')->where('carnetEmpleado', $id)->update([
                 'fechaContratoFin' => null,
+                'estadoA' => 1,
+                'fechaA' => now(),
+                'usuarioA' => $usuarioA,
+            ]);
+
+            DB::table('tusuarios')->where('idUsuario', $empleado->idUsuario)->update([
                 'estadoA' => 1,
                 'fechaA' => now(),
                 'usuarioA' => $usuarioA,
