@@ -29,7 +29,6 @@
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Costo Total (Bs.)</label>
                 <input type="text" v-model="formulario.costoPlan" @input="validarCostoPlan" class="form-control" :class="{ 'is-invalid': errores.costoPlan }" required placeholder="0.00">
                 <small v-if="errores.costoPlan" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.costoPlan }}</small>
-                <small style="color:#ef4444; font-size:0.75em; display:block; margin-top:2px;">No se permiten costos negativos.</small>
             </div>
 
             <div style="grid-column: span 2; margin-top: 10px;">
@@ -110,6 +109,11 @@
                 const costo = parseFloat(String(formulario.value.costoPlan || '').replace(/[^0-9.]/g, ''));
                 if (!costo || costo <= 0) {
                     errores.value.costoPlan = 'El costo debe ser un número mayor a 0.';
+                    guardando.value = false;
+                    return;
+                }
+                if (costo < 50) {
+                    errores.value.costoPlan = 'El costo mínimo del plan es de 50 Bs.';
                     guardando.value = false;
                     return;
                 }

@@ -194,6 +194,10 @@ createApp({
             if (!f.modalidadPago) errs.modalidadPago = 'Debe seleccionar una modalidad de pago.';
             const monto = parseFloat(String(f.montoBase).replace(/[^0-9.]/g, ''));
             if (!monto || monto < 100) errs.montoBase = 'El monto base mínimo es de 100 Bs.';
+            if (esEntrenador.value) {
+                const tarifa = parseFloat(String(f.tarifaHoraOClase).replace(/[^0-9.]/g, ''));
+                if (!tarifa || tarifa <= 10) errs.tarifaHoraOClase = 'La tarifa por hora/clase debe ser mayor a 10 Bs.';
+            }
             return errs;
         };
 
