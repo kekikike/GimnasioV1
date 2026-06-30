@@ -8,6 +8,7 @@
     .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     .alert { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
     .form-control.is-invalid { border-color: #ef4444; }
+    .password-mask{-webkit-text-security:disc}.password-mask.no-mask{-webkit-text-security:none}
 </style>
 
 <div id="appPersonal">
@@ -73,7 +74,7 @@
                     @{{ modoEdicion ? 'Nueva Contraseña (Opcional)' : 'Contraseña *' }}
                 </label>
                 <div style="display:flex; align-items:center; gap:4px;">
-                    <input :type="mostrarPassword ? 'text' : 'password'" v-model="formulario.contrasena" class="form-control" :class="{ 'is-invalid': errores.contrasena }" :required="!modoEdicion" :placeholder="modoEdicion ? '********' : ''" style="flex:1;">
+                    <input type="text" v-model="formulario.contrasena" class="form-control password-mask" :class="[{'no-mask': mostrarPassword}, {'is-invalid': errores.contrasena}]" :required="!modoEdicion" :placeholder="modoEdicion ? '********' : ''" style="flex:1;" autocomplete="off" :readonly="passReadonly" @focus="passReadonly = false">
                     <button type="button" @click="mostrarPassword = !mostrarPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarPassword ? 'Ocultar' : 'Mostrar'">
                         <svg v-if="mostrarPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -85,7 +86,7 @@
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
                 <div style="display:flex; align-items:center; gap:4px;">
-                    <input :type="mostrarConfirmPassword ? 'text' : 'password'" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''" style="flex:1;">
+                    <input type="text" v-model="formulario.contrasena_confirmation" class="form-control password-mask" :class="{'no-mask': mostrarConfirmPassword}" :required="!modoEdicion || formulario.contrasena !== ''" style="flex:1;" autocomplete="off" :readonly="passConfirmReadonly" @focus="passConfirmReadonly = false">
                     <button type="button" @click="mostrarConfirmPassword = !mostrarConfirmPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarConfirmPassword ? 'Ocultar' : 'Mostrar'">
                         <svg v-if="mostrarConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -219,6 +220,8 @@
             const guardando = ref(false);
             const mostrarPassword = ref(false);
             const mostrarConfirmPassword = ref(false);
+            const passReadonly = ref(true);
+            const passConfirmReadonly = ref(true);
 
             // 1. Función inteligente para calcular la fecha de hoy sin problemas de zona horaria
             const obtenerFechaHoy = () => {
@@ -450,7 +453,7 @@
 
             return {
                 empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId,
-                formulario, errores, modoEdicion, guardando, mostrarPassword, mostrarConfirmPassword,
+                formulario, errores, modoEdicion, guardando, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly,
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
                 guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,
                 confirmarContrato, reactivarEmpleado

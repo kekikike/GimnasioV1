@@ -19,6 +19,7 @@
     .btn-editar.active:hover { background:#2563eb; }
     .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     @media (max-width:640px) { .grid-2 { grid-template-columns:1fr; } }
+    .password-mask{-webkit-text-security:disc}.password-mask.no-mask{-webkit-text-security:none}
 </style>
 
 <script>
@@ -100,7 +101,7 @@
                     <div class="field-group">
                         <label>Nueva Contrasena <small style="color:#64748b;font-weight:normal;">(Dejar en blanco para no cambiar)</small></label>
                         <div style="display:flex; align-items:center; gap:4px;">
-                            <input :type="mostrarPassword ? 'text' : 'password'" v-model="formulario.contrasena" class="form-control" :disabled="!editando" placeholder="Minimo 8 caracteres" style="flex:1;">
+                            <input type="text" v-model="formulario.contrasena" class="form-control password-mask" :class="{'no-mask': mostrarPassword}" :disabled="!editando" placeholder="Minimo 8 caracteres" style="flex:1;" autocomplete="off" :readonly="!editando || passReadonly" @focus="if(!editando) return; passReadonly = false">
                             <button type="button" @click="mostrarPassword = !mostrarPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarPassword ? 'Ocultar' : 'Mostrar'" :disabled="!editando">
                                 <svg v-if="mostrarPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -109,7 +110,7 @@
                     </div>
                     <div class="field-group">
                         <label>Confirmar Contrasena</label>
-                        <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :disabled="!editando" :required="formulario.contrasena!==''" placeholder="Repite la contrasena">
+                        <input type="text" v-model="formulario.contrasena_confirmation" class="form-control password-mask" :disabled="!editando" :required="formulario.contrasena!==''" placeholder="Repite la contrasena" autocomplete="off" :readonly="!editando || passConfirmReadonly" @focus="if(!editando) return; passConfirmReadonly = false">
                     </div>
                 </div>
             </div>
@@ -133,6 +134,8 @@ createApp({
         const guardando = ref(false);
         const tabActiva = ref('datos');
         const mostrarPassword = ref(false);
+        const passReadonly = ref(true);
+        const passConfirmReadonly = ref(true);
         const socio = window.socioData || {};
 
         const formulario = ref({
@@ -167,7 +170,10 @@ createApp({
 
         const toggleEditar = () => {
             editando.value = !editando.value;
-            if (!editando.value) {
+            if (editando.value) {
+                passReadonly.value = true;
+                passConfirmReadonly.value = true;
+            } else {
                 formulario.value.contrasena = '';
                 formulario.value.contrasena_confirmation = '';
                 limpiarErrores();
@@ -271,6 +277,7 @@ createApp({
 
         return {
             formulario, errores, editando, guardando, tabActiva, mostrarPassword,
+            passReadonly, passConfirmReadonly,
             toggleEditar, validarLetras, filtrarTelefono, filtrarContactoTelefono,
             limpiarError, guardarPerfil
         };
