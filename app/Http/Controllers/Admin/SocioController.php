@@ -417,6 +417,7 @@ class SocioController extends Controller
             $socio = DB::table('tsocios')->where('carnetSocio', $id)->first();
             if ($socio) {
                 DB::table('tusuarios')->where('idUsuario', $socio->idUsuario)->update(['estadoA' => 0, 'fechaA' => now(), 'usuarioA' => $usuarioA]);
+                DB::table('tsocios')->where('carnetSocio', $id)->update(['estadoA' => 0, 'fechaA' => now(), 'usuarioA' => $usuarioA]);
             }
             DB::table('tmembresias')->where('carnetSocio', $id)->update(['estadoA' => 0, 'fechaA' => now()]);
             

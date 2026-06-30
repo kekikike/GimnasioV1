@@ -36,7 +36,7 @@
 
             <div class="form-group">
                 <label for="descripcionFalla">Descripci&oacute;n de la Falla</label>
-                <textarea name="descripcionFalla" id="descripcionFalla" class="form-control" rows="4" required placeholder="Describa el problema detectado..."></textarea>
+                <textarea name="descripcionFalla" id="descripcionFalla" class="form-control" rows="4" maxlength="255" required placeholder="Describa el problema detectado..."></textarea>
             </div>
 
             <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;">

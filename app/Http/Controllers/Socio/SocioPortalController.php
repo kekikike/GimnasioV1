@@ -34,8 +34,14 @@ class SocioPortalController extends Controller
         }
 
         $carnet = $socio->carnetSocio;
-        $membresia = DB::select('CALL sp_TMembresias_GetActiveBySocio(?)', [$carnet]);
-        $membresia = $membresia[0] ?? null;
+        $membresia = DB::table('TMembresias as m')
+            ->join('TPlanes as p', 'm.idPlan', '=', 'p.idPlan')
+            ->leftJoin('TSucursales as s', 'm.idSucursal', '=', 's.idSucursal')
+            ->select('m.*', 'p.nombrePlan', 'p.descripcion as descripcionPlan', 'p.costoPlan', 'p.duracionDias', 's.nombre as sucursal')
+            ->where('m.carnetSocio', $carnet)
+            ->where('m.estadoA', 1)
+            ->orderBy('m.idMembresia', 'desc')
+            ->first();
         $accesos = DB::select('CALL sp_TControlAccesos_GetBySocio(?)', [$carnet]);
         $reservas = DB::select('CALL sp_TReservas_GetBySocio(?)', [$carnet]);
         $clases = DB::select('CALL sp_TClaseGrupales_GetAvailable()');

@@ -99,7 +99,8 @@
                     </div>
                     <div class="field-group">
                         <label>Confirmar Contrasena</label>
-                        <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :disabled="!editando" :required="formulario.contrasena!==''" placeholder="Repite la contrasena">
+                        <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :disabled="!editando" :required="formulario.contrasena!==''" placeholder="Repite la contrasena" :class="{'is-invalid': errores.contrasena}">
+                        <small v-if="errores.contrasena" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.contrasena }}</small>
                     </div>
                 </div>
             </div>
@@ -205,6 +206,13 @@ createApp({
             } else if (tel.charAt(0) !== '6' && tel.charAt(0) !== '7') {
                 errores.telefono = 'El teléfono debe comenzar con 6 o 7.';
                 valido = false;
+            }
+
+            if (formulario.value.contrasena && formulario.value.contrasena !== formulario.value.contrasena_confirmation) {
+                errores.contrasena = 'Las contraseñas no coinciden.';
+                valido = false;
+            } else {
+                errores.contrasena = '';
             }
 
             return valido;

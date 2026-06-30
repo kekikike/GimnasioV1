@@ -73,7 +73,7 @@
                 </div>
                 <div v-if="montoCierre && diferenciaCierre > 0.01">
                     <label>Observacion (razon de la diferencia)</label>
-                    <textarea v-model="cierreObservacion" class="form-control" rows="2" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
+                    <textarea v-model="cierreObservacion" class="form-control" rows="2" maxlength="255" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
                 </div>
             </div>
             <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">

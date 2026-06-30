@@ -327,8 +327,15 @@ class EntrenadorController extends Controller
     {
         $data = $request->validate([
             'idEquipo'        => 'required|integer|exists:TEquipamientos,idEquipo',
-            'descripcionFalla' => 'required|string|max:500',
+            'descripcionFalla' => 'required|string|max:255',
             'gravedad'         => 'required|in:Baja,Media,Alta,Critica',
+        ], [
+            'idEquipo.required' => 'Debe seleccionar un equipo.',
+            'idEquipo.exists' => 'El equipo seleccionado no es válido.',
+            'descripcionFalla.required' => 'La descripción de la falla es obligatoria.',
+            'descripcionFalla.max' => 'La descripción no debe exceder 255 caracteres.',
+            'gravedad.required' => 'Debe seleccionar la gravedad de la falla.',
+            'gravedad.in' => 'La gravedad seleccionada no es válida.',
         ]);
 
         $usuario    = session('usuario');

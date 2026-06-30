@@ -265,7 +265,7 @@ class ClaseGrupalController extends Controller
 
         DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $id)
-            ->update(['estadoA' => 0, 'estadoClase' => 'Cancelada']);
+            ->update(['estadoClase' => 'Cancelada']);
 
         DB::table('TReservas')
             ->where('idClaseGrupal', $id)
@@ -275,10 +275,10 @@ class ClaseGrupalController extends Controller
         DB::table('tauditorias')->insert([
             'tablaNombre'   => 'TClaseGrupales',
             'registroId'    => $id,
-            'accion'        => 'D',
-            'campo'         => 'estadoA, estadoClase',
-            'valorAnterior' => 'estadoA = 1, estadoClase = Programada',
-            'valorNuevo'    => 'estadoA = 0, estadoClase = Cancelada',
+            'accion'        => 'Cancelar',
+            'campo'         => 'estadoClase',
+            'valorAnterior' => 'Programada',
+            'valorNuevo'    => 'Cancelada',
             'usuarioA'      => $usuarioA,
             'fechaA'        => now(),
             'direccionIP'   => request()->ip(),

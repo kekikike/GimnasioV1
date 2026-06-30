@@ -85,7 +85,7 @@
         </div>
         <div class="info-row">
             <span class="label">Sucursal</span>
-            <span class="value">{{ $accesos[0]->sucursal ?? '—' }}</span>
+            <span class="value">{{ $membresia->sucursal ?? '—' }}</span>
         </div>
         @else
         <p class="empty-msg">Sin membresía activa.</p>
@@ -147,9 +147,9 @@
                     <td>{{ $r->fecha }}</td>
                     <td>{{ substr($r->horaInicio, 0, 5) }} - {{ substr($r->horaFin, 0, 5) }}</td>
                     <td>
-                        @if($r->estadoReserva === 'Confirmada')
+                        @if($r->estadoReserva === 'Reservado' || $r->estadoReserva === 'Confirmada')
                         <span class="badge badge-success">{{ $r->estadoReserva }}</span>
-                        @elseif($r->estadoReserva === 'Cancelada')
+                        @elseif($r->estadoReserva === 'Cancelado' || $r->estadoReserva === 'Cancelada')
                         <span class="badge badge-danger">{{ $r->estadoReserva }}</span>
                         @else
                         <span class="badge badge-info">{{ $r->estadoReserva }}</span>

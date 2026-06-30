@@ -63,6 +63,12 @@
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-warning { background: #fef3c7; color: #92400e; }
         .badge-danger { background: #fee2e2; color: #991b1b; }
+        .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+        .toast{padding:14px 28px;border-radius:12px;font-size:0.9rem;font-weight:500;color:white;box-shadow:0 8px 32px rgba(0,0,0,0.25);margin-bottom:8px;animation:toastIn .3s ease,toastOut .3s ease 1.7s forwards;pointer-events:auto;max-width:520px;text-align:center;line-height:1.4;}
+        .toast-success{background:#10b981;}
+        .toast-error{background:#ef4444;}
+        @keyframes toastIn{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
     </style>
 </head>
 <body>
@@ -101,5 +107,8 @@
         @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
         @yield('content')
     </div>
+<script>
+function mostrarToast(m,t){t=t||'success';var c=document.querySelector('.toast-container');if(!c){c=document.createElement('div');c.className='toast-container';document.body.appendChild(c)}var o=document.createElement('div');o.className='toast toast-'+t;o.textContent=m;c.appendChild(o);setTimeout(function(){if(o.parentNode)o.parentNode.removeChild(o)},2000)}
+</script>
 </body>
 </html>

@@ -36,7 +36,7 @@ class EsquemaSueldoController extends Controller
             ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->where('es.estadoA', 1)
             ->where('u.idRol', '!=', 1)
-            ->select('es.*', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'e.idSucursal');
+            ->select('es.*', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.idRol', 'e.idSucursal');
         if ($usuario->idRol != 1) {
             $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
             if ($emp) $query->where('e.idSucursal', $emp->idSucursal);

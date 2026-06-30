@@ -158,7 +158,7 @@ class CajaController extends Controller
             $cierreEstado = 'Bien';
             $cierreObservacion = null;
         } else {
-            $request->validate(['cierreObservacion' => 'required|string|max:1000']);
+            $request->validate(['cierreObservacion' => 'required|string|max:255'], ['cierreObservacion.max' => 'La observación no debe exceder los 255 caracteres.']);
             $cierreEstado = 'Auditada';
             $cierreObservacion = $request->cierreObservacion;
         }

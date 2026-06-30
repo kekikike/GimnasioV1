@@ -175,7 +175,7 @@ Route::middleware('auth.usuario')->group(function () {
         // Rutas de operaciones de caja para recepcionista
         Route::get('/recepcionista/caja/estado', [RecepcionistaController::class, 'estado'])->name('recepcionista.caja.estado');
         Route::post('/recepcionista/caja/abrir', [RecepcionistaController::class, 'abrir'])->name('recepcionista.caja.abrir');
-        Route::post('/recepcionista/caja/cerrar/{id}', [RecepcionistaController::class, 'cerrar'])->name('recepcionista.caja.cerrar');
+        Route::post('/recepcionista/caja/{id}/cerrar', [RecepcionistaController::class, 'cerrar'])->name('recepcionista.caja.cerrar');
         Route::get('/recepcionista/caja/movimientos', [RecepcionistaController::class, 'movimientos'])->name('recepcionista.caja.movimientos');
         Route::post('/recepcionista/caja/recibo', [RecepcionistaController::class, 'crearRecibo'])->name('recepcionista.caja.recibo');
         Route::get('/recepcionista/caja/recibo/{id}', [RecepcionistaController::class, 'mostrarRecibo'])->name('recepcionista.caja.mostrar_recibo');

@@ -70,7 +70,7 @@
                 </div>
                 <div v-if="montoCierre && diferenciaCierre > 0.01">
                     <label>Observacion (razon de la diferencia)</label>
-                    <textarea v-model="cierreObservacion" class="form-control" rows="2" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
+                    <textarea v-model="cierreObservacion" class="form-control" rows="2" maxlength="255" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
                 </div>
             </div>
             <div v-if="cajaAbierta.estadoCaja === 'Cerrada'" style="padding:0.5rem 0; color:#64748b;">
@@ -369,7 +369,7 @@ createApp({
                 body: JSON.stringify({ montoApertura: montoApertura.value })
             });
             const data = await res.json();
-            alert(data.message);
+            mostrarToast(data.message, data.success ? 'success' : 'error');
             if (data.success) { montoApertura.value = ''; cierreObservacion.value = ''; cargarEstado(); cargarMovimientos(); }
         };
 
@@ -383,7 +383,7 @@ createApp({
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            alert(data.message);
+            mostrarToast(data.message, data.success ? 'success' : 'error');
             if (data.success) { montoCierre.value = ''; cierreObservacion.value = ''; cajaAbierta.value = data; cargarEstado(); cargarMovimientos(); }
         };
 
@@ -415,7 +415,7 @@ createApp({
                 body: JSON.stringify({ descripcion: descripcionSalida.value, costo: costosalida.value })
             });
             const data = await res.json();
-            alert(data.message);
+            mostrarToast(data.message, data.success ? 'success' : 'error');
             if (data.success) {
                 descripcionSalida.value = '';
                 costosalida.value = '';
@@ -433,8 +433,8 @@ createApp({
             montoTotal.value = '';
             metodosPagoArr.value = [];
             try {
-                const res = await fetch('{{ url("/admin/caja/buscar-socio") }}/' + socioCarnet.value);
-                if (!res.ok) { alert('Socio no encontrado.'); return; }
+                const res = await fetch('{{ url("/recepcionista/caja/buscar-socio") }}/' + socioCarnet.value);
+                if (!res.ok) { mostrarToast('Socio no encontrado.', 'error'); return; }
                 const data = await res.json();
                 if (data.success) {
                     socioInfo.value = data.socio;
@@ -447,7 +447,7 @@ createApp({
                         metodosPagoArr.value = [{ idMetodoPago: '', monto: '' }];
                     }
                 }
-            } catch (e) { alert('Error al buscar socio.'); }
+            } catch (e) { mostrarToast('Error al buscar socio.', 'error'); }
         };
 
         const cargarPlanes = async () => {
@@ -495,11 +495,11 @@ createApp({
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                    if (data.errors) { const msgs = Object.values(data.errors).flat().join('\n'); alert(msgs); }
-                    else alert(data.message || 'Error al registrar recibo.');
+                    if (data.errors) { const msgs = Object.values(data.errors).flat().join('\n'); mostrarToast(msgs, 'error'); }
+                    else mostrarToast(data.message || 'Error al registrar recibo.', 'error');
                     return;
                 }
-                alert(data.message);
+                mostrarToast(data.message, 'success');
                 socioInfo.value = null;
                 membresiaActiva.value = null;
                 esRenovacion.value = false;
@@ -509,12 +509,12 @@ createApp({
                 metodosPagoArr.value = [];
                 cargarMovimientos();
                 if (data.idRecibo) verRecibo(data.idRecibo);
-            } catch (e) { alert('Error: ' + e.message); }
+            } catch (e) { mostrarToast('Error: ' + e.message, 'error'); }
         };
 
         const verRecibo = async (id) => {
             try {
-                const res = await fetch('{{ url("/admin/caja/recibo") }}/' + id);
+                const res = await fetch('{{ url("/recepcionista/caja/recibo") }}/' + id);
                 const data = await res.json();
                 if (data.success) {
                     reciboPreview.value = data.recibo;

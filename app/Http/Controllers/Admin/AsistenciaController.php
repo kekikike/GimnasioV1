@@ -10,17 +10,12 @@ use Carbon\Carbon;
 
 class AsistenciaController extends Controller
 {
-    private function getHorario($carnetEmpleado, $timestamp = null)
+    private function getHorario($carnetEmpleado, $fechaReferencia = null)
     {
-        $fechaReferencia = $timestamp ? Carbon::parse($timestamp) : Carbon::now();
+        $fechaReferencia = $fechaReferencia ? Carbon::parse($fechaReferencia) : Carbon::now();
         $dias = [
-            'Monday'    => 'Lunes',
-            'Tuesday'   => 'Martes',
-            'Wednesday' => 'Miércoles',
-            'Thursday'  => 'Jueves',
-            'Friday'    => 'Viernes',
-            'Saturday'  => 'Sábado',
-            'Sunday'    => 'Domingo',
+            'Monday'    => 'Lunes', 'Tuesday'   => 'Martes', 'Wednesday' => 'Miércoles',
+            'Thursday'  => 'Jueves', 'Friday'    => 'Viernes', 'Saturday'  => 'Sábado', 'Sunday'    => 'Domingo',
         ];
         $diaSemana = $dias[$fechaReferencia->format('l')];
 
@@ -28,30 +23,29 @@ class AsistenciaController extends Controller
             ->where('carnetEmpleado', $carnetEmpleado)
             ->where('diaSemana', $diaSemana)
             ->where('estadoA', 1)
+            ->orderBy('horaEntradaEsperada')
             ->get();
 
         if ($horarios->isEmpty()) {
-            return null;
+            return ['siguiente' => null, 'anterior' => null];
         }
 
-        $mejorTurno = null;
-        $menorDiferencia = PHP_INT_MAX;
+        $siguiente = null;
+        $anterior = null;
+        $toleranciaSegundos = 3600;
 
         foreach ($horarios as $horario) {
-            $horaTurno = Carbon::parse($horario->horaEntradaEsperada)->setDateFrom($fechaReferencia);
-            $diferenciaAbs = abs($fechaReferencia->getTimestamp() - $horaTurno->getTimestamp());
+            $horaEntrada = Carbon::parse($horario->horaEntradaEsperada)->setDateFrom($fechaReferencia);
+            $diferenciaSegundos = $horaEntrada->timestamp - $fechaReferencia->timestamp;
 
-            if ($diferenciaAbs < $menorDiferencia) {
-                $menorDiferencia = $diferenciaAbs;
-                $mejorTurno = $horario;
+            if ($diferenciaSegundos >= -$toleranciaSegundos) {
+                $siguiente = $horario;
+                break;
             }
+            $anterior = $horario;
         }
 
-        if ($timestamp === null && $menorDiferencia > (4 * 3600)) {
-            return null;
-        }
-
-        return $mejorTurno;
+        return ['siguiente' => $siguiente, 'anterior' => $anterior];
     }
 
     public function registrarEntrada(Request $request)
@@ -68,67 +62,79 @@ class AsistenciaController extends Controller
         }
 
         $usuarioA = Auth::id() ?? 1;
+        $hoy = Carbon::today()->toDateString();
 
         try {
-            $horario = $this->getHorario($request->carnetEmpleado);
+            $horarios = $this->getHorario($request->carnetEmpleado);
+            $siguiente = $horarios['siguiente'];
+            $anterior = $horarios['anterior'];
 
-            // Un solo registro por d�a por horario
-            if ($horario) {
-                $existeHoy = DB::table('tasistenciaspersonal')
+            if ($anterior) {
+                $tieneAsistencia = DB::table('tasistenciaspersonal')
                     ->where('carnetEmpleado', $request->carnetEmpleado)
-                    ->where('idHorario', $horario->idHorario)
-                    ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
+                    ->where('idHorario', $anterior->idHorario)
+                    ->whereDate('fechaHoraEntrada', $hoy)
                     ->exists();
 
-                if ($existeHoy) {
-                    return response()->json(['success' => false, 'message' => 'Ya existe un registro de asistencia para este turno el d�a de hoy.'], 409);
-                }
-            } else {
-                // Sin horario: solo validar que no haya entrada abierta
-                $entradaAbierta = DB::table('tasistenciaspersonal')
-                    ->where('carnetEmpleado', $request->carnetEmpleado)
-                    ->whereDate('fechaHoraEntrada', Carbon::today()->toDateString())
-                    ->whereNull('fechaHoraSalida')
-                    ->exists();
-
-                if ($entradaAbierta) {
-                    return response()->json(['success' => false, 'message' => 'Ya existe una entrada registrada sin salida para hoy.'], 409);
+                if (!$tieneAsistencia) {
+                    DB::table('tasistenciaspersonal')->insert([
+                        'carnetEmpleado' => $request->carnetEmpleado,
+                        'idHorario' => $anterior->idHorario,
+                        'fechaHoraEntrada' => Carbon::parse($anterior->horaEntradaEsperada),
+                        'estadoEntrada' => 'falta',
+                        'estadoSalida' => 'falta',
+                        'estadoAsistencia' => 'falta',
+                        'usuarioA' => $usuarioA,
+                        'fechaA' => now(),
+                        'estadoA' => 1,
+                    ]);
                 }
             }
 
-            $ahora = Carbon::now();
+            if ($siguiente) {
+                $existeHoy = DB::table('tasistenciaspersonal')
+                    ->where('carnetEmpleado', $request->carnetEmpleado)
+                    ->where('idHorario', $siguiente->idHorario)
+                    ->whereDate('fechaHoraEntrada', $hoy)
+                    ->exists();
 
-            $estadoEntrada = null;
-            $msg = 'Entrada registrada exitosamente.';
+                if ($existeHoy) {
+                    return response()->json(['success' => false, 'message' => 'Ya existe un registro de asistencia para este turno el día de hoy.'], 409);
+                }
 
-            if ($horario) {
-                $horaEntradaEsperada = Carbon::parse($horario->horaEntradaEsperada);
+                $ahora = Carbon::now();
+                $horaEntradaEsperada = Carbon::parse($siguiente->horaEntradaEsperada);
                 $tolerancia = $horaEntradaEsperada->copy()->addMinutes(5);
 
                 if ($ahora->lte($tolerancia)) {
                     $estadoEntrada = 'puntual';
+                    $estadoAsistencia = 'presente';
                     $msg = 'Entrada registrada - Llegaste a tiempo.';
                 } else {
                     $estadoEntrada = 'tardanza';
+                    $estadoAsistencia = 'tardanza';
                     $msg = 'Entrada registrada - Llegaste tarde.';
                 }
 
-                $msg .= ' Turno: ' . substr($horario->horaEntradaEsperada, 0, 5) . ' - ' . substr($horario->horaSalidaEsperada, 0, 5);
+                $msg .= ' Turno: ' . substr($siguiente->horaEntradaEsperada, 0, 5) . ' - ' . substr($siguiente->horaSalidaEsperada, 0, 5);
+
+                DB::table('tasistenciaspersonal')->insert([
+                    'carnetEmpleado' => $request->carnetEmpleado,
+                    'idHorario' => $siguiente->idHorario,
+                    'fechaHoraEntrada' => $ahora,
+                    'estadoEntrada' => $estadoEntrada,
+                    'estadoSalida' => null,
+                    'estadoAsistencia' => $estadoAsistencia,
+                    'usuarioA' => $usuarioA,
+                    'fechaA' => now(),
+                    'estadoA' => 1,
+                ]);
+
+                return response()->json(['success' => true, 'message' => $msg, 'estado' => $estadoEntrada]);
             }
 
-            DB::table('tasistenciaspersonal')->insert([
-                'carnetEmpleado' => $request->carnetEmpleado,
-                'idHorario' => $horario ? $horario->idHorario : null,
-                'fechaHoraEntrada' => $ahora,
-                'estadoEntrada' => $estadoEntrada,
-                'estadoSalida' => null,
-                'estadoAsistencia' => $estadoEntrada ? 'presente' : 'presente',
-                'usuarioA' => $usuarioA,
-                'fechaA' => now(),
-                'estadoA' => 1
-            ]);
+            return response()->json(['success' => false, 'message' => 'Todos tus turnos de hoy ya pasaron.'], 400);
 
-            return response()->json(['success' => true, 'message' => $msg]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
@@ -157,30 +163,36 @@ class AsistenciaController extends Controller
                 ->first();
 
             if (!$asistenciaAbierta) {
-                return response()->json(['success' => false, 'message' => 'No se encontro una entrada abierta para registrar la salida.'], 404);
+                return response()->json(['success' => false, 'message' => 'No se encontró una entrada abierta para registrar la salida.'], 404);
             }
 
             $ahora = Carbon::now();
             $estadoSalida = null;
             $msg = 'Salida registrada correctamente.';
 
+            $horario = null;
             if ($asistenciaAbierta->idHorario) {
                 $horario = DB::table('thorariolaborales')->where('idHorario', $asistenciaAbierta->idHorario)->first();
+            }
 
-                if ($horario) {
-                    $horaSalidaEsperada = Carbon::parse($horario->horaSalidaEsperada);
-                    $diferenciaMinutos = $ahora->diffInMinutes($horaSalidaEsperada, false);
+            if (!$horario) {
+                $horarios = $this->getHorario($request->carnetEmpleado, $asistenciaAbierta->fechaHoraEntrada);
+                $horario = $horarios['siguiente'];
+            }
 
-                    if ($diferenciaMinutos < -10) {
-                        $estadoSalida = 'temprano';
-                        $msg = 'Salida registrada - Te fuiste antes de la hora.';
-                    } else {
-                        $estadoSalida = 'puntual';
-                        $msg = 'Salida registrada - A tiempo.';
-                    }
+            if ($horario) {
+                $horaSalidaEsperada = Carbon::parse($horario->horaSalidaEsperada);
+                $minutosAntes = ($horaSalidaEsperada->timestamp - $ahora->timestamp) / 60;
 
-                    $msg .= ' Turno: ' . substr($horario->horaEntradaEsperada, 0, 5) . ' - ' . substr($horario->horaSalidaEsperada, 0, 5);
+                if ($minutosAntes > 10) {
+                    $estadoSalida = 'temprano';
+                    $msg = 'Salida registrada - Te fuiste antes de la hora.';
+                } else {
+                    $estadoSalida = 'puntual';
+                    $msg = 'Salida registrada - A tiempo.';
                 }
+
+                $msg .= ' Turno: ' . substr($horario->horaEntradaEsperada, 0, 5) . ' - ' . substr($horario->horaSalidaEsperada, 0, 5);
             }
 
             DB::table('tasistenciaspersonal')
@@ -188,12 +200,12 @@ class AsistenciaController extends Controller
                 ->update([
                     'fechaHoraSalida' => $ahora,
                     'estadoSalida' => $estadoSalida,
-                    'estadoAsistencia' => 'presente',
+                    'estadoAsistencia' => $estadoSalida === 'temprano' ? 'temprano' : 'presente',
                     'usuarioA' => $usuarioA,
-                    'fechaA' => now()
+                    'fechaA' => now(),
                 ]);
 
-            return response()->json(['success' => true, 'message' => $msg]);
+            return response()->json(['success' => true, 'message' => $msg, 'estado' => $estadoSalida]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }

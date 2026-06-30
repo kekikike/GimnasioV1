@@ -87,8 +87,8 @@
                     
                     mensajeTipo.value = res.ok ? 'success' : 'error';
                     mensaje.value = data.message || (res.ok ? 'Operación exitosa.' : 'Ocurrió un error.');
-                    mensajeEstado.value = '';
-                    if (res.ok && data.message) {
+                    mensajeEstado.value = data.estado || '';
+                    if (!mensajeEstado.value && res.ok && data.message) {
                         var msg = data.message.toLowerCase();
                         if (msg.indexOf('tarde') !== -1 || msg.indexOf('tardanza') !== -1) mensajeEstado.value = 'tardanza';
                         else if (msg.indexOf('antes') !== -1 || msg.indexOf('temprano') !== -1) mensajeEstado.value = 'temprano';

@@ -122,6 +122,7 @@ createApp({
         const form = ref({carnetEmpleado:'', modalidadPago:'', montoBase:0, tarifaHoraOClase:0});
 
         const esEntrenador = computed(() => {
+            if (editando.value) return form.value.idRol == 3;
             if (!form.value.carnetEmpleado) return false;
             const emp = empleados.value.find(e => e.carnetEmpleado == form.value.carnetEmpleado);
             return emp && emp.idRol == 3;
@@ -169,6 +170,7 @@ createApp({
                     modalidadPago: e.modalidadPago,
                     montoBase: e.montoBase,
                     tarifaHoraOClase: e.tarifaHoraOClase,
+                    idRol: e.idRol,
                 };
                 form.value._id = e.idEsquemaSueldo;
             } else {
