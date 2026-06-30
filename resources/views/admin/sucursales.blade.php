@@ -168,17 +168,31 @@
                 mapInstance = L.map(mapContainer.value).setView([lat, lng], 12);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapInstance);
                 markerInstance = L.marker([lat, lng], { draggable: true }).addTo(mapInstance);
+                const onCoordsChange = function(lat, lng) {
+                    formulario.value.latitud = lat.toFixed(7);
+                    formulario.value.longitud = lng.toFixed(7);
+                    reverseGeocode(lat, lng);
+                };
                 markerInstance.on('dragend', function() {
                     var pos = markerInstance.getLatLng();
-                    formulario.value.latitud = pos.lat.toFixed(7);
-                    formulario.value.longitud = pos.lng.toFixed(7);
+                    onCoordsChange(pos.lat, pos.lng);
                 });
                 mapInstance.on('click', function(e) {
                     if (markerInstance) markerInstance.setLatLng(e.latlng);
-                    formulario.value.latitud = e.latlng.lat.toFixed(7);
-                    formulario.value.longitud = e.latlng.lng.toFixed(7);
+                    onCoordsChange(e.latlng.lat, e.latlng.lng);
                 });
                 setTimeout(() => mapInstance.invalidateSize(), 500);
+            };
+
+            const reverseGeocode = async (lat, lng) => {
+                try {
+                    const res = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&addressdetails=1');
+                    const data = await res.json();
+                    if (data && data.display_name) {
+                        formulario.value.direccion = data.display_name;
+                        errores.value.direccion = '';
+                    }
+                } catch(e) { /* ignore */ }
             };
 
             const buscarEnMapa = async () => {
@@ -194,6 +208,7 @@
                         formulario.value.longitud = lng.toFixed(7);
                         if (mapInstance) mapInstance.setView([lat, lng], 15);
                         if (markerInstance) markerInstance.setLatLng([lat, lng]);
+                        reverseGeocode(lat, lng);
                     } else {
                         mostrarToast('No se encontró la dirección en el mapa.', 'error');
                     }
