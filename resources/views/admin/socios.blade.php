@@ -39,9 +39,9 @@
                 <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" :class="{ 'is-invalid': errores.carnetSocio_confirmation }" required maxlength="10">
                 <small v-if="errores.carnetSocio_confirmation" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio_confirmation }}</small>
             </div>
-            <div v-else></div> <div style="grid-row: span 2;">
-                <label style="font-weight: bold; font-size: 0.85rem;">Foto Perfil (JPG, PNG)</label>
-                <input type="file" @change="manejarFoto" class="form-control" accept="image/jpeg, image/png" ref="fileInput">
+            <div v-else></div>             <div style="grid-row: span 2;">
+                <label style="font-weight: bold; font-size: 0.85rem;">Foto Perfil (JPG, PNG) <span style="color:#ef4444;">*</span></label>
+                <input type="file" @change="manejarFoto" class="form-control" accept="image/jpeg, image/png" ref="fileInput" required>
                 <small v-if="errores.foto" style="color:#ef4444; font-size: 0.8em;">@{{ errores.foto }}</small>
                 <div v-if="fotoPreview && !mostrarCropper" style="margin-top:6px; position:relative; display:inline-block;">
                     <img :src="fotoPreview" style="width:120px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
@@ -52,7 +52,7 @@
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">@{{ modoEdicion ? 'Nueva Contraseña' : 'Contraseña Portal *' }}</label>
                 <div style="display:flex; align-items:center; gap:4px;">
-                    <input :type="mostrarPassword ? 'text' : 'password'" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion" :placeholder="modoEdicion ? '********' : ''" style="flex:1;">
+                    <input :type="mostrarPassword ? 'text' : 'password'" v-model="formulario.contrasena" class="form-control" :required="!modoEdicion" :placeholder="modoEdicion ? '********' : ''" style="flex:1;" autocomplete="new-password">
                     <button type="button" @click="mostrarPassword = !mostrarPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarPassword ? 'Ocultar' : 'Mostrar'">
                         <svg v-if="mostrarPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -306,6 +306,13 @@
             const manejarFoto = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
+                const tiposValidos = ['image/jpeg', 'image/png'];
+                if (!tiposValidos.includes(file.type)) {
+                    errores.value.foto = 'Formato incompatible. Solo se permiten JPG, JPEG y PNG.';
+                    event.target.value = '';
+                    return;
+                }
+                errores.value.foto = '';
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     cropperSrc.value = e.target.result;

@@ -17,7 +17,7 @@
                     style="width: 100%; padding: 0.85rem 1rem; border: 2px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; outline: none; transition: border-color 0.2s;"
                     :style="{ borderColor: buscando ? '#10b981' : '#e2e8f0' }"
                 >
-                <div v-if="resultados.length > 0" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 320px; overflow-y: auto;">
+                <div v-if="resultados.length > 0" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 320px; overflow-y: auto;" :style="{ overflowY: resultados.length <= 1 ? 'hidden' : 'auto' }">
                     <div
                         v-for="s in resultados"
                         :key="s.carnetSocio"

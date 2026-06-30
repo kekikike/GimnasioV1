@@ -45,7 +45,6 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Equipo</th>
                         <th>Marca</th>
                         <th>Modelo</th>
@@ -59,7 +58,6 @@
                     @foreach($equipos as $eq)
                     @php $marca = $marcas[$eq->idMarca] ?? null; $suc = $sucursales[$eq->idSucursal] ?? null; @endphp
                     <tr data-id="{{ $eq->idEquipo }}">
-                        <td style="color:#64748b; font-weight:500;">#{{ $eq->idEquipo }}</td>
                         <td style="font-weight:600;">{{ $eq->nombreEquipo }}</td>
                         <td>{{ $marca->nombreMarca ?? '-' }}</td>
                         <td class="td-modelo">{{ $eq->modelo ?? '-' }}</td>

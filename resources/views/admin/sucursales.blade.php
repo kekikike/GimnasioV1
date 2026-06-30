@@ -3,6 +3,8 @@
 
 @section('content')
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="appSucursales">
     <div class="card" style="padding: 20px; margin-bottom: 20px;">
@@ -28,6 +30,20 @@
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Dirección Exacta <span style="color:#ef4444;">*</span></label>
                 <input type="text" v-model="formulario.direccion" class="form-control" required placeholder="Calle, Avenida, Zona...">
                 <small v-if="errores.direccion" style="color: #ef4444; font-size: 0.8em; display: block; margin-top: 4px;">@{{ errores.direccion }}</small>
+            </div>
+
+            <div style="grid-column: span 3;">
+                <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Ubicación en el Mapa</label>
+                <div id="map" ref="mapContainer" style="height: 300px; border-radius: 0.5rem; border: 1.5px solid #e2e8f0; margin-bottom: 0.5rem;"></div>
+                <small style="color:#64748b; font-size:0.8rem;">Haz clic en el mapa para marcar la ubicación exacta de la sucursal.</small>
+                <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+                    <div><small style="color:#64748b;">Latitud: @{{ formulario.latitud || '—' }}</small></div>
+                    <div><small style="color:#64748b;">Longitud: @{{ formulario.longitud || '—' }}</small></div>
+                    <button type="button" @click="buscarEnMapa" class="btn btn-sm btn-outline" style="padding:0.3rem 0.7rem; font-size:0.8rem;">Buscar dirección en mapa</button>
+                </div>
+                <small v-if="errores.latitud" style="color: #ef4444; font-size: 0.8em; display: block; margin-top: 4px;">@{{ errores.latitud }}</small>
+                <input type="hidden" v-model="formulario.latitud">
+                <input type="hidden" v-model="formulario.longitud">
             </div>
 
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 10px;">
@@ -58,7 +74,8 @@
                     <td style="padding: 12px; color: #475569; font-family: monospace; font-size: 1.1em;">@{{ sucursal.telefono }}</td>
                     <td style="padding: 12px; text-align: center;">
                         <button @click="editarSucursal(sucursal)" class="btn btn-sm btn-info" style="margin-right: 5px;" title="Editar">Editar</button>
-                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + sucursal.direccion" target="_blank" class="btn btn-sm btn-success" style="margin-right: 5px; text-decoration: none;" title="Ver en Google Maps">Mapa</a>
+                        <a v-if="sucursal.latitud && sucursal.longitud" :href="'https://www.google.com/maps?q=' + sucursal.latitud + ',' + sucursal.longitud" target="_blank" class="btn btn-sm btn-success" style="margin-right: 5px; text-decoration: none;" title="Ver en Google Maps">Mapa</a>
+                        <a v-else :href="'https://www.google.com/maps/search/?api=1&query=' + sucursal.direccion" target="_blank" class="btn btn-sm btn-success" style="margin-right: 5px; text-decoration: none;" title="Ver en Google Maps">Mapa</a>
                         <button @click="eliminarSucursal(sucursal.idSucursal)" class="btn btn-sm btn-danger" title="Dar de baja">Eliminar</button>
                     </td>
                 </tr>
@@ -104,9 +121,12 @@
             const modoEdicion = ref(false);
             const idActual = ref(null);
             const guardando = ref(false);
+            const mapContainer = ref(null);
+            let mapInstance = null;
+            let markerInstance = null;
             
-            const formulario = ref({ nombre: '', direccion: '', telefono: '' });
-            const errores = ref({ nombre: '', direccion: '', telefono: '' });
+            const formulario = ref({ nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' });
+            const errores = ref({ nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' });
 
             const headers = { 
                 'Content-Type': 'application/json', 
@@ -143,8 +163,45 @@
                 }
             };
 
+            const initMap = (lat = -16.5, lng = -68.15) => {
+                if (mapInstance) mapInstance.remove();
+                mapInstance = L.map(mapContainer.value).setView([lat, lng], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapInstance);
+                markerInstance = L.marker([lat, lng], { draggable: true }).addTo(mapInstance);
+                markerInstance.on('dragend', function() {
+                    var pos = markerInstance.getLatLng();
+                    formulario.value.latitud = pos.lat.toFixed(7);
+                    formulario.value.longitud = pos.lng.toFixed(7);
+                });
+                mapInstance.on('click', function(e) {
+                    if (markerInstance) markerInstance.setLatLng(e.latlng);
+                    formulario.value.latitud = e.latlng.lat.toFixed(7);
+                    formulario.value.longitud = e.latlng.lng.toFixed(7);
+                });
+                setTimeout(() => mapInstance.invalidateSize(), 500);
+            };
+
+            const buscarEnMapa = async () => {
+                var dir = formulario.value.direccion.trim();
+                if (!dir) { errores.value.direccion = 'Escriba una dirección primero.'; return; }
+                try {
+                    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(dir + ', Bolivia') + '&limit=1');
+                    const data = await res.json();
+                    if (data.length > 0) {
+                        var lat = parseFloat(data[0].lat);
+                        var lng = parseFloat(data[0].lon);
+                        formulario.value.latitud = lat.toFixed(7);
+                        formulario.value.longitud = lng.toFixed(7);
+                        if (mapInstance) mapInstance.setView([lat, lng], 15);
+                        if (markerInstance) markerInstance.setLatLng([lat, lng]);
+                    } else {
+                        mostrarToast('No se encontró la dirección en el mapa.', 'error');
+                    }
+                } catch(e) { mostrarToast('Error al buscar dirección.', 'error'); }
+            };
+
             const guardarSucursal = async () => {
-                errores.value = { nombre: '', direccion: '', telefono: '' };
+                errores.value = { nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' };
                 if (!formulario.value.nombre.trim()) { errores.value.nombre = 'El nombre de la sede es obligatorio.'; return; }
                 if (!formulario.value.direccion.trim()) { errores.value.direccion = 'La dirección es obligatoria.'; return; }
                 if (!formulario.value.telefono) { errores.value.telefono = 'El teléfono es obligatorio.'; return; }
@@ -186,8 +243,11 @@
             const editarSucursal = (sucursal) => {
                 modoEdicion.value = true;
                 idActual.value = sucursal.idSucursal;
-                formulario.value = { nombre: sucursal.nombre, direccion: sucursal.direccion, telefono: sucursal.telefono };
-                errores.value = { nombre: '', direccion: '', telefono: '' };
+                formulario.value = { nombre: sucursal.nombre, direccion: sucursal.direccion, telefono: sucursal.telefono, latitud: sucursal.latitud || '', longitud: sucursal.longitud || '' };
+                errores.value = { nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' };
+                var lat = parseFloat(sucursal.latitud) || -16.5;
+                var lng = parseFloat(sucursal.longitud) || -68.15;
+                setTimeout(function() { initMap(lat, lng); }, 100);
             };
 
             const eliminarSucursal = async (id) => {
@@ -213,13 +273,14 @@
             const cancelarEdicion = () => {
                 modoEdicion.value = false;
                 idActual.value = null;
-                formulario.value = { nombre: '', direccion: '', telefono: '' };
-                errores.value = { nombre: '', direccion: '', telefono: '' };
+                formulario.value = { nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' };
+                errores.value = { nombre: '', direccion: '', telefono: '', latitud: '', longitud: '' };
+                if (mapInstance) { mapInstance.remove(); mapInstance = null; markerInstance = null; }
             };
 
-            onMounted(() => { cargarSucursales(); });
+            onMounted(() => { cargarSucursales(); initMap(); });
 
-            return { sucursales, inactivas, formulario, errores, modoEdicion, guardando, validarTelefono, guardarSucursal, editarSucursal, eliminarSucursal, restaurarSucursal, cancelarEdicion, cargarInactivas };
+            return { sucursales, inactivas, formulario, errores, modoEdicion, guardando, mapContainer, validarTelefono, guardarSucursal, editarSucursal, eliminarSucursal, restaurarSucursal, cancelarEdicion, cargarInactivas, buscarEnMapa };
         }
     }).mount('#appSucursales');
 </script>

@@ -31,6 +31,8 @@ class SucursalController extends Controller
             'nombre' => 'required|string|max:100|unique:tsucursales,nombre',
             'direccion' => 'required|string|max:255',
             'telefono' => ['required', 'numeric', 'digits_between:7,8', 'regex:/^[67]\d{6,7}$/'],
+            'latitud' => 'nullable|numeric|between:-90,90',
+            'longitud' => 'nullable|numeric|between:-180,180',
         ], [
             'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
             'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',
@@ -58,6 +60,8 @@ class SucursalController extends Controller
             'nombre' => 'required|string|max:100|unique:tsucursales,nombre,' . $id . ',idSucursal',
             'direccion' => 'required|string|max:255',
             'telefono' => ['required', 'numeric', 'digits_between:7,8', 'regex:/^[67]\d{6,7}$/'],
+            'latitud' => 'nullable|numeric|between:-90,90',
+            'longitud' => 'nullable|numeric|between:-180,180',
         ], [
             'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
             'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',

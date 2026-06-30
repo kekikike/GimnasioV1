@@ -27,7 +27,14 @@ class Sucursal
             $usuarioA,
             $direccionIP,
         ]);
-        return (int) ($rows[0]->id ?? 0);
+        $id = (int) ($rows[0]->id ?? 0);
+        if ($id && isset($data['latitud']) && isset($data['longitud'])) {
+            DB::table('TSucursales')->where('idSucursal', $id)->update([
+                'latitud' => $data['latitud'],
+                'longitud' => $data['longitud'],
+            ]);
+        }
+        return $id;
     }
 
     public static function update(int $id, array $data, int $usuarioA, string $direccionIP): void
@@ -41,6 +48,12 @@ class Sucursal
             $usuarioA,
             $direccionIP,
         ]);
+        if (isset($data['latitud']) && isset($data['longitud'])) {
+            DB::table('TSucursales')->where('idSucursal', $id)->update([
+                'latitud' => $data['latitud'],
+                'longitud' => $data['longitud'],
+            ]);
+        }
     }
 
     public static function delete(int $id, int $usuarioA, string $direccionIP): void
