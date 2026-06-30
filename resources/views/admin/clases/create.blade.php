@@ -94,7 +94,7 @@
 
             <div class="form-group">
                 <label for="cupoMaximo">Cupo Máximo *</label>
-                <input type="number" id="cupoMaximo" name="cupoMaximo" class="form-control @error('cupoMaximo') is-invalid @enderror" value="{{ old('cupoMaximo', 20) }}" required min="1">
+                <input type="number" id="cupoMaximo" name="cupoMaximo" class="form-control @error('cupoMaximo') is-invalid @enderror" value="{{ old('cupoMaximo', 20) }}" required min="1" max="99999">
                 @error('cupoMaximo')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
             </div>
         </div>

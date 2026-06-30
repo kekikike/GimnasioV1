@@ -34,6 +34,7 @@ class SucursalController extends Controller
             'latitud' => 'nullable|numeric|between:-90,90',
             'longitud' => 'nullable|numeric|between:-180,180',
         ], [
+            'telefono.numeric' => 'El teléfono solo debe contener números.',
             'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
             'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',
         ]);
@@ -63,6 +64,7 @@ class SucursalController extends Controller
             'latitud' => 'nullable|numeric|between:-90,90',
             'longitud' => 'nullable|numeric|between:-180,180',
         ], [
+            'telefono.numeric' => 'El teléfono solo debe contener números.',
             'telefono.digits_between' => 'El telefono debe tener entre 7 y 8 digitos.',
             'telefono.regex' => 'El telefono debe comenzar con 6 o 7.',
         ]);
@@ -85,6 +87,20 @@ class SucursalController extends Controller
     // 5. Eliminar (Dar de baja)
     public function destroy(Request $request, $id)
     {
+        $clasesActivas = DB::table('TClaseGrupales')
+            ->where('idSucursal', $id)
+            ->where('estadoA', 1)
+            ->whereIn('estadoClase', ['Programada', 'Cursandose'])
+            ->where('fecha', '>=', now()->toDateString())
+            ->count();
+
+        if ($clasesActivas > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "No se puede dar de baja la sucursal porque tiene {$clasesActivas} clase(s) activa(s) o programada(s) para el futuro. Cancélelas o espere a que finalicen."
+            ], 422);
+        }
+
         $usuarioA = Auth::id() ?? 1;
         $direccionIP = $request->ip();
 

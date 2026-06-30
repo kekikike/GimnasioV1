@@ -14,7 +14,7 @@ class SucursalSeeder extends Seeder
         DB::table('TSucursales')->insert([
             'nombre' => 'Sucursal Central',
             'direccion' => 'Av. Principal #123, Col. Centro',
-            'telefono' => '777-0100',
+            'telefono' => '7770100',
             'estado' => true,
             'usuarioA' => $adminId,
         ]);

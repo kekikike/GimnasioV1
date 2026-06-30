@@ -97,7 +97,7 @@ class ClaseGrupalController extends Controller
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
-            'cupoMaximo' => 'required|integer|min:1',
+            'cupoMaximo' => 'required|integer|min:1|max:99999',
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
             'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
@@ -106,7 +106,9 @@ class ClaseGrupalController extends Controller
             'horaInicio.required' => 'La hora de inicio es obligatoria.',
             'horaFin.required' => 'La hora de fin es obligatoria.',
             'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
+            'cupoMaximo.integer' => 'El cupo máximo debe ser un número entero.',
             'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
+            'cupoMaximo.max' => 'El cupo máximo no debe exceder 99999.',
         ]);
 
         if ($validator->fails()) {
@@ -188,7 +190,7 @@ class ClaseGrupalController extends Controller
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
-            'cupoMaximo' => 'required|integer|min:1',
+            'cupoMaximo' => 'required|integer|min:1|max:99999',
             'estadoClase' => 'required|in:Programada,Cursandose,Cancelada',
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
@@ -198,7 +200,9 @@ class ClaseGrupalController extends Controller
             'horaInicio.required' => 'La hora de inicio es obligatoria.',
             'horaFin.required' => 'La hora de fin es obligatoria.',
             'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
+            'cupoMaximo.integer' => 'El cupo máximo debe ser un número entero.',
             'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
+            'cupoMaximo.max' => 'El cupo máximo no debe exceder 99999.',
         ]);
 
         if ($validator->fails()) {

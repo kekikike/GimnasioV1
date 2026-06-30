@@ -144,7 +144,7 @@
                     </div>
                     <div class="form-group">
                         <label>Cupo Máximo *</label>
-                        <input type="number" v-model="editFormulario.cupoMaximo" class="form-control" required min="1">
+                        <input type="number" v-model="editFormulario.cupoMaximo" class="form-control" required min="1" max="99999">
                     </div>
                     <div class="form-group">
                         <label>Estado</label>
@@ -156,7 +156,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">💾 Guardar Cambios</button>
+                    <button type="submit" class="btn btn-primary" :disabled="guardando">💾 Guardar Cambios</button>
                     <button type="button" @click="closeEditModal" class="btn btn-outline">Cancelar</button>
                 </div>
             </form>
@@ -333,7 +333,11 @@ createApp({
             editandoId.value = null;
         };
 
+        const guardando = ref(false);
+
         const guardarEdicion = async () => {
+            if (guardando.value) return;
+            guardando.value = true;
             try {
                 const res = await fetch(
                     `{{ route("admin.clases.update", ["id" => ":id"]) }}`.replace(':id', editandoId.value),
@@ -347,6 +351,8 @@ createApp({
                 }
             } catch (e) {
                 mostrarToast('Error de conexión.', 'error');
+            } finally {
+                guardando.value = false;
             }
         };
 
@@ -408,7 +414,7 @@ createApp({
 
         return {
             clases, actividades, empleados, sucursales, adminSucursalId,
-            mensaje, mensajeTipo, filtroFecha, filtroEstado, clasesFiltradas,
+            mensaje, mensajeTipo, filtroFecha, filtroEstado, clasesFiltradas, guardando,
             modalReservas, reservasData, claseSeleccionada,
             editModal, editFormulario,
             cargarClases, openEditModal, closeEditModal, guardarEdicion,
