@@ -30,11 +30,11 @@
                 </div>
                 <div>
                     <label>Monto apertura (Bs)</label>
-                    <input @input="filtrarMonto($event, montoApertura)" :value="montoApertura" type="text" class="form-control" :class="{ 'is-invalid': errores.montoApertura }" placeholder="0.00">
+                    <input v-model="montoApertura" type="text" class="form-control" :class="{ 'is-invalid': errores.montoApertura }" placeholder="0.00">
                     <small v-if="errores.montoApertura" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.montoApertura }}</small>
                 </div>
                 <div>
-                    <button @click="abrirCaja" class="btn btn-primary" style="width:100%;" :disabled="!montoApertura">Abrir Caja</button>
+                    <button @click="abrirCaja" class="btn btn-success" style="width:100%;" :disabled="!montoApertura">Abrir Caja</button>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
                 <div style="display:flex; gap:1rem; align-items:end;">
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
-                        <input @input="filtrarMonto($event, montoCierre)" :value="montoCierre" type="text" class="form-control"
+                        <input v-model="montoCierre" type="text" class="form-control"
                                :class="{ 'is-invalid': errores.montoCierre }"
                                :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                         <small v-if="errores.montoCierre" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.montoCierre }}</small>
@@ -96,7 +96,7 @@
                     <label>Buscar Socio por CI</label>
                     <div style="display:flex; gap:0.5rem;">
                         <input v-model="socioCarnet" @keyup.enter="buscarSocio" type="text" class="form-control" placeholder="Ingrese CI...">
-                        <button @click="buscarSocio" class="btn btn-sm btn-primary">Buscar</button>
+                        <button @click="buscarSocio" class="btn btn-sm btn-success">Buscar</button>
                     </div>
                 </div>
                 <div v-if="socioInfo">
@@ -168,7 +168,7 @@
                 </div>
                 <div>
                     <label>Costo (Bs)</label>
-                    <input @input="filtrarMonto($event, costosalida)" :value="costosalida" type="text" class="form-control" :class="{ 'is-invalid': errores.costosalida }" placeholder="0.00">
+                    <input v-model="costosalida" type="text" class="form-control" :class="{ 'is-invalid': errores.costosalida }" placeholder="0.00">
                     <small v-if="errores.costosalida" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.costosalida }}</small>
                 </div>
                 <div>
@@ -275,14 +275,14 @@
                 </ul>
                 <p><strong>Estado:</strong> {{ reciboPreview.estadoRecibo }}</p>
             </div>
-            <button @click="imprimirRecibo" class="btn btn-primary" style="margin-top:1rem;">Imprimir Recibo</button>
+            <button @click="imprimirRecibo" class="btn btn-success" style="margin-top:1rem;">Imprimir Recibo</button>
         </div>
     </div>
 </div>
 @endverbatim
 
 <script>
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, watch, onMounted } = Vue;
 
 createApp({
     setup() {
@@ -309,14 +309,16 @@ createApp({
         const costosalida = ref('');
         const errores = ref({});
 
-        const filtrarMonto = (e, campo) => {
-            let val = String(e.target.value || '').replace(/[^0-9.]/g, '');
-            const pts = val.match(/\./g);
-            if (pts && pts.length > 1) val = val.substring(0, val.lastIndexOf('.'));
-            if (val.startsWith('.')) val = '0' + val;
-            e.target.value = val;
-            campo.value = val;
+        const sanitizarMonto = (val) => {
+            let s = String(val || '').replace(/[^0-9.]/g, '');
+            const pts = s.match(/\./g);
+            if (pts && pts.length > 1) s = s.substring(0, s.lastIndexOf('.'));
+            if (s.startsWith('.')) s = '0' + s;
+            return s;
         };
+        watch(montoApertura, (n) => { const s = sanitizarMonto(n); if (s !== n) montoApertura.value = s; });
+        watch(montoCierre, (n) => { const s = sanitizarMonto(n); if (s !== n) montoCierre.value = s; });
+        watch(costosalida, (n) => { const s = sanitizarMonto(n); if (s !== n) costosalida.value = s; });
 
         const textoStatus = computed(() => {
             if (!cajaAbierta.value) return 'Caja cerrada / no abierta';
@@ -591,7 +593,7 @@ createApp({
         return {
             cajaAbierta, sucursalNombre, montoApertura, montoCierre, cierreObservacion, metodosPago, planes, movimientos,
             socioCarnet, socioInfo, membresiaActiva, esRenovacion, idPlan, montoTotal, metodosPagoArr,
-            reciboPreview, reciboMetodos, errores, filtrarMonto,
+            reciboPreview, reciboMetodos, errores,
             textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaCierre, planesFiltrados, diferenciaMetodos, puedeRegistrar,
             salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,
