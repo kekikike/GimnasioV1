@@ -409,6 +409,7 @@
                     const res = await fetch(`/admin/personal/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
                     if (data.success) { mostrarToast(data.message, 'success'); cargarEmpleados(); }
+                    else { mostrarToast(data.message, 'error'); }
                 });
             };
 
@@ -417,6 +418,7 @@
                     const res = await fetch(`/admin/personal/${emp.carnetEmpleado}/acabar-contrato`, { method: 'PUT', headers: headers });
                     const data = await res.json();
                     if (data.success) { mostrarToast(data.message, 'success'); cargarEmpleados(); }
+                    else { mostrarToast(data.message, 'error'); }
                 });
             };
 

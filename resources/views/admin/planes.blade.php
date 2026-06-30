@@ -154,8 +154,8 @@
                 confirmarAccion("¿Dar de baja este plan?", async function() {
                     const res = await fetch(`/admin/planes/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
-                    if(data.success) mostrarToast(data.message, 'success');
-                    cargarPlanes();
+                    if (data.success) { mostrarToast(data.message, 'success'); cargarPlanes(); }
+                    else { mostrarToast(data.message, 'error'); }
                 });
             };
 
