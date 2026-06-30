@@ -31,12 +31,12 @@
 
             <div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Nro. Carnet (CI) <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetSocio" @input="validarCI('carnetSocio')" class="form-control" required :disabled="modoEdicion" maxlength="10">
+                <input type="text" v-model="formulario.carnetSocio" @input="validarCI('carnetSocio')" class="form-control" required :disabled="modoEdicion" maxlength="9" placeholder="Máx. 9 dígitos">
                 <small v-if="errores.carnetSocio" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio }}</small>
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: bold; font-size: 0.85rem;">Confirmar CI <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" :class="{ 'is-invalid': errores.carnetSocio_confirmation }" required maxlength="10">
+                <input type="text" v-model="formulario.carnetSocio_confirmation" @input="validarCI('carnetSocio_confirmation')" class="form-control" :class="{ 'is-invalid': errores.carnetSocio_confirmation }" required maxlength="9">
                 <small v-if="errores.carnetSocio_confirmation" style="color:#ef4444; font-size: 0.8em;">@{{ errores.carnetSocio_confirmation }}</small>
             </div>
             <div v-else></div>             <div style="grid-row: span 2;">
@@ -293,7 +293,7 @@
             const validarLetras = (campo) => { formulario.value[campo] = formulario.value[campo].replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]/g, ''); };
 
             const validarCI = (campo) => {
-                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 10);
+                formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 9);
             };
 
             const validarTelefono = (campo) => {

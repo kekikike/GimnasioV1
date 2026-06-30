@@ -128,6 +128,13 @@ class EsquemaSueldoController extends Controller
             'detalles'      => 'Creacion de esquema de sueldo',
         ]);
 
+        $empleado = DB::table('templeados')->where('carnetEmpleado', $request->carnetEmpleado)->first();
+        if ($empleado) {
+            DB::table('tusuarios')->where('idUsuario', $empleado->idUsuario)->update([
+                'estadoA' => 1, 'fechaA' => now(), 'usuarioA' => session('usuario')->idUsuario ?? 1,
+            ]);
+        }
+
         return response()->json(['success' => true, 'message' => 'Esquema de sueldo registrado.']);
     }
 

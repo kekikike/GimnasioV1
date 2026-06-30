@@ -111,7 +111,7 @@ class PersonalController extends Controller
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'contrasena' => bcrypt($request->contrasena),
-                'estadoA'    => 1,
+                'estadoA'    => 0,
                 'usuarioA'   => $usuarioA,
                 'fechaA'     => now(),
                 // El SP original recibía una IP, que probablemente se usaba para auditoría.

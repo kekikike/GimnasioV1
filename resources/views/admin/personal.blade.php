@@ -84,19 +84,26 @@
 
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Confirmar Contraseña <span v-if="!modoEdicion" style="color:#ef4444;">*</span></label>
-                <input type="password" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <input :type="mostrarConfirmPassword ? 'text' : 'password'" v-model="formulario.contrasena_confirmation" class="form-control" :required="!modoEdicion || formulario.contrasena !== ''" style="flex:1;">
+                    <button type="button" @click="mostrarConfirmPassword = !mostrarConfirmPassword" style="background:none; border:1px solid #ccc; border-radius:4px; padding:6px 10px; cursor:pointer; line-height:1;" :title="mostrarConfirmPassword ? 'Ocultar' : 'Mostrar'">
+                        <svg v-if="mostrarConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <small v-if="errores.contrasena_confirmation" class="text-danger">@{{ errores.contrasena_confirmation }}</small>
             </div>
 
             <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: 600;">Datos Laborales (Recursos Humanos)</div>
 
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Nro. Carnet (CI) <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetEmpleado" @input="validarCarnet" class="form-control" :class="{ 'is-invalid': errores.carnetEmpleado }" :disabled="modoEdicion" required maxlength="10" placeholder="Máx. 10 dígitos">
+                <input type="text" v-model="formulario.carnetEmpleado" @input="validarCarnet" class="form-control" :class="{ 'is-invalid': errores.carnetEmpleado }" :disabled="modoEdicion" required maxlength="9" placeholder="Máx. 9 dígitos">
                 <small v-if="errores.carnetEmpleado" class="text-danger">@{{ errores.carnetEmpleado }}</small>
             </div>
             <div v-if="!modoEdicion">
                 <label style="font-weight: 600; font-size: 0.85rem;">Confirmar Nro. Carnet <span style="color:#ef4444;">*</span></label>
-                <input type="text" v-model="formulario.carnetEmpleado_confirmation" @input="validarCarnetConfirm" class="form-control" maxlength="10" required>
+                <input type="text" v-model="formulario.carnetEmpleado_confirmation" @input="validarCarnetConfirm" class="form-control" maxlength="9" required>
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Sucursal Base <span style="color:#ef4444;">*</span></label>
@@ -211,6 +218,7 @@
             const idActual = ref(null);
             const guardando = ref(false);
             const mostrarPassword = ref(false);
+            const mostrarConfirmPassword = ref(false);
 
             // 1. Función inteligente para calcular la fecha de hoy sin problemas de zona horaria
             const obtenerFechaHoy = () => {
@@ -272,13 +280,13 @@
 
             const validarCarnet = () => {
                 let val = formulario.value.carnetEmpleado.replace(/[^0-9]/g, '');
-                if (val.length > 10) val = val.substring(0, 10);
+                if (val.length > 9) val = val.substring(0, 9);
                 formulario.value.carnetEmpleado = val;
             };
 
             const validarCarnetConfirm = () => {
                 let val = formulario.value.carnetEmpleado_confirmation.replace(/[^0-9]/g, '');
-                if (val.length > 10) val = val.substring(0, 10);
+                if (val.length > 9) val = val.substring(0, 9);
                 formulario.value.carnetEmpleado_confirmation = val;
             };
 
@@ -305,7 +313,7 @@
                 if (!modoEdicion.value) {
                     if (!f.carnetEmpleado?.trim()) errs.carnetEmpleado = 'El número de carnet es obligatorio.';
                     else if (!/^\d+$/.test(f.carnetEmpleado)) errs.carnetEmpleado = 'El carnet solo debe contener números.';
-                    else if (f.carnetEmpleado.length > 10) errs.carnetEmpleado = 'El carnet no debe exceder 10 dígitos.';
+                    else if (f.carnetEmpleado.length > 9) errs.carnetEmpleado = 'El carnet no debe exceder 9 dígitos.';
 
                     if (f.carnetEmpleado !== f.carnetEmpleado_confirmation) {
                         errs.carnetEmpleado_confirmation = 'Los números de carnet no coinciden.';
@@ -442,7 +450,7 @@
 
             return {
                 empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId,
-                formulario, errores, modoEdicion, guardando, mostrarPassword,
+                formulario, errores, modoEdicion, guardando, mostrarPassword, mostrarConfirmPassword,
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
                 guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,
                 confirmarContrato, reactivarEmpleado
