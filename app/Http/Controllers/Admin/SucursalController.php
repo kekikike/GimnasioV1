@@ -87,6 +87,18 @@ class SucursalController extends Controller
     // 5. Eliminar (Dar de baja)
     public function destroy(Request $request, $id)
     {
+        $empleadosActivos = DB::table('TEmpleados')
+            ->where('idSucursal', $id)
+            ->where('estadoA', 1)
+            ->count();
+
+        if ($empleadosActivos > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "No se puede dar de baja la sucursal porque tiene {$empleadosActivos} empleado(s) activo(s). Debe dar de baja a todos los empleados primero."
+            ], 422);
+        }
+
         $clasesActivas = DB::table('TClaseGrupales')
             ->where('idSucursal', $id)
             ->where('estadoA', 1)
