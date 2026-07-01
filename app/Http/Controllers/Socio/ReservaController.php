@@ -76,6 +76,10 @@ class ReservaController extends Controller
             ->orderBy('cg.fecha', 'asc')
             ->orderBy('cg.horaInicio', 'asc')
             ->get()
+            ->filter(function ($clase) {
+                $limite = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaInicio)->addMinutes(5);
+                return now()->lessThanOrEqualTo($limite);
+            })
             ->map(function ($clase) {
                 $reservados = DB::table('TReservas')
                     ->where('idClaseGrupal', $clase->idClaseGrupal)
@@ -84,7 +88,8 @@ class ReservaController extends Controller
                     ->count();
                 $clase->cuposDisponibles = $clase->cupoMaximo - $reservados;
                 return $clase;
-            });
+            })
+            ->values();
 
         return response()->json($clases);
     }
@@ -125,6 +130,11 @@ class ReservaController extends Controller
 
         if (!$clase) {
             return response()->json(['success' => false, 'message' => 'Clase no disponible.']);
+        }
+
+        $limite = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaInicio)->addMinutes(5);
+        if (now()->greaterThan($limite)) {
+            return response()->json(['success' => false, 'message' => 'El plazo para reservar esta clase ya venció (máximo 5 minutos después de la hora de inicio).']);
         }
 
         $yaReservado = DB::table('TReservas')

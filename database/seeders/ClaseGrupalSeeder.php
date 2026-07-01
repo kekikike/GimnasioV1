@@ -20,7 +20,7 @@ class ClaseGrupalSeeder extends Seeder
             ['inicio' => '17:00:00', 'fin' => '18:00:00'],
             ['inicio' => '18:30:00', 'fin' => '19:30:00'],
         ];
-        $estados = ['Programada', 'Programada', 'Programada', 'Cursandose', 'Cancelada'];
+        $hoy = now()->format('Y-m-d');
 
         $clases = [];
         for ($dia = 0; $dia < 172; $dia++) {
@@ -38,7 +38,14 @@ class ClaseGrupalSeeder extends Seeder
                 $actividadesUsadas[] = $actividad;
                 $horario = $horarios[array_rand($horarios)];
                 $cupoMax = rand(15, 30);
-                $estado = $estados[array_rand($estados)];
+
+                if ($fecha < $hoy) {
+                    $estado = 'Finalizada';
+                } elseif ($fecha === $hoy) {
+                    $estado = 'Programada';
+                } else {
+                    $estado = 'Programada';
+                }
 
                 $clases[] = [
                     'idActividad' => $actividad,

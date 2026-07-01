@@ -36,6 +36,7 @@
                 <option value="">Todos los estados</option>
                 <option value="Programada">Programada</option>
                 <option value="Cursandose">Cursándose</option>
+                <option value="Finalizada">Finalizada</option>
                 <option value="Cancelada">Cancelada</option>
             </select>
         </div>
@@ -68,11 +69,11 @@
                         <br><small style="color: #64748b;">@{{ clase.totalReservas }} reserva(s)</small>
                     </td>
                     <td style="padding: 12px;">
-                        <span :style="{
-                            background: clase.estadoClase === 'Programada' ? '#dbeafe' : clase.estadoClase === 'Cursandose' ? '#fef3c7' : '#fee2e2',
-                            color: clase.estadoClase === 'Programada' ? '#1e40af' : clase.estadoClase === 'Cursandose' ? '#92400e' : '#991b1b',
-                            padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600
-                        }">@{{ clase.estadoClase }}</span>
+                            <span :style="{
+                                background: clase.estadoClase === 'Programada' ? '#dbeafe' : clase.estadoClase === 'Cursandose' ? '#fef3c7' : clase.estadoClase === 'Finalizada' ? '#d1fae5' : '#fee2e2',
+                                color: clase.estadoClase === 'Programada' ? '#1e40af' : clase.estadoClase === 'Cursandose' ? '#92400e' : clase.estadoClase === 'Finalizada' ? '#065f46' : '#991b1b',
+                                padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600
+                            }">@{{ clase.estadoClase }}</span>
                     </td>
                     <td style="padding: 12px; text-align: center;">
                         <button @click="openEditModal(clase)" class="btn btn-sm btn-info" style="margin-right: 4px;">✏️</button>
@@ -138,6 +139,7 @@
                         <select v-model="editFormulario.estadoClase" class="form-control">
                             <option value="Programada">Programada</option>
                             <option value="Cursandose">Cursándose</option>
+                            <option value="Finalizada">Finalizada</option>
                             <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>

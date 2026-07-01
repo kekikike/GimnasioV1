@@ -229,7 +229,7 @@ class ClaseGrupalController extends Controller
             'horaInicio' => 'required',
             'horaFin' => 'required',
             'cupoMaximo' => 'required|integer|min:1|max:99999',
-            'estadoClase' => 'required|in:Programada,Cursandose,Cancelada',
+            'estadoClase' => 'required|in:Programada,Cursandose,Cancelada,Finalizada',
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
             'carnetEmpleado.required' => 'Debe seleccionar un instructor.',

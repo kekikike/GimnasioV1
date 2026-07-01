@@ -55,8 +55,8 @@
                                 <span v-if="c.asistieron > 0" style="color: #10b981;"> · <span v-text="c.asistieron"></span> asistieron</span>
                             </span>
                             <span :style="{
-                                background: c.estadoClase === 'Programada' ? '#f5f3ff' : c.estadoClase === 'Cursandose' ? '#fef3c7' : '#d1fae5',
-                                color: c.estadoClase === 'Programada' ? '#6d28d9' : c.estadoClase === 'Cursandose' ? '#92400e' : '#065f46',
+                                background: c.estadoClase === 'Programada' ? '#f5f3ff' : c.estadoClase === 'Cursandose' ? '#fef3c7' : c.estadoClase === 'Finalizada' ? '#d1fae5' : '#d1fae5',
+                                color: c.estadoClase === 'Programada' ? '#6d28d9' : c.estadoClase === 'Cursandose' ? '#92400e' : c.estadoClase === 'Finalizada' ? '#065f46' : '#065f46',
                                 padding: '2px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600
                             }" v-text="c.estadoClase"></span>
                         </div>

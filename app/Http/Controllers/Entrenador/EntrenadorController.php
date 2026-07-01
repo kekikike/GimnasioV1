@@ -14,8 +14,29 @@ class EntrenadorController extends Controller
         return view('entrenador.dashboard');
     }
 
+    private function actualizarEstadoClases()
+    {
+        $limiteInicio = now()->subMinutes(5)->format('Y-m-d H:i:s');
+        $ahora = now()->format('Y-m-d H:i:s');
+
+        DB::update("
+            UPDATE TClaseGrupales
+            SET estadoClase = 'Cursandose'
+            WHERE estadoClase = 'Programada'
+              AND CONCAT(fecha, ' ', horaInicio) <= ?
+        ", [$limiteInicio]);
+
+        DB::update("
+            UPDATE TClaseGrupales
+            SET estadoClase = 'Finalizada'
+            WHERE estadoClase IN ('Programada', 'Cursandose')
+              AND CONCAT(fecha, ' ', horaFin) < ?
+        ", [$ahora]);
+    }
+
     public function misClases()
     {
+        $this->actualizarEstadoClases();
         $usuario = session('usuario');
         $empleado = DB::table('TEmpleados')
             ->where('idUsuario', $usuario->idUsuario)
@@ -117,6 +138,7 @@ class EntrenadorController extends Controller
 
     public function clasesHoy()
     {
+        $this->actualizarEstadoClases();
         $usuario = session('usuario');
         $empleado = DB::table('TEmpleados')
             ->where('idUsuario', $usuario->idUsuario)
