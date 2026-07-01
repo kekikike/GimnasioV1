@@ -85,11 +85,13 @@ class EsquemaSueldoController extends Controller
             'carnetEmpleado.exists' => 'El empleado no existe.',
             'modalidadPago.required' => 'La modalidad de pago es requerida.',
             'montoBase.required' => 'El monto base es requerido.',
-            'montoBase.numeric' => 'El monto base debe ser un numero.',
+            'montoBase.numeric' => 'El monto base debe ser un numero valido.',
             'montoBase.min' => 'El monto base no puede ser negativo.',
+            'montoBase.max' => 'El monto base no debe superar los 999,999.99 Bs.',
             'tarifaHoraOClase.required' => 'La tarifa es requerida.',
             'tarifaHoraOClase.integer' => 'La tarifa debe ser un numero entero.',
             'tarifaHoraOClase.min' => 'La tarifa no puede ser negativa.',
+            'tarifaHoraOClase.max' => 'La tarifa no debe superar los 999,999.',
         ]);
 
         if ($validator->fails()) {
@@ -157,11 +159,13 @@ class EsquemaSueldoController extends Controller
         ], [
             'modalidadPago.required' => 'La modalidad de pago es requerida.',
             'montoBase.required' => 'El monto base es requerido.',
-            'montoBase.numeric' => 'El monto base debe ser un numero.',
+            'montoBase.numeric' => 'El monto base debe ser un numero valido.',
             'montoBase.min' => 'El monto base no puede ser negativo.',
+            'montoBase.max' => 'El monto base no debe superar los 999,999.99 Bs.',
             'tarifaHoraOClase.required' => 'La tarifa es requerida.',
             'tarifaHoraOClase.integer' => 'La tarifa debe ser un numero entero.',
             'tarifaHoraOClase.min' => 'La tarifa no puede ser negativa.',
+            'tarifaHoraOClase.max' => 'La tarifa no debe superar los 999,999.',
         ]);
 
         if ($validator->fails()) {
