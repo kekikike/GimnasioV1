@@ -158,8 +158,8 @@
                     </td>
                     <td style="padding: 12px; text-align: center;">
                         <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 3px;">Editar</button>
-                        <button @click="confirmarContrato(emp)" class="btn btn-sm btn-warning" style="margin-right: 3px;">Acabar Contrato</button>
-                        <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger">Baja</button>
+                        <button @click="confirmarContrato(emp)" class="btn btn-sm btn-warning" style="margin-right: 3px;" :disabled="emp.carnetEmpleado == adminCarnet">Acabar Contrato</button>
+                        <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger" :disabled="emp.carnetEmpleado == adminCarnet">Baja</button>
                     </td>
                 </tr>
             </tbody>
@@ -215,6 +215,7 @@
             const rolesFiltrados = ref([]);
             const sucursales = ref([]);
             const adminSucursalId = {{ $adminSucursalId ?? 'null' }};
+            const adminCarnet = {{ $adminCarnet ?? 'null' }};
             const modoEdicion = ref(false);
             const idActual = ref(null);
             const guardando = ref(false);
@@ -452,7 +453,7 @@
             });
 
             return {
-                empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId,
+                empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId, adminCarnet,
                 formulario, errores, modoEdicion, guardando, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly,
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
                 guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,

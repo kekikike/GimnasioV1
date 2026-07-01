@@ -15,7 +15,9 @@ class PersonalController extends Controller
     {
         $roles = DB::select('CALL sp_TRoles_Select()');
         $sucursales = DB::select('CALL sp_TSucursales_Select()');
-        return view('admin.personal', compact('roles', 'sucursales'));
+        $usuario = session('usuario');
+        $adminCarnet = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->value('carnetEmpleado');
+        return view('admin.personal', compact('roles', 'sucursales', 'adminCarnet'));
     }
 
     public function listar()
@@ -28,7 +30,7 @@ class PersonalController extends Controller
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
             INNER JOIN troles r ON u.idRol = r.idRol
             INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
-            WHERE e.estadoA = 1
+            WHERE e.estadoA = 1 AND e.carnetEmpleado != '1000'
         ");
         return response()->json($empleados);
     }
@@ -43,7 +45,7 @@ class PersonalController extends Controller
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
             INNER JOIN troles r ON u.idRol = r.idRol
             INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
-            WHERE e.estadoA = 0
+            WHERE e.estadoA = 0 AND e.carnetEmpleado != '1000'
         ");
         return response()->json($empleados);
     }
@@ -111,7 +113,7 @@ class PersonalController extends Controller
                 'correo'     => $request->correo,
                 'telefono'   => $request->telefono,
                 'contrasena' => bcrypt($request->contrasena),
-                'estadoA'    => 0,
+                'estadoA'    => 1,
                 'usuarioA'   => $usuarioA,
                 'fechaA'     => now(),
                 // El SP original recibía una IP, que probablemente se usaba para auditoría.

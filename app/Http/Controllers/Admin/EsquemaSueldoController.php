@@ -18,13 +18,11 @@ class EsquemaSueldoController extends Controller
                      ->where('es.estadoA', 1);
             })
             ->where('e.estadoA', 1)
-            ->where('u.idRol', '!=', 1)
+            ->where('u.idUsuario', '!=', 1)
             ->whereNull('es.carnetEmpleado')
             ->select('e.carnetEmpleado', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.idRol', 'e.idSucursal');
-        if ($usuario->idRol != 1) {
-            $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
-            if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
-        }
+        $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
+        if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
         return $query;
     }
 
@@ -35,12 +33,10 @@ class EsquemaSueldoController extends Controller
             ->join('templeados as e', 'es.carnetEmpleado', '=', 'e.carnetEmpleado')
             ->join('tusuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->where('es.estadoA', 1)
-            ->where('u.idRol', '!=', 1)
+            ->where('u.idUsuario', '!=', 1)
             ->select('es.*', 'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.idRol', 'e.idSucursal');
-        if ($usuario->idRol != 1) {
-            $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
-            if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
-        }
+        $emp = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
+        if ($emp) $query->where('e.idSucursal', $emp->idSucursal);
         return $query->orderBy('e.carnetEmpleado');
     }
 
@@ -103,9 +99,7 @@ class EsquemaSueldoController extends Controller
             return response()->json(['success' => false, 'errors' => ['tarifaHoraOClase' => [$error]]], 422);
         }
 
-        if ($usuario->idRol != 1) {
-            $this->authorizeSucursal($usuario, $request->carnetEmpleado);
-        }
+        $this->authorizeSucursal($usuario, $request->carnetEmpleado);
 
         $nuevoId = DB::table('tesquemasueldos')->insertGetId([
             'carnetEmpleado' => $request->carnetEmpleado,
@@ -130,13 +124,6 @@ class EsquemaSueldoController extends Controller
             'detalles'      => 'Creacion de esquema de sueldo',
         ]);
 
-        $empleado = DB::table('templeados')->where('carnetEmpleado', $request->carnetEmpleado)->first();
-        if ($empleado) {
-            DB::table('tusuarios')->where('idUsuario', $empleado->idUsuario)->update([
-                'estadoA' => 1, 'fechaA' => now(), 'usuarioA' => session('usuario')->idUsuario ?? 1,
-            ]);
-        }
-
         return response()->json(['success' => true, 'message' => 'Esquema de sueldo registrado.']);
     }
 
@@ -148,9 +135,7 @@ class EsquemaSueldoController extends Controller
         }
 
         $usuario = session('usuario');
-        if ($usuario->idRol != 1) {
-            $this->authorizeSucursal($usuario, $esquema->carnetEmpleado);
-        }
+        $this->authorizeSucursal($usuario, $esquema->carnetEmpleado);
 
         $validator = Validator::make($request->all(), [
             'modalidadPago' => 'required|string|max:50',
@@ -210,9 +195,7 @@ class EsquemaSueldoController extends Controller
         }
 
         $usuario = session('usuario');
-        if ($usuario->idRol != 1) {
-            $this->authorizeSucursal($usuario, $esquema->carnetEmpleado);
-        }
+        $this->authorizeSucursal($usuario, $esquema->carnetEmpleado);
 
         DB::table('tesquemasueldos')->where('idEsquemaSueldo', $id)->update([
             'estadoA' => 0,

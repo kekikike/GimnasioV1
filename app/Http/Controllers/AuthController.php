@@ -41,7 +41,7 @@ class AuthController extends Controller
                 SELECT u.*, e.fechaContratoFin
                 FROM TUsuarios u
                 LEFT JOIN TEmpleados e ON u.idUsuario = e.idUsuario
-                WHERE u.correo = ? COLLATE utf8mb4_unicode_ci AND u.estadoA = 0
+                WHERE u.correo COLLATE utf8mb4_unicode_ci = ? AND u.estadoA = 0
                 LIMIT 1
             ', [$request->correo]);
 

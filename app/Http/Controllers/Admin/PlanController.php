@@ -29,21 +29,8 @@ class PlanController extends Controller
             'nombrePlan'   => ['required', 'string', 'regex:/[a-zA-Z]/', 'max:100'],
             'descripcion'  => 'required|string|min:15|max:255',
             'costoPlan'    => 'required|numeric|min:0',
-            'duracionDias' => 'required|integer|min:1'
+            'duracionDias' => 'required|integer|min:1|max:366'
         ], [
-            'nombrePlan.required' => 'El nombre del plan es obligatorio.',
-            'nombrePlan.regex' => 'El nombre del plan debe contener letras (no puede ser solo números).',
-            'nombrePlan.max' => 'El nombre del plan no debe exceder 100 caracteres.',
-            'descripcion.required' => 'La descripción es obligatoria.',
-            'descripcion.min'  => 'La descripción es muy corta. Escribe al menos 15 caracteres detallando el plan.',
-            'descripcion.max' => 'La descripción no debe exceder 255 caracteres.',
-            'costoPlan.required' => 'El costo del plan es obligatorio.',
-            'costoPlan.numeric' => 'El costo debe ser un número.',
-            'costoPlan.min' => 'El costo no puede ser negativo.',
-            'duracionDias.required' => 'La duración es obligatoria.',
-            'duracionDias.integer' => 'La duración debe ser un número entero.',
-            'duracionDias.min' => 'La duración debe ser al menos 1 día.',
-        ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $validator->errors()], 422);
@@ -85,7 +72,7 @@ class PlanController extends Controller
             'nombrePlan'   => ['required', 'string', 'regex:/[a-zA-Z]/', 'max:100'],
             'descripcion'  => 'required|string|min:15|max:255',
             'costoPlan'    => 'required|numeric|min:0',
-            'duracionDias' => 'required|integer|min:1'
+            'duracionDias' => 'required|integer|min:1|max:366'
         ], [
             'nombrePlan.required' => 'El nombre del plan es obligatorio.',
             'nombrePlan.regex' => 'El nombre del plan debe contener letras (no puede ser solo números).',
@@ -99,6 +86,7 @@ class PlanController extends Controller
             'duracionDias.required' => 'La duración es obligatoria.',
             'duracionDias.integer' => 'La duración debe ser un número entero.',
             'duracionDias.min' => 'La duración debe ser al menos 1 día.',
+            'duracionDias.max' => 'La duración no puede exceder 366 días.',
         ]);
 
         if ($validator->fails()) {

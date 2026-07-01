@@ -18,7 +18,7 @@
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Duración (Días)</label>
-                <input type="number" v-model="formulario.duracionDias" class="form-control" required min="1">
+                <input type="number" v-model="formulario.duracionDias" class="form-control" required min="1" max="366">
             </div>
             <div style="grid-column: span 2;">
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Descripción de los Beneficios</label>
