@@ -7,6 +7,7 @@
     $totalVisitas = count(array_filter($accesos, fn($a) => !$a->bloqueo));
     $totalDenegados = count(array_filter($accesos, fn($a) => $a->bloqueo));
     $ultimoAcceso = $accesos[0] ?? null;
+    \Carbon\Carbon::setLocale('es');
 @endphp
 <div class="grid-3" style="margin-bottom:1.5rem;">
     <div class="card stat-card">

@@ -122,7 +122,7 @@ class SocioController extends Controller
                 'carnetSocio'  => $request->carnetSocio, 
                 'idUsuario'    => $idUsuario,
                 'direccion'    => $request->direccion,
-                'observacionesMedicas' => $request->observacionesMedicas,
+                'observacionesMedicas' => $request->observacionesMedicas ?: 'Ninguna',
                 'nombreContactoEmergencia' => $request->contacto_emergencia_nombre,
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl'=> $fotoPath,
@@ -228,7 +228,7 @@ class SocioController extends Controller
 
             $socioUpdateData = [
                 'direccion' => $request->direccion,
-                'observacionesMedicas' => $request->observacionesMedicas,
+                'observacionesMedicas' => $request->observacionesMedicas ?: 'Ninguna',
                 'nombreContactoEmergencia' => $request->contacto_emergencia_nombre,
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl' => $fotoPath,

@@ -18,7 +18,7 @@
             @foreach($membresias as $m)
             <tr>
                 <td><strong>{{ $m->nombrePlan }}</strong></td>
-                <td>${{ number_format($m->costoPlan, 2) }}</td>
+                <td>Bs {{ number_format($m->costoPlan, 2) }}</td>
                 <td>{{ $m->duracionDias }} dias</td>
                 <td>{{ $m->fechaInicioMembresia }}</td>
                 <td>{{ $m->fechaFinMembresia }}</td>

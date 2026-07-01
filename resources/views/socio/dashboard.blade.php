@@ -62,7 +62,7 @@
         </div>
         <div class="info-row">
             <span class="label">Costo</span>
-            <span class="value">${{ number_format($membresia->costoPlan, 2) }}</span>
+            <span class="value">Bs {{ number_format($membresia->costoPlan, 2) }}</span>
         </div>
         <div class="info-row">
             <span class="label">Duración</span>
