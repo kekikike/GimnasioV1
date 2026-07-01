@@ -79,12 +79,12 @@
                                     <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     Editar
                                 </button>
-                                <form action="{{ route('admin.mantenimientos.destroy', $m->idMantenimiento) }}" method="POST" data-confirm="¿Eliminar este mantenimiento?" style="display:inline;">
+                                <form action="{{ route('admin.mantenimientos.destroy', $m->idMantenimiento) }}" method="POST" data-confirm="¿Cancelar este mantenimiento?" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm">
                                         <svg fill="none" stroke="currentColor" width="14" height="14" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        Eliminar
+                                        Cancelar
                                     </button>
                                 </form>
                             </div>
@@ -119,11 +119,11 @@
                 </div>
                 <div class="form-group">
                     <label>Tecnico Asignado</label>
-                    <input type="text" name="tecnicoAsignado" id="em_tecnico" class="form-control">
+                    <input type="text" name="tecnicoAsignado" id="em_tecnico" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Costo</label>
-                    <input type="number" step="0.01" min="0" name="costoMantenimiento" id="em_costo" class="form-control">
+                    <input type="number" step="0.01" min="0" name="costoMantenimiento" id="em_costo" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Estado <span style="color:#64748b; font-size:0.85rem; font-weight:400;">(se deriva automaticamente)</span></label>
@@ -132,7 +132,7 @@
             </div>
             <div class="form-group">
                 <label>Descripcion</label>
-                <textarea name="descripcionMantenimiento" id="em_descripcion" class="form-control" rows="3"></textarea>
+                <textarea name="descripcionMantenimiento" id="em_descripcion" class="form-control" rows="3" required></textarea>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>

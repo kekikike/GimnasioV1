@@ -35,21 +35,26 @@ class ClaseGrupalController extends Controller
             ->select('e.carnetEmpleado', 'u.nombre1', 'u.apellido1', 'u.idRol')
             ->get();
 
-        $sucursales = DB::table('TSucursales')
-            ->where('estadoA', 1)
-            ->get();
+        $adminSucursalId = $this->getAdminSucursalId();
 
-        $adminSucursalId = null;
-        $usuarioA = session('usuario')->idUsuario ?? null;
-        if ($usuarioA) {
-            $empleado = DB::table('TEmpleados')
-                ->where('idUsuario', $usuarioA)
-                ->where('estadoA', 1)
-                ->first();
-            $adminSucursalId = $empleado->idSucursal ?? null;
+        $adminSucursalNombre = null;
+        if ($adminSucursalId) {
+            $suc = DB::table('TSucursales')->where('idSucursal', $adminSucursalId)->first();
+            $adminSucursalNombre = $suc->nombre ?? null;
         }
 
-        return compact('actividades', 'empleados', 'sucursales', 'adminSucursalId');
+        return compact('actividades', 'empleados', 'adminSucursalId', 'adminSucursalNombre');
+    }
+
+    private function getAdminSucursalId()
+    {
+        $usuarioA = session('usuario')->idUsuario ?? null;
+        if (!$usuarioA) return null;
+        $empleado = DB::table('TEmpleados')
+            ->where('idUsuario', $usuarioA)
+            ->where('estadoA', 1)
+            ->first();
+        return $empleado->idSucursal ?? null;
     }
 
     public function listar()
@@ -93,7 +98,6 @@ class ClaseGrupalController extends Controller
         $validator = Validator::make($request->all(), [
             'idActividad' => 'required|integer',
             'carnetEmpleado' => 'required|integer',
-            'idSucursal' => 'required|integer',
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
@@ -101,7 +105,6 @@ class ClaseGrupalController extends Controller
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
             'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
-            'idSucursal.required' => 'Debe seleccionar una sucursal.',
             'fecha.required' => 'La fecha es obligatoria.',
             'horaInicio.required' => 'La hora de inicio es obligatoria.',
             'horaFin.required' => 'La hora de fin es obligatoria.',
@@ -127,7 +130,37 @@ class ClaseGrupalController extends Controller
             return redirect()->back()->withInput()->with('error', 'La duración mínima de la clase debe ser de 30 minutos.');
         }
 
+        // Validar que el instructor no tenga otra clase en el mismo horario
+        $conflicto = DB::table('TClaseGrupales as cg')
+            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->where('cg.carnetEmpleado', $request->carnetEmpleado)
+            ->where('cg.fecha', $request->fecha)
+            ->where('cg.estadoA', 1)
+            ->where('cg.estadoClase', '!=', 'Cancelada')
+            ->where(function ($q) use ($request) {
+                $q->whereRaw('? < cg.horaFin', [$request->horaInicio])
+                  ->whereRaw('? > cg.horaInicio', [$request->horaFin]);
+            })
+            ->select('cg.horaInicio', 'cg.horaFin', 'a.nombreActividad')
+            ->first();
+
+        if ($conflicto) {
+            $msg = "El instructor ya tiene la clase \"{$conflicto->nombreActividad}\" programada de {$conflicto->horaInicio} a {$conflicto->horaFin} en ese horario.";
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
+
         $usuarioA = session('usuario')->idUsuario ?? 1;
+        $idSucursal = $this->getAdminSucursalId();
+        if (!$idSucursal) {
+            $msg = 'No se pudo determinar la sucursal del administrador.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->withInput()->with('error', $msg);
+        }
         $direccionIP = $request->ip();
 
         try {
@@ -136,7 +169,7 @@ class ClaseGrupalController extends Controller
                 [
                     $request->idActividad,
                     $request->carnetEmpleado,
-                    $request->idSucursal,
+                    $idSucursal,
                     $request->fecha,
                     $request->horaInicio,
                     $request->horaFin,
@@ -192,7 +225,6 @@ class ClaseGrupalController extends Controller
         $validator = Validator::make($request->all(), [
             'idActividad' => 'required|integer',
             'carnetEmpleado' => 'required|integer',
-            'idSucursal' => 'required|integer',
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
@@ -201,7 +233,6 @@ class ClaseGrupalController extends Controller
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
             'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
-            'idSucursal.required' => 'Debe seleccionar una sucursal.',
             'fecha.required' => 'La fecha es obligatoria.',
             'horaInicio.required' => 'La hora de inicio es obligatoria.',
             'horaFin.required' => 'La hora de fin es obligatoria.',
@@ -221,7 +252,33 @@ class ClaseGrupalController extends Controller
             return response()->json(['success' => false, 'message' => 'La duración mínima de la clase debe ser de 30 minutos.'], 422);
         }
 
+        // Validar que el instructor no tenga otra clase en el mismo horario
+        $conflicto = DB::table('TClaseGrupales as cg')
+            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->where('cg.carnetEmpleado', $request->carnetEmpleado)
+            ->where('cg.fecha', $request->fecha)
+            ->where('cg.idClaseGrupal', '!=', $id)
+            ->where('cg.estadoA', 1)
+            ->where('cg.estadoClase', '!=', 'Cancelada')
+            ->where(function ($q) use ($request) {
+                $q->whereRaw('? < cg.horaFin', [$request->horaInicio])
+                  ->whereRaw('? > cg.horaInicio', [$request->horaFin]);
+            })
+            ->select('cg.horaInicio', 'cg.horaFin', 'a.nombreActividad')
+            ->first();
+
+        if ($conflicto) {
+            return response()->json([
+                'success' => false,
+                'message' => "El instructor ya tiene la clase \"{$conflicto->nombreActividad}\" programada de {$conflicto->horaInicio} a {$conflicto->horaFin} en ese horario.",
+            ], 422);
+        }
+
         $usuarioA = session('usuario')->idUsuario ?? 1;
+        $idSucursal = $this->getAdminSucursalId();
+        if (!$idSucursal) {
+            return response()->json(['success' => false, 'message' => 'No se pudo determinar la sucursal del administrador.'], 422);
+        }
 
         DB::statement(
             'CALL sp_TClaseGrupales_Update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -229,7 +286,7 @@ class ClaseGrupalController extends Controller
                 $id,
                 $request->idActividad,
                 $request->carnetEmpleado,
-                $request->idSucursal,
+                $idSucursal,
                 $request->fecha,
                 $request->horaInicio,
                 $request->horaFin,

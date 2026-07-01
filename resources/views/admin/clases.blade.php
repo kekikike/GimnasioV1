@@ -7,8 +7,8 @@
 <script>
     window.listaActividades = @json($actividades);
     window.listaEmpleados = @json($empleados);
-    window.listaSucursales = @json($sucursales);
     window.adminSucursalId = @json($adminSucursalId);
+    window.adminSucursalNombre = @json($adminSucursalNombre);
 </script>
 
 <div id="appClases">
@@ -111,11 +111,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Sucursal *</label>
-                        <select v-model="editFormulario.idSucursal" class="form-control" required>
-                            <option v-if="!adminSucursalId" value="" disabled>Seleccione sucursal...</option>
-                            <option v-for="s in sucursales" :key="s.idSucursal" :value="s.idSucursal">@{{ s.nombre }}</option>
-                        </select>
+                        <label>Sucursal</label>
+                        <div style="padding: 0.6rem 0.75rem; background: #f1f5f9; border-radius: 0.5rem; font-size: 0.9rem; color: #0f172a; border: 2px solid #e2e8f0;">
+                            <strong>@{{ adminSucursalNombre }}</strong>
+                            <small style="color: #64748b; display: block;">Sucursal asignada según tu perfil.</small>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Fecha *</label>
@@ -261,8 +261,8 @@ createApp({
         const clases = ref([]);
         const actividades = ref(window.listaActividades || []);
         const empleados = ref(window.listaEmpleados || []);
-        const sucursales = ref(window.listaSucursales || []);
         const adminSucursalId = ref(window.adminSucursalId || null);
+        const adminSucursalNombre = ref(window.adminSucursalNombre || 'No definida');
         const mensaje = ref('{{ session('success') ? session('success') : (session('error') ? session('error') : '') }}');
         const mensajeTipo = ref('{{ session('success') ? 'success' : (session('error') ? 'error' : 'success') }}');
         const filtroFecha = ref('');
@@ -274,7 +274,7 @@ createApp({
         const editandoId = ref(null);
         const editFormulario = ref({
             idActividad: '', carnetEmpleado: '',
-            idSucursal: '', fecha: '', horaInicio: '',
+            fecha: '', horaInicio: '',
             horaFin: '', cupoMaximo: '', estadoClase: 'Programada'
         });
 
@@ -305,7 +305,6 @@ createApp({
             editFormulario.value = {
                 idActividad: clase.idActividad,
                 carnetEmpleado: clase.carnetEmpleado,
-                idSucursal: clase.idSucursal,
                 fecha: clase.fecha,
                 horaInicio: clase.horaInicio,
                 horaFin: clase.horaFin,
@@ -435,7 +434,7 @@ createApp({
         });
 
         return {
-            clases, actividades, empleados, sucursales, adminSucursalId,
+            clases, actividades, empleados, adminSucursalId, adminSucursalNombre,
             mensaje, mensajeTipo, filtroFecha, filtroEstado, clasesFiltradas, guardando,
             modalReservas, reservasData, claseSeleccionada,
             editModal, editFormulario,

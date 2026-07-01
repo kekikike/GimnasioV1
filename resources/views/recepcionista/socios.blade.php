@@ -368,7 +368,7 @@ createApp({
             if (!detalle.value?.membresia) return 'badge-danger';
             const m = detalle.value.membresia;
             const hoy = new Date();
-            const fin = new Date(m.fechaFinMembresia);
+            const fin = new Date(m.fechaFinMembresia + 'T23:59:59');
             const inicio = new Date(m.fechaInicioMembresia);
             if (m.estadoMembresia === 'Activa' && fin >= hoy && inicio <= hoy) return 'badge-success';
             if (fin < hoy) return 'badge-danger';
@@ -379,7 +379,7 @@ createApp({
             if (!detalle.value?.membresia) return 'Sin membresía';
             const m = detalle.value.membresia;
             const hoy = new Date();
-            const fin = new Date(m.fechaFinMembresia);
+            const fin = new Date(m.fechaFinMembresia + 'T23:59:59');
             const inicio = new Date(m.fechaInicioMembresia);
             if (m.estadoMembresia === 'Activa' && fin >= hoy && inicio <= hoy) return 'Vigente';
             if (fin < hoy) return 'Vencida';
@@ -389,9 +389,7 @@ createApp({
         const diasRestantes = computed(() => {
             if (!detalle.value?.membresia) return -1;
             const hoy = new Date();
-            hoy.setHours(0,0,0,0);
-            const fin = new Date(detalle.value.membresia.fechaFinMembresia);
-            fin.setHours(0,0,0,0);
+            const fin = new Date(detalle.value.membresia.fechaFinMembresia + 'T23:59:59');
             return Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24));
         });
 

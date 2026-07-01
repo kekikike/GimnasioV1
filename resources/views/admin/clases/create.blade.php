@@ -32,7 +32,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-                <label for="idActividad">Actividad *</label>
+                <label>Actividad *</label>
                 <select id="idActividad" name="idActividad" class="form-control @error('idActividad') is-invalid @enderror" required>
                     <option value="" disabled {{ old('idActividad') ? '' : 'selected' }}>Seleccione actividad...</option>
                     @foreach($actividades as $a)
@@ -43,7 +43,7 @@
             </div>
 
             <div class="form-group">
-                <label for="carnetEmpleado">Instructor *</label>
+                <label>Instructor *</label>
                 <select id="carnetEmpleado" name="carnetEmpleado" class="form-control @error('carnetEmpleado') is-invalid @enderror" required>
                     <option value="" disabled {{ old('carnetEmpleado') ? '' : 'selected' }}>Seleccione instructor...</option>
                     @foreach($empleados as $e)
@@ -55,23 +55,11 @@
             </div>
 
             <div class="form-group">
-                <label for="idSucursal">Sucursal *</label>
-                <select id="idSucursal" name="idSucursal" class="form-control @error('idSucursal') is-invalid @enderror" required>
-                    @if(!$adminSucursalId)
-                        <option value="" disabled {{ old('idSucursal') ? '' : 'selected' }}>Seleccione sucursal...</option>
-                    @endif
-                    @foreach($sucursales as $s)
-                        <option value="{{ $s->idSucursal }}"
-                            {{ old('idSucursal') == $s->idSucursal ? 'selected' : '' }}
-                            {{ (!$adminSucursalId && !old('idSucursal')) ? '' : '' }}
-                            {{ ($adminSucursalId == $s->idSucursal && !old('idSucursal')) ? 'selected' : '' }}
-                        >{{ $s->nombre }}</option>
-                    @endforeach
-                </select>
-                @error('idSucursal')<small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small>@enderror
-                @if($adminSucursalId)
-                    <small style="color: #64748b;">Sucursal pre-seleccionada según tu perfil.</small>
-                @endif
+                <label>Sucursal</label>
+                <div style="padding: 0.6rem 0.75rem; background: #f1f5f9; border-radius: 0.5rem; font-size: 0.9rem; color: #0f172a; border: 2px solid #e2e8f0;">
+                    <strong>{{ $adminSucursalNombre ?? 'No definida' }}</strong>
+                    <small style="color: #64748b; display: block;">Sucursal asignada según tu perfil.</small>
+                </div>
             </div>
 
             <div class="form-group">

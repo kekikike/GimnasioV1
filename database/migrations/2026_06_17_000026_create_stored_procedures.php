@@ -649,7 +649,7 @@ return new class extends Migration
             . "    WHERE e.estadoA = 1\n"
             . "      AND NOT EXISTS (\n"
             . "          SELECT 1 FROM TMantenimientoPreventivos mp\n"
-            . "          WHERE mp.idEquipo = e.idEquipo AND mp.estadoA = 1\n"
+            . "          WHERE mp.idEquipo = e.idEquipo AND mp.estadoA = 1 AND mp.estadoMantenimiento = 'Pendiente'\n"
             . "      )\n"
             . "      AND (p_fechaDesde IS NULL OR p_fechaDesde = '' OR latest_rf.fechaReporte >= p_fechaDesde)\n"
             . "      AND (p_fechaHasta IS NULL OR p_fechaHasta = '' OR latest_rf.fechaReporte <= p_fechaHasta)\n"

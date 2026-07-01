@@ -36,9 +36,9 @@ class MantenimientoController extends Controller
         }
 
         $data = $request->validate([
-            'descripcionMantenimiento' => 'nullable|string|max:500',
-            'tecnicoAsignado'          => 'nullable|string|max:150',
-            'costoMantenimiento'       => 'nullable|numeric|min:0',
+            'descripcionMantenimiento' => 'required|string|max:500',
+            'tecnicoAsignado'          => 'required|string|max:150',
+            'costoMantenimiento'       => 'required|numeric|min:0',
             'fechaProgramada'          => 'required|date|after:today',
             'fechaRealizada'           => [
                 'nullable', 'date',
@@ -51,6 +51,17 @@ class MantenimientoController extends Controller
                     }
                 },
             ],
+        ], [
+            'descripcionMantenimiento.required' => 'La descripción del mantenimiento es obligatoria.',
+            'descripcionMantenimiento.max'      => 'La descripción no debe exceder 500 caracteres.',
+            'tecnicoAsignado.required'          => 'El técnico asignado es obligatorio.',
+            'tecnicoAsignado.max'               => 'El técnico asignado no debe exceder 150 caracteres.',
+            'costoMantenimiento.required'       => 'El costo del mantenimiento es obligatorio.',
+            'costoMantenimiento.numeric'        => 'El costo debe ser un valor numérico.',
+            'costoMantenimiento.min'            => 'El costo debe ser mayor o igual a 0.',
+            'fechaProgramada.required'          => 'La fecha programada es obligatoria.',
+            'fechaProgramada.date'              => 'La fecha programada no es válida.',
+            'fechaProgramada.after'             => 'La fecha programada debe ser posterior a hoy.',
         ]);
 
         $estadoMantenimiento = !empty($data['fechaRealizada']) ? 'Realizado' : 'Pendiente';
@@ -98,30 +109,29 @@ class MantenimientoController extends Controller
                 ->with('error', 'Mantenimiento no encontrado.');
         }
 
-        if ($current[0]->estadoMantenimiento == 'Realizado') {
+        if (in_array($current[0]->estadoMantenimiento, ['Realizado', 'Cancelado'])) {
             return redirect()->route('admin.mantenimientos.index')
-                ->with('error', 'No se puede eliminar un mantenimiento realizado.');
+                ->with('error', 'No se puede cancelar un mantenimiento ' . strtolower($current[0]->estadoMantenimiento) . '.');
         }
 
         $usuarioA   = session('usuario')->idUsuario;
         $direccionIP = request()->ip();
 
-        $equipo = Equipamiento::getById((int) $current[0]->idEquipo);
-        if ($equipo) {
-            Equipamiento::update((int) $current[0]->idEquipo, [
-                'idSucursal'       => $equipo->idSucursal,
-                'idMarca'          => $equipo->idMarca,
-                'nombreEquipo'     => $equipo->nombreEquipo,
-                'modelo'           => $equipo->modelo,
-                'fechaAdquisicion' => $equipo->fechaAdquisicion,
-                'estadoEquipo'     => 'De Baja',
-            ], $usuarioA, $direccionIP);
-        }
-
-        DB::statement('CALL sp_TMantenimientoPreventivos_Delete(?, ?, ?)', [(int) $id, $usuarioA, $direccionIP]);
+        DB::update('UPDATE TMantenimientoPreventivos SET estadoMantenimiento = ? WHERE idMantenimiento = ?', ['Cancelado', (int) $id]);
+        DB::insert('INSERT INTO TAuditorias (tablaNombre, registroId, accion, campo, valorAnterior, valorNuevo, usuarioA, fechaA, direccionIP, detalles) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)', [
+            'TMantenimientoPreventivos',
+            (int) $id,
+            'U',
+            'estadoMantenimiento',
+            $current[0]->estadoMantenimiento,
+            'Cancelado',
+            $usuarioA,
+            $direccionIP,
+            'Cancelado',
+        ]);
 
         return redirect()->route('admin.mantenimientos.index')
-            ->with('success', 'Mantenimiento eliminado. Equipo dado de baja.');
+            ->with('success', 'Mantenimiento cancelado exitosamente.');
     }
 
     public function getJson($id)

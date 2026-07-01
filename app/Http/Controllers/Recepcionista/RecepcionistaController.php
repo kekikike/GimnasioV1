@@ -86,7 +86,7 @@ class RecepcionistaController extends Controller
     public function abrir(Request $request)
     {
         $request->validate([
-            'montoApertura' => 'required|numeric|min:0',
+            'montoApertura' => 'required|numeric',
         ]);
 
         $today = date('Y-m-d');
@@ -136,7 +136,7 @@ class RecepcionistaController extends Controller
     public function cerrar(Request $request, int $id)
     {
         $request->validate([
-            'montoCierre' => 'required|numeric|min:0',
+            'montoCierre' => 'required|numeric',
         ]);
 
         $caja = DB::table('TCajas')->where('idCaja', $id)->where('estadoA', 1)->first();
@@ -251,7 +251,7 @@ class RecepcionistaController extends Controller
     {
         $request->validate([
             'descripcion' => 'required|string|max:500',
-            'costo' => 'required|numeric|min:0.01',
+            'costo' => 'required|numeric',
         ]);
 
         $today = date('Y-m-d');
@@ -369,10 +369,10 @@ class RecepcionistaController extends Controller
         $request->validate([
             'carnetSocio' => 'required|integer|exists:TSocios,carnetSocio',
             'idPlan' => 'required|integer|exists:TPlanes,idPlan',
-            'montoTotal' => 'required|numeric|min:0',
+            'montoTotal' => 'required|numeric',
             'metodos' => 'required|array|min:1',
             'metodos.*.idMetodoPago' => 'required|integer|exists:TMetodoPagos,idMetodoPago',
-            'metodos.*.monto' => 'required|numeric|min:0',
+            'metodos.*.monto' => 'required|numeric',
             'renovar' => 'nullable|boolean',
         ]);
 

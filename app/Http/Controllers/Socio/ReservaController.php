@@ -138,6 +138,29 @@ class ReservaController extends Controller
             return response()->json(['success' => false, 'message' => 'Ya tienes una reserva activa para esta clase.']);
         }
 
+        // Validar que no tenga otra reserva en el mismo horario
+        $conflicto = DB::table('TReservas as r')
+            ->join('TClaseGrupales as cg', 'r.idClaseGrupal', '=', 'cg.idClaseGrupal')
+            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
+            ->where('r.carnetSocio', $socio->carnetSocio)
+            ->where('r.estadoReserva', 'Reservado')
+            ->where('r.estadoA', 1)
+            ->where('cg.fecha', $clase->fecha)
+            ->where('cg.estadoClase', 'Programada')
+            ->where(function ($q) use ($clase) {
+                $q->whereRaw('? < cg.horaFin', [$clase->horaInicio])
+                  ->whereRaw('? > cg.horaInicio', [$clase->horaFin]);
+            })
+            ->select('cg.horaInicio', 'cg.horaFin', 'a.nombreActividad')
+            ->first();
+
+        if ($conflicto) {
+            return response()->json([
+                'success' => false,
+                'message' => "Ya tienes una reserva en la clase \"{$conflicto->nombreActividad}\" de {$conflicto->horaInicio} a {$conflicto->horaFin} que coincide con este horario.",
+            ]);
+        }
+
         $reservados = DB::table('TReservas')
             ->where('idClaseGrupal', $request->idClaseGrupal)
             ->where('estadoReserva', 'Reservado')

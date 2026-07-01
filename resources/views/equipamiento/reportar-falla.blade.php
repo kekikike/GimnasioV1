@@ -26,19 +26,19 @@
         <form action="{{ route('equipamiento.reportar-falla.store') }}" method="POST" novalidate>
             @csrf
 
-            <div class="form-group">
-                <label for="busquedaEquipo">Buscar equipo</label>
-                <input type="text" id="busquedaEquipo" class="form-control" placeholder="Escriba para filtrar equipos..." oninput="filtrarEquipos()">
-            </div>
-
-            <div class="form-group">
-                <label for="idEquipo">Equipo</label>
-                <select name="idEquipo" id="idEquipo" class="form-control @error('idEquipo') is-invalid @enderror" required>
-                    <option value="">-- Seleccione un equipo --</option>
-                    @foreach($equipos as $eq)
-                        <option value="{{ $eq->idEquipo }}" data-nombre="{{ mb_strtolower($eq->nombreEquipo . ' ' . ($eq->sucursal ?? '')) }}" {{ old('idEquipo') == $eq->idEquipo ? 'selected' : '' }}>{{ $eq->nombreEquipo }} {{ !empty($eq->sucursal) ? '- ' . $eq->sucursal : '' }}</option>
-                    @endforeach
-                </select>
+            <div class="form-group" style="position:relative;">
+                <label for="busquedaEquipo">Equipo</label>
+                <input type="text" id="busquedaEquipo" class="form-control"
+                       placeholder="Escriba para buscar equipo..."
+                       autocomplete="off"
+                       oninput="buscarEquipo(this.value)"
+                       onfocus="if(this.value.trim()) buscarEquipo(this.value)">
+                <input type="hidden" name="idEquipo" id="idEquipo" value="{{ old('idEquipo') }}">
+                <div id="resultadosEquipos" class="search-results" style="display:none;"></div>
+                <div id="equipoSeleccionado" class="equipo-seleccionado" style="display:none;">
+                    <span id="equipoSeleccionadoTexto"></span>
+                    <button type="button" onclick="limpiarEquipo()" class="btn-clear-selected"><span aria-hidden="true">&times;</span></button>
+                </div>
                 @error('idEquipo') <small style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">{{ $message }}</small> @enderror
             </div>
 
@@ -69,15 +69,132 @@
     @endif
 </div>
 
+<style>
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    max-height: 210px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.search-results .result-item {
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+.search-results .result-item:last-child {
+    border-bottom: none;
+}
+.search-results .result-item:hover {
+    background: #f1f5f9;
+}
+.search-results .result-item strong {
+    color: #0f172a;
+}
+.search-results .result-item .sucursal-tag {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+.search-results .empty-item {
+    padding: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+    font-size: 0.85rem;
+}
+.equipo-seleccionado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #dbeafe;
+    border-radius: 0.5rem;
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    color: #1e40af;
+    font-weight: 500;
+}
+.btn-clear-selected {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #1e40af;
+    padding: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+.btn-clear-selected:hover {
+    color: #1e3a5f;
+}
+</style>
+
 <script>
-function filtrarEquipos() {
-    var input = document.getElementById('busquedaEquipo').value.toLowerCase();
-    var select = document.getElementById('idEquipo');
-    var options = select.options;
-    for (var i = 0; i < options.length; i++) {
-        var nombre = options[i].getAttribute('data-nombre') || options[i].text.toLowerCase();
-        options[i].style.display = nombre.indexOf(input) === -1 ? 'none' : '';
+var equipos = @json($equipos);
+
+document.addEventListener('click', function(e) {
+    var contenedor = document.getElementById('resultadosEquipos');
+    var input = document.getElementById('busquedaEquipo');
+    if (!contenedor || !input) return;
+    if (!contenedor.contains(e.target) && e.target !== input) {
+        contenedor.style.display = 'none';
     }
+});
+
+function buscarEquipo(valor) {
+    var contenedor = document.getElementById('resultadosEquipos');
+    if (!contenedor) return;
+
+    if (!valor.trim()) {
+        contenedor.style.display = 'none';
+        return;
+    }
+
+    var termino = valor.toLowerCase();
+    var resultados = equipos.filter(function(eq) {
+        return (eq.nombreEquipo + ' ' + (eq.sucursal || '')).toLowerCase().indexOf(termino) !== -1;
+    });
+
+    if (resultados.length === 0) {
+        contenedor.innerHTML = '<div class="empty-item">Sin resultados</div>';
+        contenedor.style.display = 'block';
+        return;
+    }
+
+    var html = '';
+    resultados.forEach(function(eq) {
+        var texto = eq.nombreEquipo + (eq.sucursal ? ' - ' + eq.sucursal : '');
+        html += '<div class="result-item" data-id="' + eq.idEquipo + '" onclick="seleccionarEquipo(' + eq.idEquipo + ', \'' + texto.replace(/'/g, "\\'") + '\')">';
+        html += '<strong>' + eq.nombreEquipo + '</strong>';
+        if (eq.sucursal) html += ' <span class="sucursal-tag">- ' + eq.sucursal + '</span>';
+        html += '</div>';
+    });
+    contenedor.innerHTML = html;
+    contenedor.style.display = 'block';
+}
+
+function seleccionarEquipo(id, texto) {
+    document.getElementById('idEquipo').value = id;
+    document.getElementById('busquedaEquipo').value = '';
+    document.getElementById('equipoSeleccionadoTexto').textContent = texto;
+    document.getElementById('equipoSeleccionado').style.display = 'inline-flex';
+    document.getElementById('resultadosEquipos').style.display = 'none';
+}
+
+function limpiarEquipo() {
+    document.getElementById('idEquipo').value = '';
+    document.getElementById('equipoSeleccionado').style.display = 'none';
+    document.getElementById('busquedaEquipo').value = '';
+    document.getElementById('resultadosEquipos').style.display = 'none';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -88,6 +205,16 @@ document.addEventListener('DOMContentLoaded', function() {
         desc.addEventListener('input', function() {
             contador.textContent = this.value.length + '/255';
         });
+    }
+
+    var oldEquipo = document.getElementById('idEquipo').value;
+    if (oldEquipo) {
+        var eq = equipos.find(function(e) { return e.idEquipo == oldEquipo; });
+        if (eq) {
+            var texto = eq.nombreEquipo + (eq.sucursal ? ' - ' + eq.sucursal : '');
+            document.getElementById('equipoSeleccionadoTexto').textContent = texto;
+            document.getElementById('equipoSeleccionado').style.display = 'inline-flex';
+        }
     }
 });
 </script>

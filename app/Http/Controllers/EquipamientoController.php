@@ -48,7 +48,17 @@ class EquipamientoController extends Controller
             'fechaAdquisicion' => 'nullable|date',
             'estadoEquipo'     => 'required|string|max:50',
         ], [
-            'nombreEquipo.regex' => 'El nombre del equipo debe contener al menos una letra.',
+            'idSucursal.required' => 'La sucursal es obligatoria.',
+            'idSucursal.integer'  => 'La sucursal seleccionada no es válida.',
+            'idMarca.required'    => 'La marca es obligatoria.',
+            'idMarca.integer'     => 'La marca seleccionada no es válida.',
+            'nombreEquipo.required' => 'El nombre del equipo es obligatorio.',
+            'nombreEquipo.max'    => 'El nombre no debe exceder 100 caracteres.',
+            'nombreEquipo.regex'  => 'El nombre del equipo debe contener al menos una letra.',
+            'modelo.max'          => 'El modelo no debe exceder 100 caracteres.',
+            'fechaAdquisicion.date' => 'La fecha de adquisición no es válida.',
+            'estadoEquipo.required' => 'El estado del equipo es obligatorio.',
+            'estadoEquipo.max'    => 'El estado no debe exceder 50 caracteres.',
         ]);
 
         $usuarioA   = session('usuario')->idUsuario;
@@ -80,7 +90,17 @@ class EquipamientoController extends Controller
             'fechaAdquisicion' => 'nullable|date',
             'estadoEquipo'     => 'required|string|max:50',
         ], [
-            'nombreEquipo.regex' => 'El nombre del equipo debe contener al menos una letra.',
+            'idSucursal.required' => 'La sucursal es obligatoria.',
+            'idSucursal.integer'  => 'La sucursal seleccionada no es válida.',
+            'idMarca.required'    => 'La marca es obligatoria.',
+            'idMarca.integer'     => 'La marca seleccionada no es válida.',
+            'nombreEquipo.required' => 'El nombre del equipo es obligatorio.',
+            'nombreEquipo.max'    => 'El nombre no debe exceder 100 caracteres.',
+            'nombreEquipo.regex'  => 'El nombre del equipo debe contener al menos una letra.',
+            'modelo.max'          => 'El modelo no debe exceder 100 caracteres.',
+            'fechaAdquisicion.date' => 'La fecha de adquisición no es válida.',
+            'estadoEquipo.required' => 'El estado del equipo es obligatorio.',
+            'estadoEquipo.max'    => 'El estado no debe exceder 50 caracteres.',
         ]);
 
         $usuarioA   = session('usuario')->idUsuario;

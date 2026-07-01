@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <label>Monto apertura (Bs)</label>
-                    <input v-model="montoApertura" type="number" step="0.01" class="form-control" min="0" placeholder="0.00">
+                    <input v-model="montoApertura" type="number" step="0.01" class="form-control" placeholder="0.00">
                 </div>
                 <div>
                     <button @click="abrirCaja" class="btn btn-primary" style="width:100%;" :disabled="!montoApertura">Abrir Caja</button>
@@ -52,7 +52,7 @@
                 <div style="display:flex; gap:1rem; align-items:end;">
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
-                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0" @input="truncarEntero($event, 'montoCierre')"
+                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" @input="truncarEntero($event, 'montoCierre')"
                                :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                         <small v-if="montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
                             <template v-if="diferenciaCierre <= 0.01">Coinciden</template>
@@ -134,7 +134,7 @@
                         <option value="">Seleccione metodo...</option>
                         <option v-for="mp in metodosPago" :key="mp.idMetodoPago" :value="mp.idMetodoPago">{{ mp.nombreMetodoPago }}</option>
                     </select>
-                    <input v-model="m.monto" type="number" step="0.01" class="form-control" min="0" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto"
+                    <input v-model="m.monto" type="number" step="0.01" class="form-control" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto"
                            :style="{ borderColor: diferenciaMetodos <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                     <button @click="quitarMetodo(i)" class="btn btn-sm btn-danger" style="white-space:nowrap;">X</button>
                 </div>
@@ -164,7 +164,7 @@
                 </div>
                 <div>
                     <label>Costo (Bs)</label>
-                    <input v-model="costosalida" type="number" step="0.01" class="form-control" min="0.01" placeholder="0.00" @input="truncarEntero($event, 'costosalida')">
+                    <input v-model="costosalida" type="number" step="0.01" class="form-control" placeholder="0.00" @input="truncarEntero($event, 'costosalida')">
                 </div>
                 <div>
                     <button @click="registrarSalida" class="btn btn-warning" style="width:100%;" :disabled="!descripcionSalida || !costosalida || costosalida <= 0">Registrar Salida</button>
@@ -390,7 +390,7 @@ createApp({
 
         const cerrarCaja = async () => {
             if (!cajaAbierta.value) return;
-            if (!montoCierre.value || parseFloat(montoCierre.value) <= 0) { mostrarToast('El monto de cierre debe ser un número mayor a 0.', 'error'); return; }
+            if (!montoCierre.value) { mostrarToast('El monto de cierre es obligatorio.', 'error'); return; }
             if (String(montoCierre.value).replace('.','').length > 9) { mostrarToast('Máximo 9 dígitos enteros.', 'error'); return; }
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
@@ -425,7 +425,7 @@ createApp({
         };
 
         const registrarSalida = async () => {
-            if (!descripcionSalida.value || !costosalida.value || costosalida.value <= 0) return;
+            if (!descripcionSalida.value || !costosalida.value) return;
             if (String(costosalida.value).replace('.','').length > 9) { mostrarToast('Máximo 9 dígitos enteros.', 'error'); return; }
             const res = await fetch('{{ route("recepcionista.caja.salidas.store") }}', {
                 method: 'POST',

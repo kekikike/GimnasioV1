@@ -32,7 +32,7 @@ class SocioController extends Controller
                     'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono',
                     's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre',
                     's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url',
-                    'm.estadoMembresia', 'm.fechaCongelamiento'
+                    'm.estadoMembresia', 'm.fechaFinMembresia', 'm.fechaCongelamiento'
                 )
                 ->where('u.estadoA', 1);
 

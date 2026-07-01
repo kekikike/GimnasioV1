@@ -310,12 +310,17 @@ createApp({
         const errores = ref({});
 
         const sanitizarMonto = (val) => {
-            let s = String(val || '').replace(/[^0-9.]/g, '');
-            const pts = s.match(/\./g);
-            if (pts && pts.length > 1) s = s.substring(0, s.lastIndexOf('.'));
-            if (s.startsWith('.')) s = '0' + s;
-            if (s.indexOf('.') !== -1 && s.length - s.indexOf('.') > 3) s = s.substring(0, s.indexOf('.') + 3);
-            if (s === '') s = '';
+            let s = String(val || '').replace(/[^0-9.\-]/g, '');
+            if (s.indexOf('-') > 0) s = s.replace(/-/g, '');
+            if (s.startsWith('-')) s = '-' + s.replace(/-/g, '');
+            if (s === '-' || s === '') s = '';
+            else {
+                const pts = s.replace(/^-/, '').match(/\./g);
+                if (pts && pts.length > 1) s = s.substring(0, s.lastIndexOf('.'));
+                if (s.replace(/^-/, '').startsWith('.')) s = s.replace(/^-/, '') === '.' ? (s.startsWith('-') ? '-0' : '0') : s;
+                const decPart = s.indexOf('.');
+                if (decPart !== -1 && s.length - decPart > 3) s = s.substring(0, decPart + 3);
+            }
             return s;
         };
         watch(montoApertura, (n) => { const s = sanitizarMonto(n); if (s !== n) montoApertura.value = s; });
@@ -383,8 +388,6 @@ createApp({
 
         const preValidarApertura = () => {
             const errs = {};
-            const val = String(montoApertura.value || '').replace(/[^0-9.]/g, '');
-            if (!val || parseFloat(val) <= 0) errs.montoApertura = 'El monto de apertura debe ser un número mayor a 0.';
             return errs;
         };
 
@@ -407,7 +410,7 @@ createApp({
             if (!cajaAbierta.value) return;
             errores.value = {};
             const val = String(montoCierre.value || '').replace(/[^0-9.]/g, '');
-            if (!val || parseFloat(val) <= 0) { errores.value = { montoCierre: 'El monto de cierre debe ser un número mayor a 0.' }; return; }
+            if (!val) { errores.value = { montoCierre: 'El monto de cierre es obligatorio.' }; return; }
             if (val.replace('.','').length > 9) { errores.value = { montoCierre: 'Máximo 9 dígitos enteros.' }; return; }
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
@@ -445,8 +448,8 @@ createApp({
             errores.value = {};
             const errsSalida = {};
             if (!descripcionSalida.value?.trim()) errsSalida.descripcionSalida = 'La descripción es obligatoria.';
-            const costoParse = parseFloat(String(costosalida.value || '').replace(/[^0-9.]/g, ''));
-            if (!costosalida.value || isNaN(costoParse) || costoParse <= 0) errsSalida.costosalida = 'El costo debe ser un número mayor a 0.';
+            const costoParse = parseFloat(String(costosalida.value || '').replace(/[^0-9.-]/g, ''));
+            if (!costosalida.value || isNaN(costoParse)) errsSalida.costosalida = 'El costo debe ser un número válido.';
             if (String(costosalida.value || '').replace(/[^0-9.]/g, '').replace('.','').length > 9) errsSalida.costosalida = 'Máximo 9 dígitos enteros.';
             if (Object.keys(errsSalida).length > 0) { errores.value = errsSalida; return; }
             const res = await fetch('{{ route("admin.caja.salidas.store") }}', {

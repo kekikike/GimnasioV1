@@ -23,9 +23,14 @@
                 <td>{{ $m->fechaInicioMembresia }}</td>
                 <td>{{ $m->fechaFinMembresia }}</td>
                 <td>
-                    <span class="badge badge-{{ $m->estadoMembresia === 'Activa' ? 'success' : ($m->estadoMembresia === 'Vencida' ? 'warning' : 'danger') }}">
-                        {{ $m->estadoMembresia }}
-                    </span>
+                    @php $hoy = date('Y-m-d'); @endphp
+                    @if($m->estadoMembresia === 'Activa' && $m->fechaFinMembresia >= $hoy)
+                        <span class="badge badge-success">Activa</span>
+                    @elseif($m->fechaFinMembresia < $hoy)
+                        <span class="badge badge-danger">Vencida</span>
+                    @else
+                        <span class="badge badge-warning">{{ $m->estadoMembresia }}</span>
+                    @endif
                 </td>
             </tr>
             @endforeach

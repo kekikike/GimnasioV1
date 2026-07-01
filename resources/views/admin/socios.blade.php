@@ -175,8 +175,8 @@
                         </div>
                     </td>
                     <td style="padding: 12px; font-size: 0.85em;">
-                        <span :style="{ backgroundColor: socio.estadoMembresia === 'Activa' ? '#dcfce3' : '#fee2e2', color: socio.estadoMembresia === 'Activa' ? '#166534' : '#991b1b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }">
-                            @{{ socio.estadoMembresia || '--' }}
+                        <span :style="estadoMembresiaStyle(socio)">
+                            @{{ estadoMembresiaTexto(socio) }}
                         </span>
                         <small v-if="socio.fechaCongelamiento" style="display:block; color:#64748b; margin-top:4px;">
                             Congelada: @{{ socio.fechaCongelamiento }}
@@ -549,9 +549,24 @@
                 notificaciones.value = [];
             };
 
+            const estadoMembresiaTexto = (socio) => {
+                if (!socio.estadoMembresia) return '--';
+                const hoy = new Date();
+                const fin = new Date(socio.fechaFinMembresia + 'T23:59:59');
+                if (socio.estadoMembresia === 'Activa' && fin >= hoy) return 'Activa';
+                if (fin < hoy) return 'Vencida';
+                return socio.estadoMembresia;
+            };
+            const estadoMembresiaStyle = (socio) => {
+                const txt = estadoMembresiaTexto(socio);
+                if (txt === 'Activa') return { backgroundColor: '#dcfce3', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' };
+                if (txt === 'Vencida') return { backgroundColor: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' };
+                return { backgroundColor: '#fef08a', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' };
+            };
+
             onMounted(() => { cargarSocios(); });
 
-            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze, estadoMembresiaTexto, estadoMembresiaStyle };
         }
     }).mount('#appSocios');
 </script>

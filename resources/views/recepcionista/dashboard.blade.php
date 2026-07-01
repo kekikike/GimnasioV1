@@ -118,7 +118,7 @@ createApp({
 
         const diasRestantesFn = (fechaStr) => {
             const hoy = new Date(); hoy.setHours(0,0,0,0);
-            const fin = new Date(fechaStr); fin.setHours(0,0,0,0);
+            const fin = new Date(fechaStr + 'T00:00:00');
             return Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24));
         };
 
@@ -126,7 +126,8 @@ createApp({
             if (!socio.membresiaFin) return { texto: 'Sin membresía', fondo: '#f1f5f9', color: '#64748b' };
             const dias = diasRestantesFn(socio.membresiaFin);
             if (dias < 0) return { texto: 'Vencida', fondo: '#fee2e2', color: '#991b1b' };
-            return { texto: socio.membresiaEstado || 'Activa', fondo: '#d1fae5', color: '#065f46' };
+            if (dias === 0) return { texto: 'Vence hoy', fondo: '#fef3c7', color: '#92400e' };
+            return { texto: 'Activa', fondo: '#d1fae5', color: '#065f46' };
         };
 
         onMounted(async () => {
