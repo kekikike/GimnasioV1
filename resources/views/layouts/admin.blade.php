@@ -13,7 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f1f5f9; display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background: #0f172a; color: #e2e8f0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 50; }
-        .sidebar .brand { padding: 1.5rem; border-bottom: 1px solid #1e293b; }
+        .sidebar .brand { padding: 0.6rem 1.5rem; border-bottom: 1px solid #1e293b; }
         .sidebar .brand h1 { font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
         .sidebar .brand span { color: #3b82f6; }
         .sidebar .nav { padding: 1rem 0; flex: 1; overflow-y: auto; }
