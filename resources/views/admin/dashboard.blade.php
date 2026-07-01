@@ -41,23 +41,24 @@
             @else
                 <table>
                     <thead>
-                        <tr><th>Equipo</th><th>Programada</th><th>Dias</th><th>Estado</th></tr>
+                        <tr><th>Equipo</th><th>Estado del Equipo</th><th>Fecha Programada</th><th>D&iacute;as Restantes</th><th>Sucursal</th></tr>
                     </thead>
                     <tbody>
                         @foreach($alertasProximas as $a)
                         <tr>
                             <td style="font-weight:600;">{{ $a->nombreEquipo }}</td>
-                            <td>{{ \Carbon\Carbon::parse($a->fechaProgramada)->format('d/m') }}</td>
+                            <td>{{ $a->estadoEquipo }}</td>
+                            <td>{{ \Carbon\Carbon::parse($a->fechaProgramada)->format('d/m/Y') }}</td>
                             <td>
                                 @if($a->diasRestantes > 0)
-                                    <span style="color:#059669;">{{ $a->diasRestantes }}d</span>
+                                    <span style="color:#059669;">{{ $a->diasRestantes }} d&iacute;as</span>
                                 @elseif($a->diasRestantes == 0)
                                     <span style="color:#d97706;">Hoy</span>
                                 @else
-                                    <span style="color:#dc2626;">{{ abs($a->diasRestantes) }}d vencido</span>
+                                    <span style="color:#dc2626;">{{ abs($a->diasRestantes) }} d&iacute;as vencido</span>
                                 @endif
                             </td>
-                            <td><span class="badge {{ $a->estadoMantenimiento == 'Completado' ? 'badge-success' : ($a->estadoMantenimiento == 'En Curso' ? 'badge-info' : 'badge-warning') }}">{{ $a->estadoMantenimiento }}</span></td>
+                            <td>{{ $a->nombre }}</td>
                         </tr>
                         @endforeach
                     </tbody>

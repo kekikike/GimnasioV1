@@ -269,8 +269,12 @@
                 confirmarAccion("¿Esta acción dará de baja la sucursal y quedará registrada en la auditoría. Continuar?", async function() {
                     const res = await fetch(`/admin/sucursales/${id}`, { method: 'DELETE', headers: headers });
                     const data = await res.json();
-                    if(data.success) mostrarToast(data.message, 'success');
-                    cargarSucursales();
+                    if (data.success) {
+                        mostrarToast(data.message, 'success');
+                        cargarSucursales();
+                    } else {
+                        mostrarToast(data.message || 'Error al eliminar la sucursal.', 'error');
+                    }
                 });
             };
 
