@@ -131,14 +131,6 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/{id}/json', [MantenimientoController::class, 'getJson'])->name('json');
         });
 
-        Route::prefix('admin/esquema-sueldos')->name('admin.esquema-sueldos.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'index'])->name('index');
-            Route::get('/data', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'listar'])->name('data');
-            Route::post('/', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'store']);
-            Route::put('/{id}', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'update']);
-            Route::delete('/{id}', [App\Http\Controllers\Admin\EsquemaSueldoController::class, 'destroy']);
-        });
-
         Route::get('/admin/auditoria', [AuditoriaController::class, 'index'])->name('admin.auditoria');
 
 

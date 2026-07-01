@@ -51,7 +51,7 @@
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem;">Rol Asignado <span style="color:#ef4444;">*</span></label>
-                <select v-model="formulario.idRol" class="form-control" :class="{ 'is-invalid': errores.idRol }" required>
+                <select v-model="formulario.idRol" @change="onCambioRol" class="form-control" :class="{ 'is-invalid': errores.idRol }" required>
                     <option value="" disabled>Seleccione un rol...</option>
                     <option v-for="rol in rolesFiltrados" :key="rol.idRol" :value="rol.idRol">@{{ rol.nombreRol }}</option>
                 </select>
@@ -119,6 +119,34 @@
                 <label style="font-weight: 600; font-size: 0.85rem;">Fecha Contrato Inicio <span style="color:#ef4444;">*</span></label>
                 <input type="date" v-model="formulario.fechaContratoInicio" class="form-control" :class="{ 'is-invalid': errores.fechaContratoInicio }" required>
                 <small v-if="errores.fechaContratoInicio" class="text-danger">@{{ errores.fechaContratoInicio }}</small>
+            </div>
+
+            <div style="grid-column: span 3; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 10px; color: #3b82f6; font-weight: 600;">Esquema de Sueldo</div>
+
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem;">Modalidad de Pago <span style="color:#ef4444;">*</span></label>
+                <select v-model="formulario.modalidadPago" class="form-control" :class="{ 'is-invalid': errores.modalidadPago }" :disabled="modoEdicion && empleadoSucursalDiferente" required>
+                    <option value="">Seleccione...</option>
+                    <option v-for="m in modalidades" :key="m" :value="m">@{{ m }}</option>
+                </select>
+                <small v-if="errores.modalidadPago" class="text-danger">@{{ errores.modalidadPago }}</small>
+            </div>
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem;">Monto Base (Bs.) <span style="color:#ef4444;">*</span></label>
+                <input type="text" v-model="formulario.montoBase" @input="validarMontoBase" class="form-control" :class="{ 'is-invalid': errores.montoBase }" :disabled="modoEdicion && empleadoSucursalDiferente" required placeholder="0.00">
+                <small v-if="errores.montoBase" class="text-danger">@{{ errores.montoBase }}</small>
+            </div>
+            <div>
+                <template v-if="esEntrenador">
+                    <label style="font-weight: 600; font-size: 0.85rem;">Tarifa por Hora / Clase</label>
+                    <input type="text" v-model="formulario.tarifaHoraOClase" @input="validarTarifa" class="form-control" :class="{ 'is-invalid': errores.tarifaHoraOClase }" :disabled="modoEdicion && empleadoSucursalDiferente" placeholder="0">
+                    <small v-if="errores.tarifaHoraOClase" class="text-danger">@{{ errores.tarifaHoraOClase }}</small>
+                </template>
+                <template v-else>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Tarifa por Hora / Clase</label>
+                    <input type="text" class="form-control" value="Solo disponible para Entrenador" disabled style="background:#f1f5f9; color:#94a3b8; font-style:italic;">
+                    <small style="color:#f59e0b;font-size:0.75rem;display:block;margin-top:2px;">Seleccione un empleado con rol Entrenador para habilitar este campo.</small>
+                </template>
             </div>
 
             <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
@@ -214,6 +242,7 @@
             const roles = ref([]);
             const rolesFiltrados = ref([]);
             const sucursales = ref([]);
+            const modalidades = @json($modalidades);
             const adminSucursalId = {{ $adminSucursalId ?? 'null' }};
             const adminCarnet = {{ $adminCarnet ?? 'null' }};
             const modoEdicion = ref(false);
@@ -223,6 +252,7 @@
             const mostrarConfirmPassword = ref(false);
             const passReadonly = ref(true);
             const passConfirmReadonly = ref(true);
+            const empleadoSucursalDiferente = ref(false);
 
             // 1. Función inteligente para calcular la fecha de hoy sin problemas de zona horaria
             const obtenerFechaHoy = () => {
@@ -245,12 +275,20 @@
                 telefono: '',
                 contrasena: '', 
                 contrasena_confirmation: '',
-                fechaContratoInicio: obtenerFechaHoy() // <--- ¡AQUÍ ESTÁ LA MAGIA!
+                fechaContratoInicio: obtenerFechaHoy(),
+                modalidadPago: '',
+                montoBase: '',
+                tarifaHoraOClase: 0,
             };
             
             const formulario = ref({ ...formularioBase });
             
             const errores = ref({});
+
+            const esEntrenador = computed(() => {
+                const rol = parseInt(formulario.value.idRol);
+                return rol === 3;
+            });
 
             const headers = {
                 'Content-Type': 'application/json',
@@ -292,6 +330,28 @@
                 let val = formulario.value.carnetEmpleado_confirmation.replace(/[^0-9]/g, '');
                 if (val.length > 9) val = val.substring(0, 9);
                 formulario.value.carnetEmpleado_confirmation = val;
+            };
+
+            const validarMontoBase = () => {
+                let val = String(formulario.value.montoBase || '').replace(/[^0-9.]/g, '');
+                const puntos = val.match(/\./g);
+                if (puntos && puntos.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+                if (val.startsWith('.')) val = '0' + val;
+                formulario.value.montoBase = val;
+            };
+
+            const validarTarifa = () => {
+                let val = String(formulario.value.tarifaHoraOClase || '').replace(/[^0-9.]/g, '');
+                const puntos = val.match(/\./g);
+                if (puntos && puntos.length > 1) val = val.substring(0, val.lastIndexOf('.'));
+                if (val.startsWith('.')) val = '0' + val;
+                formulario.value.tarifaHoraOClase = val;
+            };
+
+            const onCambioRol = () => {
+                if (!esEntrenador.value) {
+                    formulario.value.tarifaHoraOClase = 0;
+                }
             };
 
             const preValidar = () => {
@@ -343,6 +403,18 @@
                     if (fechaInicio > hoy) errs.fechaContratoInicio = 'La fecha de inicio no puede ser en el futuro.';
                 }
 
+                if (modoEdicion.value && empleadoSucursalDiferente.value) {
+                    return errs;
+                }
+
+                if (!f.modalidadPago) errs.modalidadPago = 'Debe seleccionar una modalidad de pago.';
+                const monto = parseFloat(String(f.montoBase).replace(/[^0-9.]/g, ''));
+                if (!monto || monto < 100) errs.montoBase = 'El monto base mínimo es de 100 Bs.';
+                if (esEntrenador.value) {
+                    const tarifa = parseFloat(String(f.tarifaHoraOClase).replace(/[^0-9.]/g, ''));
+                    if (!tarifa || tarifa <= 10) errs.tarifaHoraOClase = 'La tarifa por hora/clase debe ser mayor a 10 Bs.';
+                }
+
                 return errs;
             };
 
@@ -388,6 +460,7 @@
             const editarEmpleado = (emp) => {
                 modoEdicion.value = true;
                 idActual.value = emp.carnetEmpleado;
+                empleadoSucursalDiferente.value = adminSucursalId && adminSucursalId != emp.idSucursal;
                 errores.value = {};
                 formulario.value = {
                     carnetEmpleado: emp.carnetEmpleado,
@@ -402,13 +475,17 @@
                     contrasena: '',
                     contrasena_confirmation: '',
                     idSucursal: emp.idSucursal,
-                    fechaContratoInicio: emp.fechaContratoInicio
+                    fechaContratoInicio: emp.fechaContratoInicio,
+                    modalidadPago: emp.modalidadPago || '',
+                    montoBase: emp.montoBase ? String(emp.montoBase) : '',
+                    tarifaHoraOClase: emp.tarifaHoraOClase ? String(emp.tarifaHoraOClase) : 0,
                 };
             };
 
             const cancelarEdicion = () => {
                 modoEdicion.value = false;
                 idActual.value = null;
+                empleadoSucursalDiferente.value = false;
                 errores.value = {};
                 formulario.value = { ...formularioBase };
                 if (adminSucursalId) {
@@ -453,9 +530,11 @@
             });
 
             return {
-                empleados, inactivos, roles, rolesFiltrados, sucursales, adminSucursalId, adminCarnet,
+                empleados, inactivos, roles, rolesFiltrados, sucursales, modalidades, adminSucursalId, adminCarnet,
                 formulario, errores, modoEdicion, guardando, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly,
+                empleadoSucursalDiferente, esEntrenador,
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
+                validarMontoBase, validarTarifa, onCambioRol,
                 guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,
                 confirmarContrato, reactivarEmpleado
             };

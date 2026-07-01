@@ -17,7 +17,8 @@ class PersonalController extends Controller
         $sucursales = DB::select('CALL sp_TSucursales_Select()');
         $usuario = session('usuario');
         $adminCarnet = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->value('carnetEmpleado');
-        return view('admin.personal', compact('roles', 'sucursales', 'adminCarnet'));
+        $modalidades = ['Fijo Mensual', 'Por Hora', 'Por Actividad'];
+        return view('admin.personal', compact('roles', 'sucursales', 'adminCarnet', 'modalidades'));
     }
 
     public function listar()
@@ -25,11 +26,13 @@ class PersonalController extends Controller
         $empleados = DB::select("
             SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.fechaContratoInicio, e.fechaContratoFin,
                    u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono,
-                   r.nombreRol, s.nombre as nombreSucursal
+                   r.nombreRol, s.nombre as nombreSucursal,
+                   es.idEsquemaSueldo, es.modalidadPago, es.montoBase, es.tarifaHoraOClase
             FROM templeados e
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
             INNER JOIN troles r ON u.idRol = r.idRol
             INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
+            LEFT JOIN tesquemasueldos es ON e.carnetEmpleado = es.carnetEmpleado AND es.estadoA = 1
             WHERE e.estadoA = 1 AND e.carnetEmpleado != '1000'
         ");
         return response()->json($empleados);
@@ -40,11 +43,13 @@ class PersonalController extends Controller
         $empleados = DB::select("
             SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.fechaContratoInicio, e.fechaContratoFin,
                    u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono,
-                   r.nombreRol, s.nombre as nombreSucursal
+                   r.nombreRol, s.nombre as nombreSucursal,
+                   es.idEsquemaSueldo, es.modalidadPago, es.montoBase, es.tarifaHoraOClase
             FROM templeados e
             INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
             INNER JOIN troles r ON u.idRol = r.idRol
             INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
+            LEFT JOIN tesquemasueldos es ON e.carnetEmpleado = es.carnetEmpleado AND es.estadoA = 1
             WHERE e.estadoA = 0 AND e.carnetEmpleado != '1000'
         ");
         return response()->json($empleados);
@@ -62,9 +67,12 @@ class PersonalController extends Controller
             'correo'              => 'required|email|unique:tusuarios,correo',
             'telefono'            => 'required|numeric|digits_between:7,8',
             'contrasena'          => 'required|string|min:8',
-            'carnetEmpleado'      => 'required|numeric|max:2147483647|unique:templeados,carnetEmpleado', // Se cambia a numeric y se limita al máximo de un INT
+            'carnetEmpleado'      => 'required|numeric|max:2147483647|unique:templeados,carnetEmpleado',
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
-            'fechaContratoInicio' => 'required|date|before_or_equal:today', // No puede ser en el futuro
+            'fechaContratoInicio' => 'required|date|before_or_equal:today',
+            'modalidadPago'       => 'required|string|max:50',
+            'montoBase'           => 'required|numeric|min:0|max:999999.99',
+            'tarifaHoraOClase'    => 'required|integer|min:0|max:999999',
         ], [
             'required' => 'El campo :attribute es obligatorio.',
             'idRol.not_in' => 'No se puede registrar un Socio desde este formulario.',
@@ -91,10 +99,24 @@ class PersonalController extends Controller
             'fechaContratoInicio.required' => 'La fecha de inicio es obligatoria.',
             'fechaContratoInicio.date' => 'Ingrese una fecha válida.',
             'fechaContratoInicio.before_or_equal' => 'La fecha de inicio no puede ser en el futuro.',
+            'modalidadPago.required' => 'La modalidad de pago es requerida.',
+            'montoBase.required' => 'El monto base es requerido.',
+            'montoBase.numeric' => 'El monto base debe ser un numero valido.',
+            'montoBase.min' => 'El monto base no puede ser negativo.',
+            'montoBase.max' => 'El monto base no debe superar los 999,999.99 Bs.',
+            'tarifaHoraOClase.required' => 'La tarifa es requerida.',
+            'tarifaHoraOClase.integer' => 'La tarifa debe ser un numero entero.',
+            'tarifaHoraOClase.min' => 'La tarifa no puede ser negativa.',
+            'tarifaHoraOClase.max' => 'La tarifa no debe superar los 999,999.',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $validator->errors()], 422);
+        }
+
+        $error = $this->validarTarifaSegunRol($request->idRol, $request->tarifaHoraOClase);
+        if ($error) {
+            return response()->json(['success' => false, 'errors' => ['tarifaHoraOClase' => [$error]]], 422);
         }
 
         $usuarioA = Auth::id() ?? 1; 
@@ -102,8 +124,6 @@ class PersonalController extends Controller
 
         DB::beginTransaction(); 
         try {
-            // Se reemplaza el Stored Procedure por un Insert directo de Laravel para mayor fiabilidad y mantenibilidad.
-            // El SP `sp_TUsuarios_Insert` no devolvía un ID de forma consistente.
             $idUsuario = DB::table('tusuarios')->insertGetId([
                 'idRol'      => $request->idRol,
                 'nombre1'    => $request->nombre1,
@@ -116,8 +136,6 @@ class PersonalController extends Controller
                 'estadoA'    => 1,
                 'usuarioA'   => $usuarioA,
                 'fechaA'     => now(),
-                // El SP original recibía una IP, que probablemente se usaba para auditoría.
-                // Si la tabla 'tusuarios' tiene una columna para IP, se debe añadir aquí.
             ]);
 
             if (!$idUsuario) throw new \Exception("No se pudo crear el registro de usuario.");
@@ -133,6 +151,16 @@ class PersonalController extends Controller
                 'estadoA'             => 1,
                 'fechaA'              => now(),
                 'usuarioA'            => $usuarioA
+            ]);
+
+            DB::table('tesquemasueldos')->insert([
+                'carnetEmpleado'  => $carnet,
+                'modalidadPago'   => $request->modalidadPago,
+                'montoBase'       => $request->montoBase,
+                'tarifaHoraOClase' => $request->tarifaHoraOClase,
+                'usuarioA'        => $usuarioA,
+                'fechaA'          => now(),
+                'estadoA'         => 1,
             ]);
 
             DB::table('tauditorias')->insert([
@@ -154,18 +182,14 @@ class PersonalController extends Controller
         } catch (\Exception $e) {
             DB::rollBack(); 
             \Log::error('Error en PersonalController@store: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
-            // Proporcionar un mensaje de error más descriptivo
             $errorMessage = 'Error al registrar al personal. ';
-            // En modo debug, mostrar el error real para facilitar la depuración
             if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
             return response()->json(['success' => false, 'message' => $errorMessage], 500);
         }
     }
 
-    // 4. Actualizar información del empleado
     public function update(Request $request, $id)
     {
-        // Solución al texto vacío: Si la contraseña viene vacía, la volvemos NULL para que 'nullable' actúe perfectamente
         if ($request->input('contrasena') === '') {
             $request->merge([
                 'contrasena' => null, 
@@ -175,7 +199,16 @@ class PersonalController extends Controller
 
         $socioRoleId = DB::table('troles')->where('nombreRol', 'Socio')->value('idRol');
 
-        $validator = Validator::make($request->all(), [
+        $empleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
+        if (!$empleado) {
+            return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
+        }
+
+        $usuario = session('usuario');
+        $adminEmpleado = DB::table('templeados')->where('idUsuario', $usuario->idUsuario)->first();
+        $mismaSucursal = $adminEmpleado && $adminEmpleado->idSucursal == $empleado->idSucursal;
+
+        $rules = [
             'idUsuario'           => 'required|integer|exists:tusuarios,idUsuario',
             'idRol'               => ['required', 'integer', Rule::notIn([$socioRoleId])],
             'nombre1'             => 'required|string|regex:/^[a-zA-Z\sñÑáéíóúÁÉÍÓÚüÜ]+$/|max:50',
@@ -185,7 +218,15 @@ class PersonalController extends Controller
             'contrasena'          => 'nullable|string|min:8',
             'idSucursal'          => 'required|integer|exists:tsucursales,idSucursal',
             'fechaContratoInicio' => 'required|date|before_or_equal:today',
-        ], [
+        ];
+
+        if ($mismaSucursal) {
+            $rules['modalidadPago'] = 'required|string|max:50';
+            $rules['montoBase'] = 'required|numeric|min:0|max:999999.99';
+            $rules['tarifaHoraOClase'] = 'required|integer|min:0|max:999999';
+        }
+
+        $messages = [
             'required' => 'El campo :attribute es obligatorio.',
             'idUsuario.required' => 'Error de referencia del usuario.',
             'idUsuario.exists' => 'El usuario de referencia no existe.',
@@ -208,10 +249,28 @@ class PersonalController extends Controller
             'fechaContratoInicio.required' => 'La fecha de inicio es obligatoria.',
             'fechaContratoInicio.date' => 'Ingrese una fecha válida.',
             'fechaContratoInicio.before_or_equal' => 'La fecha no puede ser en el futuro.',
-        ]);
+            'modalidadPago.required' => 'La modalidad de pago es requerida.',
+            'montoBase.required' => 'El monto base es requerido.',
+            'montoBase.numeric' => 'El monto base debe ser un numero valido.',
+            'montoBase.min' => 'El monto base no puede ser negativo.',
+            'montoBase.max' => 'El monto base no debe superar los 999,999.99 Bs.',
+            'tarifaHoraOClase.required' => 'La tarifa es requerida.',
+            'tarifaHoraOClase.integer' => 'La tarifa debe ser un numero entero.',
+            'tarifaHoraOClase.min' => 'La tarifa no puede ser negativa.',
+            'tarifaHoraOClase.max' => 'La tarifa no debe superar los 999,999.',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $validator->errors()], 422);
+        }
+
+        if ($mismaSucursal) {
+            $error = $this->validarTarifaSegunRol($request->idRol, $request->tarifaHoraOClase);
+            if ($error) {
+                return response()->json(['success' => false, 'errors' => ['tarifaHoraOClase' => [$error]]], 422);
+            }
         }
 
         $usuarioA = Auth::id() ?? 1;
@@ -221,7 +280,6 @@ class PersonalController extends Controller
         try {
             $usuarioActual = DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->first();
 
-            // Se reemplaza el SP por un Update directo para consistencia y claridad.
             $updateData = [
                 'idRol'      => $request->idRol,
                 'nombre1'    => $request->nombre1,
@@ -234,13 +292,11 @@ class PersonalController extends Controller
                 'fechaA'     => now(),
             ];
 
-            // Actualizar la contraseña solo si se proporciona una nueva
             if ($request->filled('contrasena')) {
                 $updateData['contrasena'] = bcrypt($request->contrasena);
             }
 
             DB::table('tusuarios')->where('idUsuario', $request->idUsuario)->update($updateData);
-
 
             $oldEmpleado = DB::table('templeados')->where('carnetEmpleado', $id)->first();
 
@@ -250,6 +306,35 @@ class PersonalController extends Controller
                 'usuarioA'            => $usuarioA,
                 'fechaA'              => now(),
             ]);
+
+            if ($mismaSucursal) {
+                $existeEsquema = DB::table('tesquemasueldos')
+                    ->where('carnetEmpleado', $id)
+                    ->where('estadoA', 1)
+                    ->first();
+
+                if ($existeEsquema) {
+                    DB::table('tesquemasueldos')
+                        ->where('idEsquemaSueldo', $existeEsquema->idEsquemaSueldo)
+                        ->update([
+                            'modalidadPago'   => $request->modalidadPago,
+                            'montoBase'       => $request->montoBase,
+                            'tarifaHoraOClase' => $request->tarifaHoraOClase,
+                            'usuarioA'        => $usuarioA,
+                            'fechaA'          => now(),
+                        ]);
+                } else {
+                    DB::table('tesquemasueldos')->insert([
+                        'carnetEmpleado'   => $id,
+                        'modalidadPago'    => $request->modalidadPago,
+                        'montoBase'        => $request->montoBase,
+                        'tarifaHoraOClase' => $request->tarifaHoraOClase,
+                        'usuarioA'         => $usuarioA,
+                        'fechaA'           => now(),
+                        'estadoA'          => 1,
+                    ]);
+                }
+            }
 
             $cambios = [];
             if ($oldEmpleado->idSucursal != $request->idSucursal) {
@@ -282,7 +367,6 @@ class PersonalController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error en PersonalController@update: ' . $e->getMessage() . ' en la línea ' . $e->getLine());
-            // Proporcionar un mensaje de error más descriptivo
             $errorMessage = 'Error interno al actualizar. ';
             if (config('app.debug')) { $errorMessage .= 'Detalle: ' . $e->getMessage(); }
             return response()->json(['success' => false, 'message' => $errorMessage], 500);
@@ -446,5 +530,13 @@ class PersonalController extends Controller
             \Log::error('Error en PersonalController@reactivar: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error al reactivar empleado.'], 500);
         }
+    }
+
+    private function validarTarifaSegunRol($idRol, $tarifa)
+    {
+        if ($idRol != 3 && $tarifa > 0) {
+            return 'Solo los entrenadores pueden tener tarifa por hora/clase.';
+        }
+        return null;
     }
 }
