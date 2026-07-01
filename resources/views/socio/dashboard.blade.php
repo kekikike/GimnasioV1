@@ -45,6 +45,12 @@
             <span class="label">Dirección</span>
             <span class="value">{{ $socio->direccion ?? '—' }}</span>
         </div>
+        @if($socio->observacionesMedicas)
+        <div class="info-row">
+            <span class="label">Observaciones Médicas</span>
+            <span class="value" style="color:#b45309; font-size:0.85rem;">{{ $socio->observacionesMedicas }}</span>
+        </div>
+        @endif
     </div>
 
     <div class="card">

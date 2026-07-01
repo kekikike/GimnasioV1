@@ -17,6 +17,15 @@ class ReservaController extends Controller
             ->first();
     }
 
+    private function getMembresiaActiva($carnetSocio)
+    {
+        return DB::table('TMembresias')
+            ->where('carnetSocio', $carnetSocio)
+            ->where('estadoA', 1)
+            ->orderBy('idMembresia', 'desc')
+            ->first();
+    }
+
     public function misReservas()
     {
         $socio = $this->getSocio();
@@ -54,6 +63,9 @@ class ReservaController extends Controller
 
     public function disponibles()
     {
+        $socio = $this->getSocio();
+        $membresia = $socio ? $this->getMembresiaActiva($socio->carnetSocio) : null;
+
         $clases = DB::table('TClaseGrupales as cg')
             ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
             ->join('TSucursales as s', 'cg.idSucursal', '=', 's.idSucursal')
@@ -76,7 +88,13 @@ class ReservaController extends Controller
             ->orderBy('cg.fecha', 'asc')
             ->orderBy('cg.horaInicio', 'asc')
             ->get()
-            ->filter(function ($clase) {
+            ->filter(function ($clase) use ($membresia) {
+                if (!$membresia || $membresia->fechaFinMembresia < now()->format('Y-m-d')) {
+                    return false;
+                }
+                if ($clase->fecha > $membresia->fechaFinMembresia) {
+                    return false;
+                }
                 $limite = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaInicio)->addMinutes(5);
                 return now()->lessThanOrEqualTo($limite);
             })
@@ -122,6 +140,14 @@ class ReservaController extends Controller
             ]);
         }
 
+        $membresia = $this->getMembresiaActiva($socio->carnetSocio);
+        if (!$membresia) {
+            return response()->json(['success' => false, 'message' => 'No tienes una membresía activa. No puedes realizar reservas.']);
+        }
+        if ($membresia->fechaFinMembresia < now()->format('Y-m-d')) {
+            return response()->json(['success' => false, 'message' => 'Tu membresía está vencida. Renueva para poder reservar clases.']);
+        }
+
         $clase = DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $request->idClaseGrupal)
             ->where('estadoA', 1)
@@ -130,6 +156,10 @@ class ReservaController extends Controller
 
         if (!$clase) {
             return response()->json(['success' => false, 'message' => 'Clase no disponible.']);
+        }
+
+        if ($clase->fecha > $membresia->fechaFinMembresia) {
+            return response()->json(['success' => false, 'message' => 'La fecha de esta clase supera el límite de tu membresía activa.']);
         }
 
         $limite = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaInicio)->addMinutes(5);

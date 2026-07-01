@@ -122,7 +122,13 @@
                 <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="validarTelefono('contacto_emergencia_telefono')" class="form-control" maxlength="8" placeholder="Ej: 71234567">
                 <small v-if="errores.contacto_emergencia_telefono" style="color:#ef4444; font-size: 0.8em;">@{{ errores.contacto_emergencia_telefono }}</small>
             </div>
-            <div></div> <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
+            <div style="grid-column: span 3;">
+                <label style="font-weight: bold; font-size: 0.85rem;">Observaciones Médicas</label>
+                <textarea v-model="formulario.observacionesMedicas" @input="limitarObservaciones" class="form-control" rows="3" maxlength="255" placeholder="Ej: Alergias, lesiones, condiciones preexistentes..." style="resize:vertical;"></textarea>
+                <small style="color:#64748b; font-size:0.75rem;">@{{ formulario.observacionesMedicas ? formulario.observacionesMedicas.length : 0 }}/255 caracteres</small>
+                <small v-if="errores.observacionesMedicas" style="color:#ef4444; font-size: 0.8em; display:block;">@{{ errores.observacionesMedicas }}</small>
+            </div>
+            <div style="grid-column: span 3; display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" class="btn btn-primary" :disabled="guardando">
                     <template v-if="guardando">Procesando...</template>
                     <template v-else>@{{ modoEdicion ? 'Guardar Cambios' : 'Registrar Socio' }}</template>
@@ -283,6 +289,7 @@
                 nombre1: '', nombre2: '', apellidoPaterno: '', apellidoMaterno: '',
                 correo: '', telefono: '', direccion: '',
                 contacto_emergencia_nombre: '', contacto_emergencia_telefono: '',
+                observacionesMedicas: '',
                 contrasena: '', contrasena_confirmation: '', idSucursal: ''
             };
             const formulario = ref({ ...formBase });
@@ -297,6 +304,12 @@
 
             const validarCI = (campo) => {
                 formulario.value[campo] = formulario.value[campo].replace(/[^0-9]/g, '').slice(0, 9);
+            };
+
+            const limitarObservaciones = () => {
+                if (formulario.value.observacionesMedicas.length > 255) {
+                    formulario.value.observacionesMedicas = formulario.value.observacionesMedicas.substring(0, 255);
+                }
             };
 
             const validarTelefono = (campo) => {
@@ -400,6 +413,10 @@
                     errs.contacto_emergencia_telefono = 'El teléfono de emergencia debe tener entre 7 y 8 dígitos.';
                 }
 
+                if (f.observacionesMedicas && f.observacionesMedicas.length > 255) {
+                    errs.observacionesMedicas = 'Las observaciones médicas no deben exceder 255 caracteres.';
+                }
+
                 return errs;
             };
 
@@ -466,6 +483,7 @@
                     direccion: socio.direccion || '',
                     contacto_emergencia_nombre: socio.contacto_emergencia_nombre || '',
                     contacto_emergencia_telefono: socio.contacto_emergencia_telefono || '',
+                    observacionesMedicas: socio.observacionesMedicas || '',
                     contrasena: '',
                     contrasena_confirmation: '',
                     idSucursal: ''
@@ -566,7 +584,7 @@
 
             onMounted(() => { cargarSocios(); });
 
-            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze, estadoMembresiaTexto, estadoMembresiaStyle };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, limitarObservaciones, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze, estadoMembresiaTexto, estadoMembresiaStyle };
         }
     }).mount('#appSocios');
 </script>

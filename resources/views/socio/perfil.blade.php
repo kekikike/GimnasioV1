@@ -89,6 +89,11 @@
                         <input type="text" v-model="formulario.contacto_emergencia_telefono" @input="filtrarContactoTelefono" class="form-control" :disabled="!editando" maxlength="8">
                     </div>
                 </div>
+                <div class="field-group" style="margin-top:0.5rem;">
+                    <label>Observaciones Medicas</label>
+                    <textarea class="form-control" rows="2" disabled style="resize:none;background:#f8fafc;color:#b45309;">{{ $socio->observacionesMedicas ?? '—' }}</textarea>
+                    <small style="color:#94a3b8; font-size:0.75em;">Solo el administrador puede modificar esta informacion.</small>
+                </div>
             </div>
 
             <div v-show="tabActiva==='usuario'">

@@ -30,7 +30,8 @@ class SocioController extends Controller
                 ->select(
                     's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.carnetSocio AS codigoAcceso',
                     'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono',
-                    's.direccion', 's.nombreContactoEmergencia as contacto_emergencia_nombre',
+                    's.direccion', 's.observacionesMedicas',
+                    's.nombreContactoEmergencia as contacto_emergencia_nombre',
                     's.telefonoContactoEmergencia as contacto_emergencia_telefono', 's.fotografiaUrl as foto_url',
                     'm.estadoMembresia', 'm.fechaFinMembresia', 'm.fechaCongelamiento'
                 )
@@ -60,6 +61,7 @@ class SocioController extends Controller
             'direccion'        => 'nullable|string|max:255',
             'contacto_emergencia_nombre' => 'nullable|string|max:100',
             'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,8',
+            'observacionesMedicas' => 'nullable|string|max:255',
             'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'carnetSocio.required' => 'El carnet de socio es obligatorio.',
@@ -120,6 +122,7 @@ class SocioController extends Controller
                 'carnetSocio'  => $request->carnetSocio, 
                 'idUsuario'    => $idUsuario,
                 'direccion'    => $request->direccion,
+                'observacionesMedicas' => $request->observacionesMedicas,
                 'nombreContactoEmergencia' => $request->contacto_emergencia_nombre,
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl'=> $fotoPath,
@@ -168,6 +171,7 @@ class SocioController extends Controller
             'direccion'        => 'nullable|string|max:255',
             'contacto_emergencia_nombre' => 'nullable|string|max:100',
             'contacto_emergencia_telefono' => 'nullable|numeric|digits_between:7,8',
+            'observacionesMedicas' => 'nullable|string|max:255',
             'foto'             => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'nombre1.required' => 'El primer nombre es obligatorio.',
@@ -224,6 +228,7 @@ class SocioController extends Controller
 
             $socioUpdateData = [
                 'direccion' => $request->direccion,
+                'observacionesMedicas' => $request->observacionesMedicas,
                 'nombreContactoEmergencia' => $request->contacto_emergencia_nombre,
                 'telefonoContactoEmergencia' => $request->contacto_emergencia_telefono,
                 'fotografiaUrl' => $fotoPath,
@@ -253,6 +258,9 @@ class SocioController extends Controller
             }
             if (($socioViejo->telefonoContactoEmergencia ?? '') !== ($request->contacto_emergencia_telefono ?? '')) {
                 $campos[] = 'telefonoContactoEmergencia'; $viejos[] = $socioViejo->telefonoContactoEmergencia ?? ''; $nuevos[] = $request->contacto_emergencia_telefono ?? '';
+            }
+            if (($socioViejo->observacionesMedicas ?? '') !== ($request->observacionesMedicas ?? '')) {
+                $campos[] = 'observacionesMedicas'; $viejos[] = $socioViejo->observacionesMedicas ?? ''; $nuevos[] = $request->observacionesMedicas ?? '';
             }
 
             if (!empty($campos)) {
