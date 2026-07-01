@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CajaController;
 use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\Admin\AlertasMantenimientoController;
 use App\Http\Controllers\Admin\MantenimientoController;
+use App\Http\Controllers\Admin\MarcaController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\HorarioController;
 use App\Http\Controllers\Admin\AsistenciaController;
@@ -140,6 +141,14 @@ Route::middleware('auth.usuario')->group(function () {
 
         Route::get('/admin/auditoria', [AuditoriaController::class, 'index'])->name('admin.auditoria');
 
+
+        Route::prefix('admin/marcas')->name('admin.marcas.')->group(function () {
+            Route::get('/', [MarcaController::class, 'index'])->name('index');
+            Route::get('/listar', [MarcaController::class, 'listar'])->name('listar');
+            Route::post('/', [MarcaController::class, 'store'])->name('store');
+            Route::put('/{id}', [MarcaController::class, 'update'])->name('update');
+            Route::delete('/{id}', [MarcaController::class, 'destroy'])->name('destroy');
+        });
 
         Route::prefix('equipamiento')->name('equipamiento.')->group(function () {
             Route::get('/', [EquipamientoController::class, 'index'])->name('index');
