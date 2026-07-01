@@ -12,19 +12,6 @@
 </script>
 
 <div id="appClases">
-    @if(session('success'))
-        <div class="alert alert-success" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>{{ session('success') }}</span>
-            <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>{{ session('error') }}</span>
-            <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
-        </div>
-    @endif
-
     <div v-if="mensaje" class="alert" :class="mensajeTipo === 'error' ? 'alert-danger' : 'alert-success'" style="display: flex; justify-content: space-between; align-items: center;">
         <span>@{{ mensaje }}</span>
         <button @click="mensaje = ''" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: inherit;">&times;</button>
@@ -276,8 +263,8 @@ createApp({
         const empleados = ref(window.listaEmpleados || []);
         const sucursales = ref(window.listaSucursales || []);
         const adminSucursalId = ref(window.adminSucursalId || null);
-        const mensaje = ref('');
-        const mensajeTipo = ref('success');
+        const mensaje = ref('{{ session('success') ? session('success') : (session('error') ? session('error') : '') }}');
+        const mensajeTipo = ref('{{ session('success') ? 'success' : (session('error') ? 'error' : 'success') }}');
         const filtroFecha = ref('');
         const filtroEstado = ref('');
         const modalReservas = ref(false);
@@ -356,20 +343,50 @@ createApp({
             }
         };
 
+        const ejecutarCancelacion = async (clase) => {
+            try {
+                const res = await fetch(
+                    `{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
+                    { method: 'DELETE', headers }
+                );
+                const data = await res.json();
+                mostrarToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) await cargarClases();
+            } catch (e) {
+                mostrarToast('Error de conexión.', 'error');
+            }
+        };
+
         const confirmarEliminar = async (clase) => {
-            confirmarAccion(`¿Cancelar la clase "${clase.nombreActividad}" del ${clase.fecha}?`, async function() {
-                try {
-                    const res = await fetch(
-                        `{{ route("admin.clases.destroy", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
-                        { method: 'DELETE', headers }
+            try {
+                const res = await fetch(`{{ route("admin.clases.reservas", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal), { headers });
+                const data = await res.json();
+                const activas = data.participantes || [];
+                const numActivas = activas.length;
+
+                if (numActivas > 0) {
+                    confirmarAccion(
+                        `La clase "${clase.nombreActividad}" del ${clase.fecha} tiene ${numActivas} reserva(s) activa(s). ¿Desea cancelar la clase? Todas las reservas serán canceladas.`,
+                        function () {
+                            confirmarAccion(
+                                `Confirmación final. ¿Está totalmente seguro de cancelar la clase y sus ${numActivas} reservas?`,
+                                async function () {
+                                    await ejecutarCancelacion(clase);
+                                }
+                            );
+                        }
                     );
-                    const data = await res.json();
-                    mostrarToast(data.message, data.success ? 'success' : 'error');
-                    if (data.success) await cargarClases();
-                } catch (e) {
-                    mostrarToast('Error de conexión.', 'error');
+                } else {
+                    confirmarAccion(
+                        `¿Cancelar la clase "${clase.nombreActividad}" del ${clase.fecha}?`,
+                        async function () {
+                            await ejecutarCancelacion(clase);
+                        }
+                    );
                 }
-            });
+            } catch (e) {
+                mostrarToast('Error al verificar reservas.', 'error');
+            }
         };
 
         const verReservas = async (clase) => {
@@ -410,7 +427,12 @@ createApp({
             }
         };
 
-        onMounted(cargarClases);
+        onMounted(() => {
+            cargarClases();
+            if (mensaje.value) {
+                setTimeout(() => { mensaje.value = ''; }, 5000);
+            }
+        });
 
         return {
             clases, actividades, empleados, sucursales, adminSucursalId,

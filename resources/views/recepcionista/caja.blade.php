@@ -52,7 +52,7 @@
                 <div style="display:flex; gap:1rem; align-items:end;">
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
-                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0"
+                        <input v-model="montoCierre" type="number" step="0.01" class="form-control" min="0" @input="truncarEntero($event, 'montoCierre')"
                                :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                         <small v-if="montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
                             <template v-if="diferenciaCierre <= 0.01">Coinciden</template>
@@ -164,7 +164,7 @@
                 </div>
                 <div>
                     <label>Costo (Bs)</label>
-                    <input v-model="costosalida" type="number" step="0.01" class="form-control" min="0.01" placeholder="0.00">
+                    <input v-model="costosalida" type="number" step="0.01" class="form-control" min="0.01" placeholder="0.00" @input="truncarEntero($event, 'costosalida')">
                 </div>
                 <div>
                     <button @click="registrarSalida" class="btn btn-warning" style="width:100%;" :disabled="!descripcionSalida || !costosalida || costosalida <= 0">Registrar Salida</button>
@@ -373,8 +373,25 @@ createApp({
             if (data.success) { montoApertura.value = ''; cierreObservacion.value = ''; cargarEstado(); cargarMovimientos(); }
         };
 
+        const truncarEntero = (e, ref) => {
+            let val = e.target.value;
+            if (!val) return;
+            const str = String(val);
+            const idx = str.indexOf('.');
+            let integerPart = idx >= 0 ? str.substring(0, idx) : str;
+            if (integerPart.length > 9) {
+                integerPart = integerPart.substring(0, 9);
+                const nueva = idx >= 0 ? integerPart + str.substring(idx) : integerPart;
+                e.target.value = nueva;
+                if (ref === 'montoCierre') montoCierre.value = nueva;
+                else costosalida.value = nueva;
+            }
+        };
+
         const cerrarCaja = async () => {
             if (!cajaAbierta.value) return;
+            if (!montoCierre.value || parseFloat(montoCierre.value) <= 0) { mostrarToast('El monto de cierre debe ser un número mayor a 0.', 'error'); return; }
+            if (String(montoCierre.value).replace('.','').length > 9) { mostrarToast('Máximo 9 dígitos enteros.', 'error'); return; }
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
             const res = await fetch('{{ url("/recepcionista/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
@@ -409,6 +426,7 @@ createApp({
 
         const registrarSalida = async () => {
             if (!descripcionSalida.value || !costosalida.value || costosalida.value <= 0) return;
+            if (String(costosalida.value).replace('.','').length > 9) { mostrarToast('Máximo 9 dígitos enteros.', 'error'); return; }
             const res = await fetch('{{ route("recepcionista.caja.salidas.store") }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },

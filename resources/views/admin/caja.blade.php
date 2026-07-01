@@ -53,7 +53,7 @@
                 <div style="display:flex; gap:1rem; align-items:end;">
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
-                        <input v-model="montoCierre" type="text" class="form-control"
+                        <input v-model="montoCierre" type="text" class="form-control" maxlength="14"
                                :class="{ 'is-invalid': errores.montoCierre }"
                                :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                         <small v-if="errores.montoCierre" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.montoCierre }}</small>
@@ -168,7 +168,7 @@
                 </div>
                 <div>
                     <label>Costo (Bs)</label>
-                    <input v-model="costosalida" type="text" class="form-control" :class="{ 'is-invalid': errores.costosalida }" placeholder="0.00">
+                    <input v-model="costosalida" type="text" class="form-control" maxlength="14" :class="{ 'is-invalid': errores.costosalida }" placeholder="0.00">
                     <small v-if="errores.costosalida" style="color:#ef4444; font-size:0.8em; display:block; margin-top:4px;">@{{ errores.costosalida }}</small>
                 </div>
                 <div>
@@ -314,6 +314,8 @@ createApp({
             const pts = s.match(/\./g);
             if (pts && pts.length > 1) s = s.substring(0, s.lastIndexOf('.'));
             if (s.startsWith('.')) s = '0' + s;
+            if (s.indexOf('.') !== -1 && s.length - s.indexOf('.') > 3) s = s.substring(0, s.indexOf('.') + 3);
+            if (s === '') s = '';
             return s;
         };
         watch(montoApertura, (n) => { const s = sanitizarMonto(n); if (s !== n) montoApertura.value = s; });
@@ -406,6 +408,7 @@ createApp({
             errores.value = {};
             const val = String(montoCierre.value || '').replace(/[^0-9.]/g, '');
             if (!val || parseFloat(val) <= 0) { errores.value = { montoCierre: 'El monto de cierre debe ser un número mayor a 0.' }; return; }
+            if (val.replace('.','').length > 9) { errores.value = { montoCierre: 'Máximo 9 dígitos enteros.' }; return; }
             const payload = { montoCierre: montoCierre.value };
             if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
             const res = await fetch('{{ url("/admin/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
@@ -444,6 +447,7 @@ createApp({
             if (!descripcionSalida.value?.trim()) errsSalida.descripcionSalida = 'La descripción es obligatoria.';
             const costoParse = parseFloat(String(costosalida.value || '').replace(/[^0-9.]/g, ''));
             if (!costosalida.value || isNaN(costoParse) || costoParse <= 0) errsSalida.costosalida = 'El costo debe ser un número mayor a 0.';
+            if (String(costosalida.value || '').replace(/[^0-9.]/g, '').replace('.','').length > 9) errsSalida.costosalida = 'Máximo 9 dígitos enteros.';
             if (Object.keys(errsSalida).length > 0) { errores.value = errsSalida; return; }
             const res = await fetch('{{ route("admin.caja.salidas.store") }}', {
                 method: 'POST',

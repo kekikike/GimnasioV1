@@ -461,7 +461,7 @@ window.renderReporte=function(reporte, d) {
             var h='<div class="stats-grid"><div class="stat-card"><div class="number">'+(d.totalAsistencias||0)+'</div><div class="label">Total Asistencias</div></div>';
             var prom=(d.asistenciasPorDia&&Object.keys(d.asistenciasPorDia).length>0)?(d.totalAsistencias/Object.keys(d.asistenciasPorDia).length).toFixed(2):0;
             h+='<div class="stat-card"><div class="number blue">'+prom+'</div><div class="label">Promedio Diario</div></div></div>';
-            h+='<table><thead><tr><th>CI</th><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Entrada</th><th>Estado Entrada</th><th>Salida</th><th>Estado Salida</th><th>Esperado</th><th>Asistencia</th></tr></thead><tbody>';
+            h+='<table><thead><tr><th>CI</th><th>Empleado</th><th>Fecha</th><th>Dia</th><th>Turno</th><th>Entrada</th><th>Estado Entrada</th><th>Salida</th><th>Estado Salida</th><th>Esperado</th><th>Asistencia</th></tr></thead><tbody>';
             (d.asistencias||[]).forEach(function(a){
                 var nom=a.nombreEmpleado||'';
                 var fe=new Date(a.fechaHoraEntrada).toLocaleDateString('es-ES');
@@ -471,9 +471,9 @@ window.renderReporte=function(reporte, d) {
                 var bcES=a.estadoSalida==='puntual'?'badge-green':a.estadoSalida==='temprano'?'badge-amber':'badge-gray';
                 var bcAsis=a.estadoAsistencia==='presente'?'badge-green':'badge-red';
                 var esp=a.esperadoEntrada!=='—' ? a.esperadoEntrada+' - '+a.esperadoSalida : '—';
-                h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+en+'</td><td><span class="badge '+bcEE+'">'+(a.estadoEntrada||'—')+'</span></td><td>'+sa+'</td><td><span class="badge '+bcES+'">'+(a.estadoSalida||'—')+'</span></td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bcAsis+'">'+(a.estadoAsistencia||'falta')+'</span></td></tr>';
+                h+='<tr><td><strong>'+a.carnetEmpleado+'</strong></td><td>'+nom+'</td><td>'+fe+'</td><td>'+(a.diaSemana||'')+'</td><td>'+(a.turno||'')+'</td><td>'+en+'</td><td><span class="badge '+bcEE+'">'+(a.estadoEntrada||'—')+'</span></td><td>'+sa+'</td><td><span class="badge '+bcES+'">'+(a.estadoSalida||'—')+'</span></td><td style="font-size:0.75rem;">'+esp+'</td><td><span class="badge '+bcAsis+'">'+(a.estadoAsistencia||'falta')+'</span></td></tr>';
             });
-            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="10" class="empty-state">No hay asistencias</td></tr>';
+            if(!d.asistencias||!d.asistencias.length) h+='<tr><td colspan="11" class="empty-state">No hay asistencias</td></tr>';
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         clases: function() {
@@ -719,7 +719,8 @@ function cargarDetalleSocio(carnet){
             h+='<table><thead><tr><th>Clase</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead><tbody>';
             (d.clasesPasadas||[]).forEach(function(r){
                 var horario=r.clase?r.clase.horaInicio+' - '+r.clase.horaFin:'';
-                h+='<tr><td>'+(r.clase&&r.clase.actividad?r.clase.actividad.nombreActividad:'N/A')+'</td><td>'+r.fechaReserva+'</td><td>'+horario+'</td><td><span class="badge badge-success">Asistido</span></td></tr>';
+                var bcER=r.estadoReserva==='Asistido'?'badge-success':r.estadoReserva==='Cancelado'?'badge-danger':'badge-warning';
+                h+='<tr><td>'+(r.clase&&r.clase.actividad?r.clase.actividad.nombreActividad:'N/A')+'</td><td>'+r.fechaReserva+'</td><td>'+horario+'</td><td><span class="badge '+bcER+'">'+r.estadoReserva+'</span></td></tr>';
             });
             if(!d.clasesPasadas||!d.clasesPasadas.length) h+='<tr><td colspan="4" class="empty-state">Sin clases pasadas</td></tr>';
             h+='</tbody></table>';

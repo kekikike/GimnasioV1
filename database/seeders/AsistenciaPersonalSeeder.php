@@ -19,7 +19,7 @@ class AsistenciaPersonalSeeder extends Seeder
             ['carnet' => 2003, 'horaEntrada' => '10:00', 'horaSalida' => '19:00'],
             ['carnet' => 5001, 'horaEntrada' => '08:00', 'horaSalida' => '17:00'],
         ];
-        $estados = ['Puntual', 'Puntual', 'Puntual', 'Tardanza', 'Falta'];
+        $estados = ['presente', 'presente', 'presente', 'presente', 'falta'];
 
         $registros = [];
         for ($dia = 0; $dia < 172; $dia++) {
@@ -30,22 +30,27 @@ class AsistenciaPersonalSeeder extends Seeder
             foreach ($empleados as $emp) {
                 $estado = $estados[array_rand($estados)];
 
-                if ($estado === 'Falta') {
+                if ($estado === 'falta') {
+                    $registros[] = [
+                        'carnetEmpleado' => $emp['carnet'],
+                        'fechaHoraEntrada' => $fecha . ' ' . $emp['horaEntrada'] . ':00',
+                        'fechaHoraSalida' => null,
+                        'estadoAsistencia' => 'falta',
+                        'estadoA' => 1,
+                        'usuarioA' => $adminId,
+                    ];
                     continue;
-                } elseif ($estado === 'Tardanza') {
-                    $retraso = rand(5, 30);
-                    $horaEntrada = date('H:i:s', strtotime($emp['horaEntrada'] . " + $retraso minutes"));
-                    $horaSalida = $emp['horaSalida'] . ':00';
-                } else {
-                    $horaEntrada = $emp['horaEntrada'] . ':00';
-                    $horaSalida = $emp['horaSalida'] . ':00';
                 }
+
+                $retraso = rand(0, 30);
+                $horaEntrada = date('H:i:s', strtotime($emp['horaEntrada'] . " + $retraso minutes"));
+                $horaSalida = $emp['horaSalida'] . ':00';
 
                 $registros[] = [
                     'carnetEmpleado' => $emp['carnet'],
                     'fechaHoraEntrada' => $fecha . ' ' . $horaEntrada,
                     'fechaHoraSalida' => $fecha . ' ' . $horaSalida,
-                    'estadoAsistencia' => $estado,
+                    'estadoAsistencia' => 'presente',
                     'estadoA' => 1,
                     'usuarioA' => $adminId,
                 ];

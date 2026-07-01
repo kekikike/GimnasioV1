@@ -112,13 +112,19 @@ class ClaseGrupalController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withInput()->withErrors($validator)->with('error', $validator->errors()->first());
         }
 
         // Validar duración mínima de 30 minutos
         $diffMinutos = $this->calcularDiferenciaMinutos($request->horaInicio, $request->horaFin);
         if ($diffMinutos < 30) {
-            return response()->json(['success' => false, 'message' => 'La duración mínima de la clase debe ser de 30 minutos.'], 422);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'La duración mínima de la clase debe ser de 30 minutos.'], 422);
+            }
+            return redirect()->back()->withInput()->with('error', 'La duración mínima de la clase debe ser de 30 minutos.');
         }
 
         $usuarioA = session('usuario')->idUsuario ?? 1;
@@ -258,18 +264,16 @@ class ClaseGrupalController extends Controller
             return response()->json(['success' => false, 'message' => 'Clase no encontrada.'], 404);
         }
 
-        if (in_array($clase->estadoClase, ['Programada', 'Cursandose'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede eliminar una clase que está "' . $clase->estadoClase . '". Cancele la clase primero.'
-            ], 422);
-        }
-
         $usuarioA = session('usuario')->idUsuario ?? 1;
+        $estadoAnterior = $clase->estadoClase;
+        $estadoAAnterior = $clase->estadoA;
 
         DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $id)
-            ->update(['estadoClase' => 'Cancelada']);
+            ->update([
+                'estadoClase' => 'Cancelada',
+                'estadoA'     => 0,
+            ]);
 
         DB::table('TReservas')
             ->where('idClaseGrupal', $id)
@@ -281,13 +285,28 @@ class ClaseGrupalController extends Controller
             'registroId'    => $id,
             'accion'        => 'Cancelar',
             'campo'         => 'estadoClase',
-            'valorAnterior' => 'Programada',
+            'valorAnterior' => $estadoAnterior,
             'valorNuevo'    => 'Cancelada',
             'usuarioA'      => $usuarioA,
             'fechaA'        => now(),
             'direccionIP'   => request()->ip(),
             'detalles'      => 'Clase cancelada (desactivada) desde el panel de administración',
         ]);
+
+        if ($estadoAAnterior != 0) {
+            DB::table('tauditorias')->insert([
+                'tablaNombre'   => 'TClaseGrupales',
+                'registroId'    => $id,
+                'accion'        => 'Desactivar',
+                'campo'         => 'estadoA',
+                'valorAnterior' => (string) $estadoAAnterior,
+                'valorNuevo'    => '0',
+                'usuarioA'      => $usuarioA,
+                'fechaA'        => now(),
+                'direccionIP'   => request()->ip(),
+                'detalles'      => 'Clase desactivada automáticamente al cancelar',
+            ]);
+        }
 
         return response()->json([
             'success' => true,

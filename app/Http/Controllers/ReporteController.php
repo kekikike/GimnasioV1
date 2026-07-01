@@ -89,14 +89,14 @@ class ReporteController extends Controller
 
         $clasesPasadas = Reserva::with(['clase.actividad'])
             ->where('carnetSocio', $carnet)
-            ->where('estadoReserva', 'Asistido')
+            ->whereIn('estadoReserva', ['Asistido', 'Cancelado', 'Penalizado'])
             ->orderBy('fechaReserva', 'desc')
             ->get();
 
         $clasesFuturas = Reserva::with(['clase.actividad'])
             ->where('carnetSocio', $carnet)
             ->where('fechaReserva', '>=', Carbon::now())
-            ->whereIn('estadoReserva', ['Reservado'])
+            ->whereIn('estadoReserva', ['Reservado', 'Cancelado', 'Penalizado'])
             ->orderBy('fechaReserva', 'asc')
             ->get();
 
@@ -232,6 +232,7 @@ class ReporteController extends Controller
             ->select(
                 'ap.idAsistencia',
                 'ap.carnetEmpleado',
+                'ap.idHorario',
                 DB::raw("CONCAT(u.nombre1, ' ', u.apellido1) as nombreEmpleado"),
                 'ap.fechaHoraEntrada',
                 'ap.fechaHoraSalida',
@@ -263,7 +264,7 @@ class ReporteController extends Controller
         $horarios = DB::table('THorarioLaborales')
             ->whereIn('carnetEmpleado', $carnets)
             ->where('estadoA', 1)
-            ->select('carnetEmpleado', 'diaSemana', 'horaEntradaEsperada', 'horaSalidaEsperada')
+            ->select('idHorario', 'carnetEmpleado', 'diaSemana', 'horaEntradaEsperada', 'horaSalidaEsperada')
             ->get()
             ->groupBy('carnetEmpleado');
 
@@ -272,19 +273,32 @@ class ReporteController extends Controller
         $asistencias = $asistencias->map(function($a) use ($horarios, $diasES) {
             $fecha = Carbon::parse($a->fechaHoraEntrada);
             $diaSemana = $diasES[$fecha->format('l')] ?? '';
-            $empleadoHorarios = isset($horarios[$a->carnetEmpleado]) ? $horarios[$a->carnetEmpleado] : collect();
-            $delDia = $empleadoHorarios->where('diaSemana', $diaSemana)->values();
             $a->diaSemana = $diaSemana;
-            if ($delDia->count() > 0) {
-                $a->esperadoEntrada = $delDia->pluck('horaEntradaEsperada')->implode(', ');
-                $a->esperadoSalida = $delDia->pluck('horaSalidaEsperada')->implode(', ');
-                $a->turnos = $delDia->map(function($t) {
-                    return ['entrada' => substr($t->horaEntradaEsperada, 0, 5), 'salida' => substr($t->horaSalidaEsperada, 0, 5)];
-                });
+            // Buscar el horario específico que corresponde a esta asistencia
+            $horarioMatch = null;
+            $turnoNum = null;
+            if ($a->idHorario && isset($horarios[$a->carnetEmpleado])) {
+                $empleadoHorarios = $horarios[$a->carnetEmpleado];
+                $delDia = $empleadoHorarios->where('diaSemana', $diaSemana)->values();
+                $horarioMatch = $delDia->firstWhere('idHorario', $a->idHorario);
+                // Calcular número de turno
+                $idx = 0;
+                foreach ($delDia as $h) {
+                    $idx++;
+                    if ($h->idHorario == $a->idHorario) {
+                        $turnoNum = $idx;
+                        break;
+                    }
+                }
+            }
+            if ($horarioMatch) {
+                $a->esperadoEntrada = substr($horarioMatch->horaEntradaEsperada, 0, 5);
+                $a->esperadoSalida = substr($horarioMatch->horaSalidaEsperada, 0, 5);
+                $a->turno = 'Turno ' . $turnoNum;
             } else {
                 $a->esperadoEntrada = '—';
                 $a->esperadoSalida = '—';
-                $a->turnos = [];
+                $a->turno = '';
             }
             return $a;
         });

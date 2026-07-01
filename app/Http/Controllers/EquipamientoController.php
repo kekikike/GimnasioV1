@@ -20,6 +20,7 @@ class EquipamientoController extends Controller
             $equipos = array_filter($equipos, function ($eq) use ($request) {
                 return $eq->estadoEquipo === $request->estado;
             });
+            $equipos = array_values($equipos);
         }
 
         $marcas     = collect(Marca::getAll())->keyBy('idMarca');
