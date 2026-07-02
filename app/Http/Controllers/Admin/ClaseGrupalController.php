@@ -59,6 +59,8 @@ class ClaseGrupalController extends Controller
 
     public function listar()
     {
+        DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
+
         $clases = DB::table('TClaseGrupales as cg')
             ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
             ->join('TEmpleados as e', 'cg.carnetEmpleado', '=', 'e.carnetEmpleado')
@@ -70,7 +72,8 @@ class ClaseGrupalController extends Controller
                 'a.nombreActividad',
                 'u.nombre1',
                 'u.apellido1',
-                's.nombre as nombreSucursal'
+                's.nombre as nombreSucursal',
+                DB::raw("CASE WHEN cg.estadoClase = 'Cancelada' THEN 'Cancelada' WHEN CONCAT(cg.fecha, ' ', cg.horaFin) < NOW() THEN 'Finalizada' WHEN CONCAT(cg.fecha, ' ', cg.horaInicio) <= NOW() AND CONCAT(cg.fecha, ' ', cg.horaFin) >= NOW() THEN 'Cursandose' ELSE cg.estadoClase END as estadoDinamico")
             )
             ->orderBy('cg.fecha', 'desc')
             ->orderBy('cg.horaInicio', 'desc')
@@ -87,6 +90,7 @@ class ClaseGrupalController extends Controller
                     ->count();
                 $clase->totalReservas = $total;
                 $clase->cuposOcupados = $cuposOcupados;
+                $clase->estadoClase = $clase->estadoDinamico;
                 return $clase;
             });
 
@@ -101,7 +105,7 @@ class ClaseGrupalController extends Controller
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
-            'cupoMaximo' => 'required|integer|min:1|max:99999',
+'cupoMaximo' => 'required|integer|min:1|max:100',
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
             'carnetEmpleado.required' => 'Debe seleccionar un instructor.',
@@ -111,9 +115,8 @@ class ClaseGrupalController extends Controller
             'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
             'cupoMaximo.integer' => 'El cupo máximo debe ser un número entero.',
             'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
-            'cupoMaximo.max' => 'El cupo máximo no debe exceder 99999.',
+            'cupoMaximo.max' => 'El cupo máximo no debe exceder 100.',
         ]);
-
         if ($validator->fails()) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
@@ -228,7 +231,7 @@ class ClaseGrupalController extends Controller
             'fecha' => 'required|date',
             'horaInicio' => 'required',
             'horaFin' => 'required',
-            'cupoMaximo' => 'required|integer|min:1|max:99999',
+            'cupoMaximo' => 'required|integer|min:1|max:100',
             'estadoClase' => 'required|in:Programada,Cursandose,Cancelada,Finalizada',
         ], [
             'idActividad.required' => 'Debe seleccionar una actividad.',
@@ -239,7 +242,7 @@ class ClaseGrupalController extends Controller
             'cupoMaximo.required' => 'El cupo máximo es obligatorio.',
             'cupoMaximo.integer' => 'El cupo máximo debe ser un número entero.',
             'cupoMaximo.min' => 'El cupo máximo debe ser al menos 1.',
-            'cupoMaximo.max' => 'El cupo máximo no debe exceder 99999.',
+            'cupoMaximo.max' => 'El cupo máximo no debe exceder 100.',
         ]);
 
         if ($validator->fails()) {
@@ -297,10 +300,6 @@ class ClaseGrupalController extends Controller
             ]
         );
 
-        DB::table('TClaseGrupales')
-            ->where('idClaseGrupal', $id)
-            ->update(['usuarioA' => $usuarioA]);
-
         if ($request->estadoClase === 'Cancelada') {
             DB::table('TReservas')
                 ->where('idClaseGrupal', $id)
@@ -322,15 +321,10 @@ class ClaseGrupalController extends Controller
         }
 
         $usuarioA = session('usuario')->idUsuario ?? 1;
-        $estadoAnterior = $clase->estadoClase;
-        $estadoAAnterior = $clase->estadoA;
 
         DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $id)
-            ->update([
-                'estadoClase' => 'Cancelada',
-                'estadoA'     => 0,
-            ]);
+            ->update(['estadoClase' => 'Cancelada']);
 
         DB::table('TReservas')
             ->where('idClaseGrupal', $id)
@@ -342,32 +336,47 @@ class ClaseGrupalController extends Controller
             'registroId'    => $id,
             'accion'        => 'Cancelar',
             'campo'         => 'estadoClase',
-            'valorAnterior' => $estadoAnterior,
+            'valorAnterior' => $clase->estadoClase,
             'valorNuevo'    => 'Cancelada',
             'usuarioA'      => $usuarioA,
             'fechaA'        => now(),
             'direccionIP'   => request()->ip(),
-            'detalles'      => 'Clase cancelada (desactivada) desde el panel de administración',
+            'detalles'      => 'Clase cancelada desde el panel de administración',
         ]);
-
-        if ($estadoAAnterior != 0) {
-            DB::table('tauditorias')->insert([
-                'tablaNombre'   => 'TClaseGrupales',
-                'registroId'    => $id,
-                'accion'        => 'Desactivar',
-                'campo'         => 'estadoA',
-                'valorAnterior' => (string) $estadoAAnterior,
-                'valorNuevo'    => '0',
-                'usuarioA'      => $usuarioA,
-                'fechaA'        => now(),
-                'direccionIP'   => request()->ip(),
-                'detalles'      => 'Clase desactivada automáticamente al cancelar',
-            ]);
-        }
 
         return response()->json([
             'success' => true,
             'message' => 'Clase cancelada correctamente.',
+        ]);
+    }
+
+    public function reactivar($id)
+    {
+        $clase = DB::table('TClaseGrupales')->where('idClaseGrupal', $id)->first();
+        if (!$clase) {
+            return response()->json(['success' => false, 'message' => 'Clase no encontrada.'], 404);
+        }
+
+        DB::table('TClaseGrupales')
+            ->where('idClaseGrupal', $id)
+            ->update(['estadoClase' => 'Programada']);
+
+        DB::table('tauditorias')->insert([
+            'tablaNombre'   => 'TClaseGrupales',
+            'registroId'    => $id,
+            'accion'        => 'Reactivar',
+            'campo'         => 'estadoClase',
+            'valorAnterior' => $clase->estadoClase,
+            'valorNuevo'    => 'Programada',
+            'usuarioA'      => session('usuario')->idUsuario ?? 1,
+            'fechaA'        => now(),
+            'direccionIP'   => request()->ip(),
+            'detalles'      => 'Clase reactivada desde el panel de administración',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Clase reactivada correctamente.',
         ]);
     }
 

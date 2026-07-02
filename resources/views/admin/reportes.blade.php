@@ -159,11 +159,11 @@ tbody tr:hover { background:#f8fafc; }
     <div class="filter-row no-print">
         <div class="form-group">
             <label>Fecha Inicio</label>
-            <input type="date" name="fecha_inicio" class="form-control" value="{{ \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d') }}">
+            <input type="date" name="fecha_inicio" class="form-control" placeholder="yyyy-mm-dd">
         </div>
         <div class="form-group">
             <label>Fecha Fin</label>
-            <input type="date" name="fecha_fin" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+            <input type="date" name="fecha_fin" class="form-control" placeholder="yyyy-mm-dd">
         </div>
         <div class="form-group">
             <label>Instructor</label>
@@ -477,16 +477,18 @@ window.renderReporte=function(reporte, d) {
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         clases: function() {
-            var h='<table><thead><tr><th>Clase</th><th>Instructor</th><th>Fecha</th><th>Hora</th><th>Capacidad</th><th>Reservados</th><th>Asistieron</th><th>Ocupacion</th></tr></thead><tbody>';
+            var h='<table><thead><tr><th>Clase</th><th>Instructor</th><th>Fecha</th><th>Hora</th><th>Capacidad</th><th>Reservados</th><th>Asistieron</th><th>Ocupacion</th><th>Estado</th></tr></thead><tbody>';
             (d.estadisticas||[]).forEach(function(c){
                 var pct=c.ocupacion||0;
                 var barBg=pct>80?'#dc2626':pct>50?'#d97706':'#16a34a';
+                var estadoColor=c.estado==='Programada'?'badge-blue':c.estado==='Cursandose'?'badge-warning':c.estado==='Finalizada'?'badge-success':'badge-gray';
                 h+='<tr class="row-clickable" data-idclase="'+c.idClaseGrupal+'" onclick="cargarDetalleClase('+c.idClaseGrupal+')"><td><strong>'+c.nombre+'</strong></td><td>'+c.instructor+'</td><td>'+c.fecha+'</td>';
                 h+='<td>'+(c.horaInicio?c.horaInicio.substring(0,5):'')+' - '+(c.horaFin?c.horaFin.substring(0,5):'')+'</td>';
                 h+='<td>'+c.capacidad+'</td><td>'+c.reservados+'</td><td>'+c.asistieron+'</td>';
-                h+='<td><div class="ocupacion-bar"><div class="ocupacion-fill" style="width:'+pct+'%;background:'+barBg+';"></div><span class="ocupacion-text">'+pct+'%</span></div></td></tr>';
+                h+='<td><div class="ocupacion-bar"><div class="ocupacion-fill" style="width:'+pct+'%;background:'+barBg+';"></div><span class="ocupacion-text">'+pct+'%</span></div></td>';
+                h+='<td><span class="badge '+estadoColor+'">'+c.estado+'</span></td></tr>';
             });
-            if(!d.estadisticas||!d.estadisticas.length) h+='<tr><td colspan="8" class="empty-state">No hay clases</td></tr>';
+            if(!d.estadisticas||!d.estadisticas.length) h+='<tr><td colspan="9" class="empty-state">No hay clases</td></tr>';
             h+='</tbody></table>'; h+=footerReporteHTML(); return h;
         },
         equipamiento: function() {

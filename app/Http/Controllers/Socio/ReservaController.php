@@ -11,6 +11,9 @@ class ReservaController extends Controller
     private function getSocio()
     {
         $usuario = session('usuario');
+        if (!$usuario) {
+            return null;
+        }
         return DB::table('TSocios')
             ->where('idUsuario', $usuario->idUsuario)
             ->where('estadoA', 1)
@@ -22,6 +25,7 @@ class ReservaController extends Controller
         return DB::table('TMembresias')
             ->where('carnetSocio', $carnetSocio)
             ->where('estadoA', 1)
+            ->where('estadoMembresia', 'Activa')
             ->orderBy('idMembresia', 'desc')
             ->first();
     }
@@ -63,6 +67,8 @@ class ReservaController extends Controller
 
     public function disponibles()
     {
+        DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
+
         $socio = $this->getSocio();
         $membresia = $socio ? $this->getMembresiaActiva($socio->carnetSocio) : null;
 
@@ -72,7 +78,7 @@ class ReservaController extends Controller
             ->join('TEmpleados as e', 'cg.carnetEmpleado', '=', 'e.carnetEmpleado')
             ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
             ->where('cg.estadoA', 1)
-            ->where('cg.estadoClase', 'Programada')
+            ->whereIn('cg.estadoClase', ['Programada', 'Cursandose'])
             ->where('cg.fecha', '>=', now()->format('Y-m-d'))
             ->select(
                 'cg.idClaseGrupal',
@@ -151,7 +157,7 @@ class ReservaController extends Controller
         $clase = DB::table('TClaseGrupales')
             ->where('idClaseGrupal', $request->idClaseGrupal)
             ->where('estadoA', 1)
-            ->where('estadoClase', 'Programada')
+            ->whereIn('estadoClase', ['Programada', 'Cursandose'])
             ->first();
 
         if (!$clase) {
@@ -186,7 +192,7 @@ class ReservaController extends Controller
             ->where('r.estadoReserva', 'Reservado')
             ->where('r.estadoA', 1)
             ->where('cg.fecha', $clase->fecha)
-            ->where('cg.estadoClase', 'Programada')
+            ->whereIn('cg.estadoClase', ['Programada', 'Cursandose'])
             ->where(function ($q) use ($clase) {
                 $q->whereRaw('? < cg.horaFin', [$clase->horaInicio])
                   ->whereRaw('? > cg.horaInicio', [$clase->horaFin]);

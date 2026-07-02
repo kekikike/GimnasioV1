@@ -102,6 +102,7 @@ Route::middleware('auth.usuario')->group(function () {
             Route::post('/', [ClaseGrupalController::class, 'store'])->name('store');
             Route::put('/{id}', [ClaseGrupalController::class, 'update'])->name('update');
             Route::delete('/{id}', [ClaseGrupalController::class, 'destroy'])->name('destroy');
+            Route::put('/{id}/reactivar', [ClaseGrupalController::class, 'reactivar'])->name('reactivar');
             Route::get('/{id}/reservas', [ClaseGrupalController::class, 'listarReservas'])->name('reservas');
             Route::post('/marcar-asistencia', [ClaseGrupalController::class, 'marcarAsistencia'])->name('asistencia');
             Route::get('/reporte/ocupacion', [ClaseGrupalController::class, 'reporteOcupacion'])->name('reporte');

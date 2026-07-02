@@ -393,12 +393,21 @@ class ReporteController extends Controller
     // =========================================
     public function clases(Request $request)
     {
-        $fechaInicio = $request->get('fecha_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
-        $fechaFin = $request->get('fecha_fin', Carbon::now()->format('Y-m-d'));
+        // Si no se proporcionan fechas, mostrar TODAS las clases (histórico completo)
+        $fechaInicio = $request->get('fecha_inicio');
+        $fechaFin = $request->get('fecha_fin');
         $instructor = $request->get('instructor', '');
 
+        // Actualizar estados automáticamente antes de reportar
+        DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
+
         $query = Clase::with(['instructor.usuario', 'reservas', 'actividad'])
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+            ->where('estadoA', 1);
+
+        // Solo aplicar filtro de fechas si AMBAS fueron proporcionadas explícitamente
+        if ($fechaInicio && $fechaFin) {
+            $query->whereBetween('fecha', [$fechaInicio, $fechaFin]);
+        }
 
         if ($instructor !== '') {
             $query->whereHas('instructor.usuario', function($q) use ($instructor) {
@@ -409,12 +418,25 @@ class ReporteController extends Controller
             });
         }
 
-        $clases = $query->get();
+        $clases = $query->orderBy('fecha', 'desc')->orderBy('horaInicio', 'desc')->get();
 
         $estadisticas = $clases->map(function($clase) {
             $nombreInstructor = 'Sin instructor';
             if ($clase->instructor && $clase->instructor->usuario) {
                 $nombreInstructor = ($clase->instructor->usuario->nombre1 ?? '') . ' ' . ($clase->instructor->usuario->apellido1 ?? '');
+            }
+
+            // Calcular estado dinámico basado en la hora actual
+            $fechaHoraInicio = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaInicio);
+            $fechaHoraFin = \Carbon\Carbon::parse($clase->fecha . ' ' . $clase->horaFin);
+            $ahora = now();
+
+            if ($fechaHoraFin < $ahora) {
+                $estado = 'Finalizada';
+            } elseif ($fechaHoraInicio <= $ahora && $fechaHoraFin >= $ahora) {
+                $estado = 'Cursandose';
+            } else {
+                $estado = $clase->estadoClase ?? 'Programada';
             }
 
             return [
@@ -427,7 +449,8 @@ class ReporteController extends Controller
                 'capacidad' => $clase->cupoMaximo ?? 0,
                 'reservados' => $clase->reservas->count(),
                 'asistieron' => $clase->reservas->where('estadoReserva', 'Asistido')->count(),
-                'ocupacion' => $clase->cupoMaximo > 0 ? round(($clase->reservas->count() / $clase->cupoMaximo) * 100, 2) : 0
+                'ocupacion' => $clase->cupoMaximo > 0 ? round(($clase->reservas->count() / $clase->cupoMaximo) * 100, 2) : 0,
+                'estado' => $estado,
             ];
         });
 

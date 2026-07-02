@@ -36,7 +36,9 @@ class EntrenadorController extends Controller
 
     public function misClases()
     {
-        $this->actualizarEstadoClases();
+        // Actualizar estados automáticamente antes de listar
+        DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
+
         $usuario = session('usuario');
         $empleado = DB::table('TEmpleados')
             ->where('idUsuario', $usuario->idUsuario)
@@ -48,44 +50,13 @@ class EntrenadorController extends Controller
             return response()->json([]);
         }
 
-        $clases = DB::table('TClaseGrupales as cg')
-            ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
-            ->join('TSucursales as s', 'cg.idSucursal', '=', 's.idSucursal')
-            ->where('cg.carnetEmpleado', $carnetEmp)
-            ->where('cg.estadoA', 1)
-            ->select(
-                'cg.idClaseGrupal',
-                'cg.fecha',
-                'cg.horaInicio',
-                'cg.horaFin',
-                'cg.cupoMaximo',
-                'cg.estadoClase',
-                'a.nombreActividad',
-                's.nombre as nombreSucursal'
-            )
-            ->orderBy('cg.fecha', 'desc')
-            ->orderBy('cg.horaInicio', 'desc')
-            ->get()
-            ->map(function ($clase) {
-                $total = DB::table('TReservas')
-                    ->where('idClaseGrupal', $clase->idClaseGrupal)
-                    ->where('estadoA', 1)
-                    ->count();
-                $asistieron = DB::table('TReservas')
-                    ->where('idClaseGrupal', $clase->idClaseGrupal)
-                    ->where('estadoA', 1)
-                    ->where('estadoReserva', 'Asistido')
-                    ->count();
-                $reservados = DB::table('TReservas')
-                    ->where('idClaseGrupal', $clase->idClaseGrupal)
-                    ->where('estadoReserva', 'Reservado')
-                    ->where('estadoA', 1)
-                    ->count();
-                $clase->totalReservas = $total;
-                $clase->reservados = $reservados;
-                $clase->asistieron = $asistieron;
-                return $clase;
-            });
+        $clases = DB::select('CALL sp_TClaseGrupales_GetByEntrenador(?)', [$carnetEmp]);
+
+        // Mapear el estadoActual devuelto por el SP al campo estadoClase
+        $clases = array_map(function ($clase) {
+            $clase->estadoClase = $clase->estadoActual;
+            return $clase;
+        }, $clases);
 
         return response()->json($clases);
     }
@@ -138,7 +109,8 @@ class EntrenadorController extends Controller
 
     public function clasesHoy()
     {
-        $this->actualizarEstadoClases();
+        DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
+
         $usuario = session('usuario');
         $empleado = DB::table('TEmpleados')
             ->where('idUsuario', $usuario->idUsuario)
@@ -166,7 +138,12 @@ class EntrenadorController extends Controller
                 'cg.horaInicio',
                 'cg.horaFin',
                 'cg.cupoMaximo',
-                'cg.estadoClase',
+                DB::raw("CASE
+                    WHEN CONCAT(cg.fecha, ' ', cg.horaFin) < NOW() THEN 'Finalizada'
+                    WHEN CONCAT(cg.fecha, ' ', cg.horaInicio) <= NOW()
+                         AND CONCAT(cg.fecha, ' ', cg.horaFin) >= NOW() THEN 'Cursandose'
+                    ELSE cg.estadoClase
+                END as estadoClase"),
                 'a.nombreActividad',
                 's.nombre as nombreSucursal'
             )
@@ -228,14 +205,16 @@ class EntrenadorController extends Controller
             return response()->json(['error' => 'Clase no encontrada o no asignada a este entrenador.'], 404);
         }
 
-        // Calcular estadoAsistencia en tiempo real con el servidor
+        // Calcular estadoAsistencia y estadoClase en tiempo real
         $horaActual = now()->format('H:i:s');
         if ($horaActual < $clase->horaInicio) {
             $clase->estadoAsistencia = 'proxima';
         } elseif ($horaActual > $clase->horaFin) {
             $clase->estadoAsistencia = 'expirada';
+            $clase->estadoClase = 'Finalizada';
         } else {
             $clase->estadoAsistencia = 'en_curso';
+            $clase->estadoClase = 'Cursandose';
         }
 
         $alumnos = DB::table('TReservas as r')

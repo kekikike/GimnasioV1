@@ -78,7 +78,8 @@
                     <td style="padding: 12px; text-align: center;">
                         <button @click="openEditModal(clase)" class="btn btn-sm btn-info" style="margin-right: 4px;">✏️</button>
                         <button @click="verReservas(clase)" class="btn btn-sm btn-primary" style="margin-right: 4px;">👥</button>
-                        <button @click="confirmarEliminar(clase)" class="btn btn-sm btn-danger">🗑️</button>
+                        <button v-if="clase.estadoClase !== 'Cancelada'" @click="confirmarEliminar(clase)" class="btn btn-sm btn-danger">🗑️</button>
+                        <button v-else @click="confirmarReactivar(clase)" class="btn btn-sm" style="background: #10b981; color: white; border: none;">🔄</button>
                     </td>
                 </tr>
                 <tr v-if="clasesFiltradas.length === 0">
@@ -132,7 +133,7 @@
                     </div>
                     <div class="form-group">
                         <label>Cupo Máximo *</label>
-                        <input type="number" v-model="editFormulario.cupoMaximo" class="form-control" required min="1" max="99999">
+                        <input type="number" v-model="editFormulario.cupoMaximo" class="form-control" required min="1" max="100">
                     </div>
                     <div class="form-group">
                         <label>Estado</label>
@@ -356,6 +357,29 @@ createApp({
             } catch (e) {
                 mostrarToast('Error de conexión.', 'error');
             }
+        };
+
+        const ejecutarReactivacion = async (clase) => {
+            try {
+                const res = await fetch(
+                    `{{ route("admin.clases.reactivar", ["id" => ":id"]) }}`.replace(':id', clase.idClaseGrupal),
+                    { method: 'PUT', headers }
+                );
+                const data = await res.json();
+                mostrarToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) await cargarClases();
+            } catch (e) {
+                mostrarToast('Error de conexión.', 'error');
+            }
+        };
+
+        const confirmarReactivar = async (clase) => {
+            confirmarAccion(
+                `¿Reactivar la clase "${clase.nombreActividad}" del ${clase.fecha} a estado "Programada"?`,
+                async function () {
+                    await ejecutarReactivacion(clase);
+                }
+            );
         };
 
         const confirmarEliminar = async (clase) => {
