@@ -53,22 +53,22 @@
                     <div style="flex:1;">
                         <label>Monto cierre real (Bs)</label>
                         <input v-model="montoCierre" type="number" step="0.01" class="form-control" @input="truncarEntero($event, 'montoCierre')"
-                               :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
-                        <small v-if="montoCierre" :style="{ color: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', fontWeight:600 }">
-                            <template v-if="diferenciaCierre <= 0.01">Coinciden</template>
+                               :style="{ borderColor: diferenciaCierre < 0.001 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
+                        <small v-if="montoCierre" :style="{ color: diferenciaCierre < 0.001 ? '#22c55e' : '#ef4444', fontWeight:600 }">
+                            <template v-if="diferenciaCierre < 0.001">Coinciden</template>
                             <template v-else>Diferencia: Bs. {{ formatNum(diferenciaCierre) }}</template>
                         </small>
                     </div>
                     <div style="flex:1;">
                         <label>Calculado automaticamente</label>
                         <input class="form-control" :value="formatNum(montoCierreCalculado)" readonly
-                               :style="{ borderColor: diferenciaCierre <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
+                               :style="{ borderColor: diferenciaCierre < 0.001 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
                     </div>
                     <div>
-                        <button @click="cerrarCaja" class="btn btn-danger" style="width:100%;" :disabled="!montoCierre || (diferenciaCierre > 0.01 && !cierreObservacion)">Cerrar Caja</button>
+                        <button @click="cerrarCaja" class="btn btn-danger" style="width:100%;" :disabled="!montoCierre || (diferenciaCierre >= 0.001 && !cierreObservacion)">Cerrar Caja</button>
                     </div>
                 </div>
-                <div v-if="montoCierre && diferenciaCierre > 0.01">
+                <div v-if="montoCierre && diferenciaCierre >= 0.001">
                     <label>Observacion (razon de la diferencia)</label>
                     <textarea v-model="cierreObservacion" class="form-control" rows="2" maxlength="255" placeholder="Describa por que existen diferencias en el arqueo..."></textarea>
                 </div>
@@ -122,7 +122,7 @@
                 <div>
                     <label>Monto total (Bs)</label>
                     <input v-model="montoTotal" type="number" step="0.01" class="form-control" readonly
-                           :style="{ borderColor: diferenciaMetodos <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
+                           :style="{ borderColor: diferenciaMetodos < 0.001 ? '#22c55e' : '#ef4444', borderWidth: '2px', background:'#f1f5f9' }">
                 </div>
             </div>
 
@@ -135,12 +135,12 @@
                         <option v-for="mp in metodosPago" :key="mp.idMetodoPago" :value="mp.idMetodoPago">{{ mp.nombreMetodoPago }}</option>
                     </select>
                     <input v-model="m.monto" type="number" step="0.01" class="form-control" :max="parseFloat(montoTotal||0)" @input="validarMontoMetodo(i)" placeholder="Monto"
-                           :style="{ borderColor: diferenciaMetodos <= 0.01 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
+                           :style="{ borderColor: diferenciaMetodos < 0.001 ? '#22c55e' : '#ef4444', borderWidth: '2px' }">
                     <button @click="quitarMetodo(i)" class="btn btn-sm btn-danger" style="white-space:nowrap;">X</button>
                 </div>
                 <div style="display:flex; gap:0.75rem; margin-top:0.5rem; align-items:center;">
                     <button @click="agregarMetodo" class="btn btn-sm btn-outline">+ Agregar metodo</button>
-                    <span v-if="diferenciaMetodos > 0.01" style="color:#dc2626; font-size:0.85rem; font-weight:600;">
+                    <span v-if="diferenciaMetodos >= 0.001" style="color:#dc2626; font-size:0.85rem; font-weight:600;">
                         Diferencia: Bs. {{ formatNum(diferenciaMetodos) }}
                     </span>
                     <span v-else style="color:#059669; font-size:0.85rem; font-weight:600;">
@@ -313,16 +313,7 @@ createApp({
             return 'padding:0.35rem 0.75rem; border-radius:999px; background:#d1e7dd; color:#0f5132; font-weight:600;';
         });
 
-        const totalRecibos = computed(() => {
-            let t = 0;
-            movimientos.value.forEach(m => { t += parseFloat(m.montoTotal || 0); });
-            return t;
-        });
-
-        const montoCierreCalculado = computed(() => {
-            if (!cajaAbierta.value) return 0;
-            return parseFloat(cajaAbierta.value.montoApertura || 0) + totalRecibos.value - totalSalidasHoy.value;
-        });
+        const montoCierreCalculado = ref(0);
 
         const diferenciaCierre = computed(() => {
             return Math.abs(parseFloat(montoCierre.value || 0) - montoCierreCalculado.value);
@@ -343,7 +334,7 @@ createApp({
         const puedeRegistrar = computed(() => {
             return socioInfo.value && idPlan.value && montoTotal.value > 0
                 && metodosPagoArr.value.length > 0
-                && diferenciaMetodos.value <= 0.01
+                && diferenciaMetodos.value < 0.001
                 && metodosPagoArr.value.every(m => m.idMetodoPago && m.monto > 0);
         });
 
@@ -393,7 +384,7 @@ createApp({
             if (!montoCierre.value) { mostrarToast('El monto de cierre es obligatorio.', 'error'); return; }
             if (String(montoCierre.value).replace('.','').length > 9) { mostrarToast('Máximo 9 dígitos enteros.', 'error'); return; }
             const payload = { montoCierre: montoCierre.value };
-            if (diferenciaCierre.value > 0.01) payload.cierreObservacion = cierreObservacion.value;
+            if (diferenciaCierre.value >= 0.001) payload.cierreObservacion = cierreObservacion.value;
             const res = await fetch('{{ url("/recepcionista/caja") }}/' + cajaAbierta.value.idCaja + '/cerrar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -412,6 +403,7 @@ createApp({
                 totalSalidasHoy.value = parseFloat(data.totalSalidasHoy || 0);
                 salidas.value = data.salidas || [];
                 if (data.caja) cajaAbierta.value = data.caja;
+                montoCierreCalculado.value = parseFloat(data.montoCierreCalculado || 0);
             } catch (e) { movimientos.value = []; }
         };
 
@@ -574,7 +566,7 @@ createApp({
             cajaAbierta, sucursalNombre, montoApertura, montoCierre, cierreObservacion, metodosPago, planes, movimientos,
             socioCarnet, socioInfo, membresiaActiva, esRenovacion, idPlan, montoTotal, metodosPagoArr,
             reciboPreview, reciboMetodos,
-            textoStatus, estiloStatus, totalRecibos, totalSalidasHoy, montoCierreCalculado, diferenciaCierre, planesFiltrados, diferenciaMetodos, puedeRegistrar,
+            textoStatus, estiloStatus, totalSalidasHoy, montoCierreCalculado, diferenciaCierre, planesFiltrados, diferenciaMetodos, puedeRegistrar,
             salidas, descripcionSalida, costosalida,
             formatNum, formatFecha,
             abrirCaja, cerrarCaja, cargarMovimientos, cargarSalidas, registrarSalida, buscarSocio, onPlanChange,

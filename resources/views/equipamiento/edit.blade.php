@@ -58,7 +58,6 @@
                 <label for="estadoEquipo">Estado del Equipo</label>
                 <select id="estadoEquipo" name="estadoEquipo" class="form-control" required>
                     <option value="Operativo" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Operativo' ? 'selected' : '' }}>Operativo</option>
-                    <option value="Mantenimiento" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Mantenimiento' ? 'selected' : '' }}>En Mantenimiento</option>
                     <option value="Fuera de Servicio" {{ old('estadoEquipo', $equipo->estadoEquipo) == 'Fuera de Servicio' ? 'selected' : '' }}>Fuera de Servicio</option>
                 </select>
                 @error('estadoEquipo') <small style="color:#ef4444;">{{ $message }}</small> @enderror
