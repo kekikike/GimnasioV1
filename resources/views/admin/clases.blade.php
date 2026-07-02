@@ -467,7 +467,7 @@ createApp({
             modalReservas, reservasData, claseSeleccionada,
             editModal, editFormulario,
             cargarClases, openEditModal, closeEditModal, guardarEdicion,
-            confirmarEliminar, verReservas, marcarAsistencia,
+            confirmarEliminar, confirmarReactivar, ejecutarReactivacion, verReservas, marcarAsistencia,
         };
     }
 }).mount('#appClases');
