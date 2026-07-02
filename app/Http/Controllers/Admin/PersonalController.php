@@ -55,6 +55,28 @@ class PersonalController extends Controller
         return response()->json($empleados);
     }
 
+    public function detalle($id)
+    {
+        $empleado = DB::selectOne("
+            SELECT e.carnetEmpleado, e.idUsuario, e.idSucursal, e.fechaContratoInicio, e.fechaContratoFin,
+                   u.idRol, u.nombre1, u.nombre2, u.apellido1, u.apellido2, u.correo, u.telefono, u.estadoA as usuarioEstado,
+                   r.nombreRol, s.nombre as nombreSucursal,
+                   es.idEsquemaSueldo, es.modalidadPago, es.montoBase, es.tarifaHoraOClase
+            FROM templeados e
+            INNER JOIN tusuarios u ON e.idUsuario = u.idUsuario
+            INNER JOIN troles r ON u.idRol = r.idRol
+            INNER JOIN tsucursales s ON e.idSucursal = s.idSucursal
+            LEFT JOIN tesquemasueldos es ON e.carnetEmpleado = es.carnetEmpleado AND es.estadoA = 1
+            WHERE e.carnetEmpleado = ?
+        ", [$id]);
+
+        if (!$empleado) {
+            return response()->json(['success' => false, 'message' => 'Empleado no encontrado.'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => $empleado]);
+    }
+
     public function store(Request $request)
     {
         $socioRoleId = DB::table('troles')->where('nombreRol', 'Socio')->value('idRol');
@@ -163,13 +185,33 @@ class PersonalController extends Controller
                 'estadoA'         => 1,
             ]);
 
+            $rolNombre = DB::table('troles')->where('idRol', $request->idRol)->value('nombreRol');
+            $sucursalNombre = DB::table('tsucursales')->where('idSucursal', $request->idSucursal)->value('nombre');
+
             DB::table('tauditorias')->insert([
                 'tablaNombre' => 'templeados',
                 'registroId' => $carnet,
                 'accion' => 'I',
-                'campo' => 'estadoA',
-                'valorAnterior' => null,
-                'valorNuevo' => '1',
+                'campo' => 'carnet|idUsr|idSuc|sucNom|rol|nom1|nom2|ape1|ape2|corr|tel|fIni|fFin|mod|mBase|tarifa',
+                'valorAnterior' => 'Nuevo registro',
+                'valorNuevo' => implode('|', [
+                    $carnet,
+                    $idUsuario,
+                    $request->idSucursal,
+                    $sucursalNombre,
+                    $rolNombre,
+                    $request->nombre1,
+                    $request->nombre2 ?? '',
+                    $request->apellido1,
+                    $request->apellido2 ?? '',
+                    $request->correo,
+                    $request->telefono ?? '',
+                    $request->fechaContratoInicio,
+                    '',
+                    $request->modalidadPago,
+                    $request->montoBase,
+                    $request->tarifaHoraOClase,
+                ]),
                 'usuarioA' => $usuarioA,
                 'fechaA' => now(),
                 'direccionIP' => $ip,

@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <style>.password-mask{-webkit-text-security:disc}.password-mask.no-mask{-webkit-text-security:none}</style>
+<style>
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal-overlay .modal-content { background:#fff; border-radius:0.75rem; padding:1.5rem; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+</style>
 
 <script>
     window.listaSucursales = @json($sucursales);
@@ -193,11 +197,12 @@
                         @{{ socio.telefono }}
                     </td>
                     <td style="padding: 12px; text-align: left; white-space: nowrap;">
-                        <button @click="editarSocio(socio)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
-                        <button @click="congelarMembresia(socio)" :disabled="socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada'" class="btn btn-sm" :style="{ background: socio.estadoMembresia === 'Congelada' ? '#22c55e' : '#f59e0b', color: '#fff', marginRight: '5px', opacity: socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada' ? '0.5' : '1' }">
+                        <button @click.stop="verDetalle(socio.carnetSocio)" class="btn btn-sm" style="background:#22c55e;color:#fff;margin-right:5px;">Ver</button>
+                        <button @click.stop="editarSocio(socio)" class="btn btn-sm btn-info" style="margin-right: 5px;">Editar</button>
+                        <button @click.stop="congelarMembresia(socio)" :disabled="socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada'" class="btn btn-sm" :style="{ background: socio.estadoMembresia === 'Congelada' ? '#22c55e' : '#f59e0b', color: '#fff', marginRight: '5px', opacity: socio.estadoMembresia !== 'Activa' && socio.estadoMembresia !== 'Congelada' ? '0.5' : '1' }">
                             @{{ socio.estadoMembresia === 'Congelada' ? 'Activar Memb.' : 'Congelar Memb.' }}
                         </button>
-                        <button @click="verNotificaciones(socio)" class="btn btn-sm" style="background:#6366f1; color:#fff;">Notificaciones</button>
+                        <button @click.stop="verNotificaciones(socio)" class="btn btn-sm" style="background:#6366f1; color:#fff;">Notificaciones</button>
                     </td>
                 </tr>
             </tbody>
@@ -260,6 +265,90 @@
             </div>
         </div>
     </div>
+    <div v-if="detalleVisible" class="modal-overlay" @click.self="cerrarDetalle" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-content" style="max-width:560px; border-radius:12px; padding:0; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h3 style="margin:0; font-size:1.15rem;">Detalle del Socio</h3>
+                    <span v-if="detalle" style="font-size:0.8rem; opacity:0.7;">CI: @{{ detalle.carnetSocio }}</span>
+                </div>
+                <button @click="cerrarDetalle" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;" title="Cerrar">&times;</button>
+            </div>
+            <div style="padding:20px 24px;">
+                <div v-if="detalleCargando" style="text-align:center; padding:2rem; color:#94a3b8;">Cargando...</div>
+                <div v-else-if="detalle" style="font-size:0.9rem;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #f1f5f9;">
+                        <img v-if="detalle.fotografiaUrl" :src="'/storage/' + detalle.fotografiaUrl" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #e2e8f0;">
+                        <div v-else style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:bold; flex-shrink:0;">
+                            @{{ detalle.nombre1 ? detalle.nombre1.charAt(0).toUpperCase() : '?' }}@{{ detalle.apellido1 ? detalle.apellido1.charAt(0).toUpperCase() : '' }}
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:1.1rem; color:#0f172a;">@{{ detalle.nombre1 }} @{{ detalle.nombre2 ? detalle.nombre2 + ' ' : '' }}@{{ detalle.apellido1 }} @{{ detalle.apellido2 ? detalle.apellido2 : '' }}</div>
+                            <div style="display:flex; gap:8px; margin-top:4px;">
+                                <span :style="{ background: detalle.estadoSocio === 'Activo' ? '#dcfce7' : '#fef2f2', color: detalle.estadoSocio === 'Activo' ? '#166534' : '#991b1b', padding:'2px 10px', borderRadius:'12px', fontSize:'0.75rem', fontWeight:'600' }">@{{ detalle.estadoSocio }}</span>
+                                <span v-if="detalle.estadoMembresia" :style="{ background: detalle.estadoMembresia === 'Activa' ? '#dcfce7' : '#fef2f2', color: detalle.estadoMembresia === 'Activa' ? '#166534' : '#991b1b', padding:'2px 10px', borderRadius:'12px', fontSize:'0.75rem', fontWeight:'600' }">@{{ detalle.estadoMembresia }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Correo</div>
+                            <div style="color:#0f172a; font-weight:500; word-break:break-all;">@{{ detalle.correo }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Teléfono</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.telefono }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Dirección</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.direccion || '--' }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Strikes</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.strikes ?? 0 }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Contacto Emergencia</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.nombreContactoEmergencia || '--' }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Tel. Emergencia</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.telefonoContactoEmergencia || '--' }}</div>
+                        </div>
+                        <div style="grid-column:span 2; background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Observaciones Médicas</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.observacionesMedicas || 'Ninguna' }}</div>
+                        </div>
+                    </div>
+                    <div v-if="detalle.idMembresia" style="margin-top:16px; padding-top:14px; border-top:2px solid #f1f5f9;">
+                        <div style="font-weight:600; font-size:0.8rem; color:#8b5cf6; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">Membresía</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Estado</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.estadoMembresia }}</div>
+                            </div>
+                            <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Inicio</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.fechaInicioMembresia || '--' }}</div>
+                            </div>
+                            <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Fin</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.fechaFinMembresia || '--' }}</div>
+                            </div>
+                            <div v-if="detalle.fechaCongelamiento" style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Congelada hasta</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.fechaCongelamiento }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else style="text-align:center; padding:2rem; color:#ef4444;">No se pudo cargar la información.</div>
+                <div style="display:flex; justify-content:flex-end; margin-top:1.5rem; padding-top:16px; border-top:1px solid #e2e8f0;">
+                    <button @click="cerrarDetalle" class="btn" style="background:#64748b;color:#fff; border-radius:8px; padding:8px 24px; font-weight:500;">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -283,6 +372,9 @@
             const mostrarConfirmPassword = ref(false);
             const passReadonly = ref(true);
             const passConfirmReadonly = ref(true);
+            const detalleVisible = ref(false);
+            const detalle = ref(null);
+            const detalleCargando = ref(false);
 
             const formBase = {
                 carnetSocio: '', carnetSocio_confirmation: '', idUsuario: '',
@@ -567,6 +659,26 @@
                 notificaciones.value = [];
             };
 
+            const verDetalle = async (carnet) => {
+                detalle.value = null;
+                detalleCargando.value = true;
+                detalleVisible.value = true;
+                try {
+                    const res = await fetch(`/admin/socios/${carnet}/detalle`);
+                    const data = await res.json();
+                    if (data.success) detalle.value = data.data;
+                } catch (e) {
+                    detalle.value = null;
+                } finally {
+                    detalleCargando.value = false;
+                }
+            };
+
+            const cerrarDetalle = () => {
+                detalleVisible.value = false;
+                detalle.value = null;
+            };
+
             const estadoMembresiaTexto = (socio) => {
                 if (!socio.estadoMembresia) return '--';
                 const hoy = new Date();
@@ -584,7 +696,7 @@
 
             onMounted(() => { cargarSocios(); });
 
-            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, limitarObservaciones, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze, estadoMembresiaTexto, estadoMembresiaStyle };
+            return { socios, sucursales, formulario, errores, modoEdicion, guardando, mostrarCropper, cropperSrc, cropperImage, fileInput, fotoPreview, msjError, mostrarPassword, mostrarConfirmPassword, passReadonly, passConfirmReadonly, manejarFoto, validarLetras, validarCI, validarTelefono, limitarObservaciones, guardarSocio, editarSocio, cancelarEdicion, congelarMembresia, abrirCropper, cerrarCropper, confirmarCropper, mostrarNotifModal, notificaciones, notifCarnet, notifSocioNombre, verNotificaciones, cerrarNotifModal, mostrarFreezeModal, freezeCarnet, freezeNombre, freezeFecha, manana, cerrarFreezeModal, confirmarFreeze, estadoMembresiaTexto, estadoMembresiaStyle, detalleVisible, detalle, detalleCargando, verDetalle, cerrarDetalle };
         }
     }).mount('#appSocios');
 </script>

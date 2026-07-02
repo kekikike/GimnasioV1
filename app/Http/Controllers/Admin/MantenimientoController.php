@@ -130,6 +130,18 @@ class MantenimientoController extends Controller
             'Cancelado',
         ]);
 
+        $equipo = Equipamiento::getById((int) $current[0]->idEquipo);
+        if ($equipo && $equipo->estadoEquipo === 'En Mantenimiento') {
+            Equipamiento::update((int) $current[0]->idEquipo, [
+                'idSucursal'       => $equipo->idSucursal,
+                'idMarca'          => $equipo->idMarca,
+                'nombreEquipo'     => $equipo->nombreEquipo,
+                'modelo'           => $equipo->modelo,
+                'fechaAdquisicion' => $equipo->fechaAdquisicion,
+                'estadoEquipo'     => 'Fuera de Servicio',
+            ], $usuarioA, $direccionIP);
+        }
+
         return redirect()->route('admin.mantenimientos.index')
             ->with('success', 'Mantenimiento cancelado exitosamente.');
     }

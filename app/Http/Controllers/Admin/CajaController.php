@@ -150,11 +150,11 @@ class CajaController extends Controller
             ->where('estadoA', 1)
             ->sum('costo') ?? 0;
 
-        $montoCierreCalculado = $caja->montoApertura + $totalRecibos - $totalSalidas;
-        $diferenciaArqueo = $request->montoCierre - $montoCierreCalculado;
+        $montoCierreCalculado = round($caja->montoApertura + $totalRecibos - $totalSalidas, 2);
+        $diferenciaArqueo = round((float)$request->montoCierre - $montoCierreCalculado, 2);
         $usuarioA = $this->getUsuarioA();
 
-        if (abs($diferenciaArqueo) <= 0.01) {
+        if ($diferenciaArqueo == 0) {
             $cierreEstado = 'Bien';
             $cierreObservacion = null;
         } else {
@@ -228,13 +228,21 @@ class CajaController extends Controller
             ->where('estadoA', 1)
             ->sum('costo') ?? 0;
 
+        $totalRecibosCalc = DB::table('TRecibos')
+            ->where('idCaja', $cajaHoy->idCaja)
+            ->whereDate('fechaPago', $today)
+            ->where('estadoA', 1)
+            ->sum('montoTotal') ?? 0;
+
+        $montoCierreCalculado = round($cajaHoy->montoApertura + $totalRecibosCalc - $totalSalidas, 2);
+
         $salidas = DB::table('TSalidas')
             ->where('idCaja', $cajaHoy->idCaja)
             ->where('estadoA', 1)
             ->orderBy('fechaA', 'desc')
             ->get();
 
-        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy, 'totalSalidasHoy' => $totalSalidas ?? 0, 'salidas' => $salidas]);
+        return response()->json(['movimientos' => $movimientos, 'caja' => $cajaHoy, 'totalSalidasHoy' => $totalSalidas ?? 0, 'salidas' => $salidas, 'montoCierreCalculado' => $montoCierreCalculado]);
     }
 
     public function salidasStore(Request $request)
@@ -389,8 +397,9 @@ class CajaController extends Controller
             }
         }
 
-        $sumaMetodos = collect($request->metodos)->sum('monto');
-        if (abs($sumaMetodos - $request->montoTotal) > 0.01) {
+        $sumaMetodos = round(collect($request->metodos)->sum('monto'), 2);
+        $montoTotal = round((float)$request->montoTotal, 2);
+        if ($sumaMetodos != $montoTotal) {
             return response()->json(['success' => false, 'message' => 'La suma de los montos de los metodos de pago no coincide con el monto total.'], 422);
         }
 

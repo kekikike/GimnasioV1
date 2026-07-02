@@ -296,7 +296,9 @@ createApp({
 
         const cargarClases = async () => {
             try {
-                const res = await fetch('{{ route("admin.clases.listar") }}');
+                const params = new URLSearchParams();
+                if (filtroEstado.value) params.append('estadoClase', filtroEstado.value);
+                const res = await fetch('{{ route("admin.clases.listar") }}?' + params.toString());
                 clases.value = await res.json();
             } catch (e) {
                 console.error('Error cargando clases:', e);

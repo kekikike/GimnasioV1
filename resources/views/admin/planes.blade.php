@@ -18,7 +18,8 @@
             </div>
             <div>
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Duración (Días)</label>
-                <input type="number" v-model="formulario.duracionDias" class="form-control" required min="1" max="366">
+                <input type="text" v-model="formulario.duracionDias" @input="validarDuracion" class="form-control" :class="{ 'is-invalid': errores.duracionDias }" required placeholder="Ej. 30">
+                <small v-if="errores.duracionDias" style="color:#ef4444; font-size: 0.8em; display:block; margin-top:4px;">@{{ errores.duracionDias }}</small>
             </div>
             <div style="grid-column: span 2;">
                 <label style="font-weight: 600; font-size: 0.85rem; color: #374151;">Descripción de los Beneficios</label>
@@ -87,6 +88,14 @@
 
             const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
 
+            const validarDuracion = () => {
+                let val = String(formulario.value.duracionDias || '').replace(/[^0-9]/g, '');
+                if (val !== '' && parseInt(val) > 366) val = '366';
+                if (val !== '' && parseInt(val) < 1) val = '';
+                formulario.value.duracionDias = val;
+                delete errores.value.duracionDias;
+            };
+
             const validarCostoPlan = () => {
                 let val = String(formulario.value.costoPlan || '').replace(/[^0-9.]/g, '');
                 const pts = val.match(/\./g);
@@ -114,6 +123,18 @@
                 }
                 if (costo < 50) {
                     errores.value.costoPlan = 'El costo mínimo del plan es de 50 Bs.';
+                    guardando.value = false;
+                    return;
+                }
+
+                const dias = parseInt(formulario.value.duracionDias);
+                if (!dias || dias < 1) {
+                    errores.value.duracionDias = 'La duración debe ser al menos 1 día.';
+                    guardando.value = false;
+                    return;
+                }
+                if (dias > 366) {
+                    errores.value.duracionDias = 'La duración no puede exceder 366 días.';
                     guardando.value = false;
                     return;
                 }
@@ -164,7 +185,7 @@
             };
 
             onMounted(cargarPlanes);
-            return { planes, formulario, errores, modoEdicion, guardando, validarCostoPlan, guardarPlan, editarPlan, cancelarEdicion, eliminarPlan };
+            return { planes, formulario, errores, modoEdicion, guardando, validarDuracion, validarCostoPlan, guardarPlan, editarPlan, cancelarEdicion, eliminarPlan };
         }
     }).mount('#appPlanes');
 </script>

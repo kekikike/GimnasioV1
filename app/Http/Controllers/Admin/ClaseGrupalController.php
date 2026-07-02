@@ -57,7 +57,7 @@ class ClaseGrupalController extends Controller
         return $empleado->idSucursal ?? null;
     }
 
-    public function listar()
+    public function listar(Request $request)
     {
         DB::statement('CALL sp_TClaseGrupales_ActualizarEstados()');
 
@@ -65,9 +65,13 @@ class ClaseGrupalController extends Controller
             ->join('TActividades as a', 'cg.idActividad', '=', 'a.idActividad')
             ->join('TEmpleados as e', 'cg.carnetEmpleado', '=', 'e.carnetEmpleado')
             ->join('TUsuarios as u', 'e.idUsuario', '=', 'u.idUsuario')
-            ->join('TSucursales as s', 'cg.idSucursal', '=', 's.idSucursal')
-            ->where('cg.estadoA', 1)
-            ->select(
+            ->join('TSucursales as s', 'cg.idSucursal', '=', 's.idSucursal');
+
+        if ($request->estadoClase !== 'Cancelada') {
+            $clases->where('cg.estadoA', 1);
+        }
+
+        $clases = $clases->select(
                 'cg.*',
                 'a.nombreActividad',
                 'u.nombre1',

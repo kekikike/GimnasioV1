@@ -63,7 +63,7 @@
                         <td>{{ $m->modelo ?? '-' }}</td>
                         <td>{{ \Carbon\Carbon::parse($m->fechaProgramada)->format('d/m/Y') }}</td>
                         <td>{{ $m->fechaRealizada ? \Carbon\Carbon::parse($m->fechaRealizada)->format('d/m/Y') : '-' }}</td>
-                        <td>${{ number_format($m->costoMantenimiento ?? 0, 2) }}</td>
+                        <td>Bs. {{ number_format($m->costoMantenimiento ?? 0, 2) }}</td>
                         <td>{{ $m->tecnicoAsignado ?? '-' }}</td>
                         <td>
                             <span class="badge {{ $m->estadoMantenimiento == 'Realizado' ? 'badge-success' : ($m->estadoMantenimiento == 'Cancelado' ? 'badge-danger' : 'badge-warning') }}">
@@ -122,7 +122,7 @@
                     <input type="text" name="tecnicoAsignado" id="em_tecnico" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Costo</label>
+                    <label>Costo (Bs)</label>
                     <input type="number" step="0.01" min="0" name="costoMantenimiento" id="em_costo" class="form-control" required>
                 </div>
                 <div class="form-group">
