@@ -78,6 +78,13 @@ class AsistenciaController extends Controller
         $hoy = Carbon::today()->toDateString();
 
         try {
+            $adminSucursal = DB::table('templeados')->where('idUsuario', $usuarioA)->value('idSucursal');
+            $empSucursal = DB::table('templeados')->where('carnetEmpleado', $request->carnetEmpleado)->value('idSucursal');
+
+            if ($adminSucursal !== $empSucursal) {
+                return response()->json(['success' => false, 'message' => 'El empleado no pertenece a tu sucursal.'], 403);
+            }
+
             $horario = $this->getHorario($request->carnetEmpleado);
 
             if (!$horario) {
@@ -186,6 +193,13 @@ class AsistenciaController extends Controller
         $hoy = Carbon::today()->toDateString();
 
         try {
+            $adminSucursal = DB::table('templeados')->where('idUsuario', $usuarioA)->value('idSucursal');
+            $empSucursal = DB::table('templeados')->where('carnetEmpleado', $request->carnetEmpleado)->value('idSucursal');
+
+            if ($adminSucursal !== $empSucursal) {
+                return response()->json(['success' => false, 'message' => 'El empleado no pertenece a tu sucursal.'], 403);
+            }
+
             $horario = $this->getHorario($request->carnetEmpleado);
 
             if (!$horario) {
