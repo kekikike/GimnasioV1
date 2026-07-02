@@ -68,6 +68,7 @@ Route::middleware('auth.usuario')->group(function () {
             Route::get('/', [PersonalController::class, 'index'])->name('index');
             Route::get('/listar', [PersonalController::class, 'listar'])->name('listar');
             Route::get('/listar-inactivos', [PersonalController::class, 'listarInactivos'])->name('listar-inactivos');
+            Route::get('/{id}/detalle', [PersonalController::class, 'detalle'])->name('detalle');
             Route::post('/', [PersonalController::class, 'store'])->name('store');
             Route::put('/{id}', [PersonalController::class, 'update'])->name('update');
             Route::delete('/{id}', [PersonalController::class, 'destroy'])->name('destroy');
@@ -78,6 +79,7 @@ Route::middleware('auth.usuario')->group(function () {
         Route::prefix('admin/socios')->name('admin.socios.')->group(function () {
             Route::get('/', [SocioController::class, 'index'])->name('index');
             Route::get('/listar', [SocioController::class, 'listar'])->name('listar');
+            Route::get('/{carnet}/detalle', [SocioController::class, 'detalle'])->name('detalle');
             Route::post('/', [SocioController::class, 'store'])->name('store');
             Route::put('/{id}', [SocioController::class, 'update'])->name('update');
 

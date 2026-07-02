@@ -47,6 +47,33 @@ class SocioController extends Controller
         }
     }
 
+    public function detalle($id)
+    {
+        $socio = DB::table('tsocios as s')
+            ->join('tusuarios as u', 's.idUsuario', '=', 'u.idUsuario')
+            ->leftJoin('tmembresias as m', function ($join) {
+                $join->on('s.carnetSocio', '=', 'm.carnetSocio')
+                     ->where('m.estadoA', 1)
+                     ->whereRaw('m.idMembresia = (SELECT MAX(m2.idMembresia) FROM tmembresias m2 WHERE m2.carnetSocio = s.carnetSocio AND m2.estadoA = 1)');
+            })
+            ->select(
+                's.carnetSocio', 's.idUsuario', 's.estadoSocio', 's.direccion',
+                's.observacionesMedicas', 's.nombreContactoEmergencia',
+                's.telefonoContactoEmergencia', 's.fotografiaUrl', 's.strikes',
+                'u.nombre1', 'u.nombre2', 'u.apellido1', 'u.apellido2', 'u.correo', 'u.telefono', 'u.estadoA as usuarioEstado',
+                'm.idMembresia', 'm.estadoMembresia', 'm.fechaInicioMembresia', 'm.fechaFinMembresia',
+                'm.fechaCongelamiento'
+            )
+            ->where('s.carnetSocio', $id)
+            ->first();
+
+        if (!$socio) {
+            return response()->json(['success' => false, 'message' => 'Socio no encontrado.'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => $socio]);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -137,9 +164,24 @@ class SocioController extends Controller
                 'tablaNombre'   => 'tsocios',
                 'registroId'    => $request->carnetSocio,
                 'accion'        => 'I',
-                'campo'         => 'carnetSocio|idUsuario|direccion|estadoSocio',
-                'valorAnterior' => '|||',
-                'valorNuevo'    => implode('|', [$request->carnetSocio, $idUsuario, $request->direccion ?? '', 'Activo']),
+                'campo'         => 'carnet|idUsr|nom1|nom2|ape1|ape2|corr|tel|dir|obs|ctcNom|ctcTel|est|strikes',
+                'valorAnterior' => 'Nuevo registro',
+                'valorNuevo'    => implode('|', [
+                    $request->carnetSocio,
+                    $idUsuario,
+                    $request->nombre1,
+                    $request->nombre2 ?? '',
+                    $request->apellidoPaterno,
+                    $request->apellidoMaterno ?? '',
+                    $request->correo,
+                    $request->telefono ?? '',
+                    $request->direccion ?? '',
+                    $request->observacionesMedicas ?: 'Ninguna',
+                    $request->contacto_emergencia_nombre ?? '',
+                    $request->contacto_emergencia_telefono ?? '',
+                    'Activo',
+                    '0',
+                ]),
                 'usuarioA'      => $usuarioA,
                 'fechaA'        => now(),
                 'direccionIP'   => $request->ip(),

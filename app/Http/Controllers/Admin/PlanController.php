@@ -31,9 +31,16 @@ class PlanController extends Controller
             'costoPlan'    => 'required|numeric|min:0',
             'duracionDias' => 'required|integer|min:1|max:366'
         ], [
+            'nombrePlan.required' => 'El nombre del plan es obligatorio.',
             'nombrePlan.regex' => 'El nombre del plan debe contener al menos una letra.',
             'nombrePlan.max' => 'El nombre no debe exceder 100 caracteres.',
+            'descripcion.required' => 'La descripcion es obligatoria.',
             'descripcion.min' => 'La descripcion debe tener al menos 15 caracteres.',
+            'costoPlan.required' => 'El costo es obligatorio.',
+            'costoPlan.numeric' => 'El costo debe ser un numero.',
+            'duracionDias.required' => 'La duracion es obligatoria.',
+            'duracionDias.integer' => 'La duracion debe ser un numero entero.',
+            'duracionDias.min' => 'La duracion debe ser al menos 1 dia.',
             'duracionDias.max' => 'La duracion no debe exceder 366 dias.',
         ]);
 

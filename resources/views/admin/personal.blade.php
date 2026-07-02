@@ -185,9 +185,10 @@
                         @{{ emp.nombreSucursal }}
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 3px;">Editar</button>
-                        <button @click="confirmarContrato(emp)" class="btn btn-sm btn-warning" style="margin-right: 3px;" :disabled="emp.carnetEmpleado == adminCarnet">Acabar Contrato</button>
-                        <button @click="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger" :disabled="emp.carnetEmpleado == adminCarnet">Baja</button>
+                        <button @click.stop="verDetalle(emp.carnetEmpleado)" class="btn btn-sm" style="background:#22c55e;color:#fff;margin-right:3px;">Ver</button>
+                        <button @click.stop="editarEmpleado(emp)" class="btn btn-sm btn-info" style="margin-right: 3px;">Editar</button>
+                        <button @click.stop="confirmarContrato(emp)" class="btn btn-sm btn-warning" style="margin-right: 3px;" :disabled="emp.carnetEmpleado == adminCarnet">Acabar Contrato</button>
+                        <button @click.stop="eliminarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-danger" :disabled="emp.carnetEmpleado == adminCarnet">Baja</button>
                     </td>
                 </tr>
             </tbody>
@@ -221,7 +222,8 @@
                         @{{ emp.nombreSucursal }}
                     </td>
                     <td style="padding: 12px; text-align: center;">
-                        <button @click="reactivarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-success">Reactivar</button>
+                        <button @click.stop="verDetalle(emp.carnetEmpleado)" class="btn btn-sm" style="background:#22c55e;color:#fff;margin-right:3px;">Ver</button>
+                        <button @click.stop="reactivarEmpleado(emp.carnetEmpleado)" class="btn btn-sm btn-success">Reactivar</button>
                     </td>
                 </tr>
                 <tr v-if="inactivos.length === 0">
@@ -229,6 +231,77 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+    <div v-if="detalleVisible" class="modal-overlay" @click.self="cerrarDetalle" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-content" style="max-width:560px; border-radius:12px; padding:0; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h3 style="margin:0; font-size:1.15rem;">Detalle del Empleado</h3>
+                    <span v-if="detalle" style="font-size:0.8rem; opacity:0.7;">@{{ detalle.nombreRol }} &middot; CI: @{{ detalle.carnetEmpleado }}</span>
+                </div>
+                <button @click="cerrarDetalle" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;" title="Cerrar">&times;</button>
+            </div>
+            <div style="padding:20px 24px;">
+                <div v-if="detalleCargando" style="text-align:center; padding:2rem; color:#94a3b8;">Cargando...</div>
+                <div v-else-if="detalle" style="font-size:0.9rem;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #f1f5f9;">
+                        <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:bold; flex-shrink:0;">
+                            @{{ detalle.nombre1 ? detalle.nombre1.charAt(0).toUpperCase() : '?' }}@{{ detalle.apellido1 ? detalle.apellido1.charAt(0).toUpperCase() : '' }}
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:1.1rem; color:#0f172a;">@{{ detalle.nombre1 }} @{{ detalle.nombre2 ? detalle.nombre2 + ' ' : '' }}@{{ detalle.apellido1 }} @{{ detalle.apellido2 ? detalle.apellido2 : '' }}</div>
+                            <div style="display:flex; gap:8px; margin-top:4px;">
+                                <span style="background:#dcfce7; color:#166534; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">@{{ detalle.fechaContratoFin ? 'Inactivo' : 'Activo' }}</span>
+                                <span style="background:#e0f2fe; color:#0369a1; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">@{{ detalle.nombreRol }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Correo</div>
+                            <div style="color:#0f172a; font-weight:500; word-break:break-all;">@{{ detalle.correo }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Teléfono</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.telefono }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Sucursal</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.nombreSucursal }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Inicio Contrato</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.fechaContratoInicio }}</div>
+                        </div>
+                        <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Fin Contrato</div>
+                            <div style="color:#0f172a; font-weight:500;">@{{ detalle.fechaContratoFin || '--' }}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px; padding-top:14px; border-top:2px solid #f1f5f9;">
+                        <div style="font-weight:600; font-size:0.8rem; color:#3b82f6; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">Esquema de Sueldo</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Modalidad</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.modalidadPago || '--' }}</div>
+                            </div>
+                            <div style="background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Monto Base</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.montoBase ? 'Bs. ' + Number(detalle.montoBase).toFixed(2) : '--' }}</div>
+                            </div>
+                            <div style="grid-column:span 2; background:#f8fafc; border-radius:8px; padding:10px 12px;">
+                                <div style="font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">Tarifa Hora/Clase</div>
+                                <div style="color:#0f172a; font-weight:500;">@{{ detalle.tarifaHoraOClase > 0 ? 'Bs. ' + detalle.tarifaHoraOClase + '/h' : '--' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else style="text-align:center; padding:2rem; color:#ef4444;">No se pudo cargar la información.</div>
+                <div style="display:flex; justify-content:flex-end; margin-top:1.5rem; padding-top:16px; border-top:1px solid #e2e8f0;">
+                    <button @click="cerrarDetalle" class="btn" style="background:#64748b;color:#fff; border-radius:8px; padding:8px 24px; font-weight:500;">Cerrar</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -253,6 +326,9 @@
             const passReadonly = ref(true);
             const passConfirmReadonly = ref(true);
             const empleadoSucursalDiferente = ref(false);
+            const detalleVisible = ref(false);
+            const detalle = ref(null);
+            const detalleCargando = ref(false);
 
             // 1. Función inteligente para calcular la fecha de hoy sin problemas de zona horaria
             const obtenerFechaHoy = () => {
@@ -519,6 +595,26 @@
                 });
             };
 
+            const verDetalle = async (id) => {
+                detalle.value = null;
+                detalleCargando.value = true;
+                detalleVisible.value = true;
+                try {
+                    const res = await fetch(`/admin/personal/${id}/detalle`);
+                    const data = await res.json();
+                    if (data.success) detalle.value = data.data;
+                } catch (e) {
+                    detalle.value = null;
+                } finally {
+                    detalleCargando.value = false;
+                }
+            };
+
+            const cerrarDetalle = () => {
+                detalleVisible.value = false;
+                detalle.value = null;
+            };
+
             onMounted(() => {
                 cargarEmpleados();
                 roles.value = @json($roles);
@@ -536,7 +632,8 @@
                 nombreCompleto, validarLetras, validarTelefono, validarCarnet, validarCarnetConfirm,
                 validarMontoBase, validarTarifa, onCambioRol,
                 guardarEmpleado, editarEmpleado, eliminarEmpleado, cancelarEdicion,
-                confirmarContrato, reactivarEmpleado
+                confirmarContrato, reactivarEmpleado,
+                detalleVisible, detalle, detalleCargando, verDetalle, cerrarDetalle
             };
         }
     }).mount('#appPersonal');
