@@ -31,6 +31,11 @@ class PlanController extends Controller
             'costoPlan'    => 'required|numeric|min:0',
             'duracionDias' => 'required|integer|min:1|max:366'
         ], [
+            'nombrePlan.regex' => 'El nombre del plan debe contener al menos una letra.',
+            'nombrePlan.max' => 'El nombre no debe exceder 100 caracteres.',
+            'descripcion.min' => 'La descripcion debe tener al menos 15 caracteres.',
+            'duracionDias.max' => 'La duracion no debe exceder 366 dias.',
+        ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Error de validación.', 'errors' => $validator->errors()], 422);
