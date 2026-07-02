@@ -215,7 +215,18 @@ class EquipamientoController extends Controller
 
     public function reportarFallaForm()
     {
-        $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosWithDetails()');
+        $usuario = session('usuario');
+        $empleado = DB::table('TEmpleados')
+            ->where('idUsuario', $usuario->idUsuario)
+            ->where('estadoA', 1)
+            ->first();
+        $idSucursal = $empleado?->idSucursal;
+
+        $equipos = [];
+        if ($idSucursal) {
+            $equipos = DB::select('CALL sp_TEquipamientos_GetOperativosBySucursal(?)', [$idSucursal]);
+        }
+
         return view('equipamiento.reportar-falla', compact('equipos'));
     }
 

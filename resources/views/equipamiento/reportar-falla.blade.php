@@ -3,7 +3,7 @@
 @section('content')
 <div class="card" style="max-width:640px; padding:1.5rem;">
     <h3 style="margin-bottom:0.25rem; color:#0f172a;">Reportar Falla de Equipo</h3>
-    <p style="color:#64748b; font-size:0.9rem; margin-bottom:1.5rem;">Seleccione un equipo operativo para reportar una falla.</p>
+    <p style="color:#64748b; font-size:0.9rem; margin-bottom:1.5rem;">Seleccione un equipo operativo de su sucursal para reportar una falla.</p>
 
     @if(session('success'))
         <div class="alert alert-success" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-radius:0.5rem; margin-bottom:1rem;">
