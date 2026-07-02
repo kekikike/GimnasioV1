@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-actions">
     <div style="display:flex; gap:0.75rem; align-items:center;">
-        <span style="font-size:0.9rem; color:#64748b;">{{ count($equipos) }} equipo(s)</span>
+        <span style="font-size:0.9rem; color:#64748b;" id="equipoCount">{{ count($equipos) }} equipo(s)</span>
     </div>
     <div style="display:flex; gap:0.5rem;">
         <input type="text" id="buscadorModelo" class="form-control" placeholder="Buscar por modelo..." style="width:220px; padding:0.5rem 0.75rem;" oninput="filtrarEquipos()">
@@ -17,20 +17,19 @@
 </div>
 
 <div class="card" style="padding:1rem; margin-bottom:1.5rem;">
-    <form method="GET" action="{{ route('equipamiento.index') }}" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+    <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
         <div class="form-group" style="margin-bottom:0; min-width:160px;">
             <label>Estado</label>
-            <select name="estado" class="form-control">
+            <select id="filtroEstado" class="form-control" onchange="filtrarEquipos()">
                 <option value="">Todos</option>
-                <option value="Operativo" {{ request('estado') == 'Operativo' ? 'selected' : '' }}>Operativo</option>
-                <option value="En Mantenimiento" {{ request('estado') == 'En Mantenimiento' ? 'selected' : '' }}>En Mantenimiento</option>
-                <option value="Fuera de Servicio" {{ request('estado') == 'Fuera de Servicio' ? 'selected' : '' }}>Fuera de Servicio</option>
-                <option value="De Baja" {{ request('estado') == 'De Baja' ? 'selected' : '' }}>De Baja</option>
+                <option value="Operativo">Operativo</option>
+                <option value="En Mantenimiento">En Mantenimiento</option>
+                <option value="Fuera de Servicio">Fuera de Servicio</option>
+                <option value="De Baja">De Baja</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-        <a href="{{ route('equipamiento.index') }}" class="btn btn-outline btn-sm">Limpiar</a>
-    </form>
+        <button onclick="limpiarFiltros()" class="btn btn-outline btn-sm">Limpiar</button>
+    </div>
 </div>
 
 <div class="card" style="overflow:hidden;">
@@ -57,7 +56,7 @@
                 <tbody>
                     @foreach($equipos as $eq)
                     @php $marca = $marcas[$eq->idMarca] ?? null; $suc = $sucursales[$eq->idSucursal] ?? null; @endphp
-                    <tr data-id="{{ $eq->idEquipo }}">
+                    <tr data-id="{{ $eq->idEquipo }}" data-estado="{{ $eq->estadoEquipo }}">
                         <td style="font-weight:600;">{{ $eq->nombreEquipo }}</td>
                         <td>{{ $marca->nombreMarca ?? '-' }}</td>
                         <td class="td-modelo">{{ $eq->modelo ?? '-' }}</td>
@@ -153,12 +152,29 @@
 var equiposData = @json($equipos);
 
 function filtrarEquipos() {
-    var input = document.getElementById('buscadorModelo').value.toLowerCase();
+    var termino = document.getElementById('buscadorModelo').value.toLowerCase();
+    var estadoSel = document.getElementById('filtroEstado').value;
     var rows = document.querySelectorAll('table tbody tr');
+    var visible = 0;
     rows.forEach(function(row) {
         var modelo = (row.querySelector('.td-modelo')?.textContent || '').toLowerCase();
-        row.style.display = modelo.indexOf(input) === -1 ? 'none' : '';
+        var nombre = (row.querySelector('td:first-child')?.textContent || '').toLowerCase();
+        var texto = modelo + ' ' + nombre;
+        var estado = row.getAttribute('data-estado') || '';
+        var coincideTexto = texto.indexOf(termino) !== -1;
+        var coincideEstado = !estadoSel || estado === estadoSel;
+        var show = coincideTexto && coincideEstado;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
     });
+    var countEl = document.getElementById('equipoCount');
+    if (countEl) countEl.textContent = visible + ' equipo(s)';
+}
+
+function limpiarFiltros() {
+    document.getElementById('buscadorModelo').value = '';
+    document.getElementById('filtroEstado').value = '';
+    filtrarEquipos();
 }
 
 function openEditModal(id) {
