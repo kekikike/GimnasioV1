@@ -36,6 +36,7 @@ class PlanController extends Controller
             'nombrePlan.max' => 'El nombre no debe exceder 100 caracteres.',
             'descripcion.required' => 'La descripcion es obligatoria.',
             'descripcion.min' => 'La descripcion debe tener al menos 15 caracteres.',
+            'descripcion.max' => 'La descripción no debe exceder 255 caracteres.',
             'costoPlan.required' => 'El costo es obligatorio.',
             'costoPlan.numeric' => 'El costo debe ser un numero.',
             'duracionDias.required' => 'La duracion es obligatoria.',
